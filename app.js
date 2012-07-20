@@ -22,11 +22,14 @@ function process(source, res){
 	source.forEach(function(url){
 		processUrl(url, function(){
 			console.log(result);
+			
+			// check whether all async jobs have finished
 			if (result.length === source.length){
 				sendResult(result,res);
 			}
 		});
 	})
+	return;
 
 	function processUrl(url, callback){
 		request.get({uri: url}, function(error, response, body) {
