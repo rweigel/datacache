@@ -17,17 +17,13 @@ var defaultSource =  ["http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/
 // "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050111T000000Z,20050112T000000Z/Magnitude,BGSEc?format=text"
 ];
 
-function parseSource(source){
-	return source.trim().split("\n");
-}
-
-function process(source, callback, res){
+function process(source, res){
 	var result = [];
 	source.forEach(function(url){
 		processUrl(url, function(){
 			console.log(result);
 			if (result.length === source.length){
-				callback(result,res);
+				sendResult(result,res);
 			}
 		});
 	})
@@ -35,7 +31,8 @@ function process(source, callback, res){
 	function processUrl(url, callback){
 		request.get({uri: url}, function(error, response, body) {
 			var start = +new Date();
-		    if (response.statusCode !== 200) {
+		    if (response && response.statusCode !== 200) {
+		    	//TODO: handle errors
 		    	console.log(url);
 		        console.log(response.statusCode);
 		    } else {
@@ -50,23 +47,26 @@ function process(source, callback, res){
 		    }
 		});
 	}
-}
 
-// uses res, req
-function sendResult(result, res){
-	res.contentType("text");
-	res.send(result.map(function(d){
-		return "URL: "+d.url+"\n"+"time: "+d.time + "ms";
-	}).join('\n\n\n'));
+	function sendResult(){
+		res.contentType("text");
+		res.send(result.map(function(d){
+			return "URL: "+d.url+"\n"+"time: "+d.time + "ms";
+		}).join('\n\n\n'));
+	}
 }
 
 app.use(express.bodyParser());
 
 app.get('/', function(req, res){
-	process(defaultSource, sendResult, res);
+	process(defaultSource, res);
 })
 app.post('/', function(req, res){
-	process(parseSource(req.body.source), sendResult, res);
+	process(parseSource(req.body.source), res);
 })
+
+function parseSource(source){
+	return source.trim().split("\n");
+}
 
 app.listen(8000);
