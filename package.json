@@ -1,0 +1,8 @@
+{
+	"name": "tsds_fe",
+  	"version": "0.1.0",
+	"dependencies": {
+		"xml2js" : "0.1.14",
+		"express" : "3.0.0beta7"
+	}
+}
