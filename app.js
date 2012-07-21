@@ -36,7 +36,7 @@ function process(source, res){
 			var start = +new Date();
 		    if (response && response.statusCode !== 200 || !body) {
 		    	//TODO: handle errors
-		    	result.push({"url" : url, "time" : "error"+response.statusCode, "response" : body});
+		    	result.push({"url" : url, "time" : "error"+response, "response" : body});
 		    	callback();
 		    } else {
 		    	parser.parseString(body, function(err, res){
