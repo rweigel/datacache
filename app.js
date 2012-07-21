@@ -37,6 +37,7 @@ function process(source, res){
 		    if (response && response.statusCode !== 200) {
 		    	//TODO: handle errors
 		    	result.push({"url" : url, "time" : "error"+response.statusCode});
+		    	callback();
 		    } else {
 		    	parser.parseString(body, function(err, res){
 		    		var url2 = res.FileDescription.Name;
