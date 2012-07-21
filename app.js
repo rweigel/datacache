@@ -36,8 +36,7 @@ function process(source, res){
 			var start = +new Date();
 		    if (response && response.statusCode !== 200) {
 		    	//TODO: handle errors
-		    	console.log(url);
-		        console.log(response.statusCode);
+		    	result.push({"url" : url, "time" : "error"+response.statusCode);
 		    } else {
 		    	parser.parseString(body, function(err, res){
 		    		var url2 = res.FileDescription.Name;
@@ -72,4 +71,4 @@ function parseSource(source){
 	return source.trim().split("\n");
 }
 
-app.listen(8000);
+app.listen(9000);
