@@ -40,12 +40,16 @@ function process(source, res){
 		    	callback();
 		    } else {
 		    	parser.parseString(body, function(err, res){
-		    		var url2 = res.FileDescription.Name;
-		    		request.get({uri:url2}, function(error, response, body){
-		    			var end = +new Date();
-		    			result.push({"url" : url, "time" : (end - start)});
-		    			callback();
-		    		})
+		    		if(err){
+		    			result.push({"url": url, "time":"error", "error": err})
+		    		} else{
+		    			var url2 = res.FileDescription.Name;
+			    		request.get({uri:url2}, function(error, response, body){
+			    			var end = +new Date();
+			    			result.push({"url" : url, "time" : (end - start)});
+			    			callback();
+			    		})
+			    	}
 		    	});
 		    }
 		});
