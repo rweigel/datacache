@@ -34,9 +34,9 @@ function process(source, res){
 	function processUrl(url, callback){
 		request.get({uri: url}, function(error, response, body) {
 			var start = +new Date();
-		    if (response && response.statusCode !== 200) {
+		    if (response && response.statusCode !== 200 || !body) {
 		    	//TODO: handle errors
-		    	result.push({"url" : url, "time" : "error"+response.statusCode});
+		    	result.push({"url" : url, "time" : "error"+response.statusCode, "response" : body});
 		    	callback();
 		    } else {
 		    	parser.parseString(body, function(err, res){
