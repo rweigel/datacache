@@ -4,9 +4,9 @@ var request = require("request"),
 	express = require('express'),
 	app = express.createServer();
 
-var defaultSource =  ["http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050101T000000Z,20050102T000000Z/Magnitude,BGSEc?format=text",
+var source =  ["http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050101T000000Z,20050102T000000Z/Magnitude,BGSEc?format=text",
 "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050102T000000Z,20050103T000000Z/Magnitude,BGSEc?format=text",
-"http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050103T000000Z,20050104T000000Z/Magnitude,BGSEc?format=text"
+"http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050103T000000Z,20050104T000000Z/Magnitude,BGSEc?format=text",
 // "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050104T000000Z,20050105T000000Z/Magnitude,BGSEc?format=text",
 // "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050105T000000Z,20050106T000000Z/Magnitude,BGSEc?format=text",
 // "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050106T000000Z,20050107T000000Z/Magnitude,BGSEc?format=text",
@@ -17,63 +17,75 @@ var defaultSource =  ["http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/
 // "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050111T000000Z,20050112T000000Z/Magnitude,BGSEc?format=text"
 ];
 
-function process(source, res){
-	var result = [];
-	source.forEach(function(url){
-		processUrl(url, function(){
-			console.log(result);
-			
-			// check whether all async jobs have finished
-			if (result.length === source.length){
-				sendResult(result,res);
-			}
-		});
-	})
-	return;
+var result = [];
 
-	function processUrl(url, callback){
+app.use(express.bodyParser());
+// app.use(function(err, req, res, next){
+// 	//error handler
+// 	res.send(err, 500);
+// })
+
+app.get('/', function(req, res){
+	res.send("<html><body><form action='/'' method='post'><p>Urls: </p><p><textarea rows='30' cols='100' name='source'>" +
+		source.join("\n") +
+		"</textarea></p><p> <input type='submit'/></p></form><p>Result:</p><p>" + 
+		result +
+		"</p></body></html>");
+})
+app.post('/', function(req, res){
+	source = req.body.source.trim().split("\n");
+	result = [];
+	source.forEach(function(url){
 		request.get({uri: url}, function(error, response, body) {
-			var start = +new Date();
-		    if (response && response.statusCode !== 200 || !body) {
-		    	//TODO: handle errors
-		    	result.push({"url" : url, "time" : "error"+response, "response" : body});
-		    	callback();
-		    } else {
+			if(error || response.statusCode!==200) {
+				result.push({error : true, url : url});
+				checkAndRespond();
+			} else {
+				var start = +new Date();
 		    	parser.parseString(body, function(err, res){
 		    		if(err){
-		    			result.push({"url": url, "time":"error", "error": err})
+		    			result.push({url: url, error: true});
+		    			checkAndRespond();
 		    		} else{
-		    			var url2 = res.FileDescription.Name;
-			    		request.get({uri:url2}, function(error, response, body){
-			    			var end = +new Date();
-			    			result.push({"url" : url, "time" : (end - start)});
-			    			callback();
-			    		})
+		    			if(!res.FileDescription || !res.FileDescription.Name){
+		    				result.push({url: url, error: true});
+		    				checkAndRespond();
+		    			} else {
+		    				var url2 = res.FileDescription.Name;
+				    		request.get({uri:url2}, function(error, response, body){
+				    			if(error || response.statusCode!==200){
+				    				result.push({error : true, url : url2});
+				    				checkAndRespond();
+				    			} else {
+				    				var end = +new Date();
+				    				result.push({"url" : url, "time" : (end - start)});
+				    				checkAndRespond();
+				    			}
+				    		})
+		    			}
 			    	}
 		    	});
 		    }
-		});
+		})
+	})
+	
+	function checkAndRespond(){
+		if(result.length==source.length){
+			result = result
+			// restore urls' order
+			.sort(function(a, b){
+				return source.indexOf(a.url) - source.indexOf(b.url);
+			})
+			.map(function(d){
+				if(d.error){
+					return "URL: "+d.url+"<br><font color='red'>Error!</font>";
+				} else {
+					return "URL: "+d.url+"<br>Time: <font color='green'>"+d.time + "ms</font>";
+				}
+			}).join('<br><br>');
+			res.redirect("back");
+		}
 	}
-
-	function sendResult(){
-		res.contentType("text");
-		res.send(result.map(function(d){
-			return "URL: "+d.url+"\n"+"time: "+d.time + "ms";
-		}).join('\n\n\n'));
-	}
-}
-
-app.use(express.bodyParser());
-
-app.get('/', function(req, res){
-	process(defaultSource, res);
 })
-app.post('/', function(req, res){
-	process(parseSource(req.body.source), res);
-})
-
-function parseSource(source){
-	return source.trim().split("\n");
-}
 
 app.listen(9000);
