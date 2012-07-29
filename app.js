@@ -24,10 +24,7 @@ var resultText = "";
 var forceUpdate = false;
 
 app.use(express.bodyParser());
-// app.use(function(err, req, res, next){
-// 	//error handler
-// 	res.send(err, 500);
-// })
+app.use(express.errorHandler({ showStack: true, dumpExceptions: true }));
 
 app.get('/', function(req, res){
 	res.send("<html><body><form action='/'' method='post'><p>Urls: </p><p><textarea rows='30' cols='100' name='source'>" +
@@ -36,7 +33,7 @@ app.get('/', function(req, res){
 		resultText +
 		"</p></body></html>");
 })
-app.post('/', function(req, res){
+app.post('/', function(req, res, next){
 	source = req.body.source.trim().split("\n");
 	forceUpdate = req.body.forceUpdate;
 	results = [];
