@@ -2,7 +2,9 @@ var request = require("request"),
 	xml2js = require('xml2js'),
 	parser = new xml2js.Parser(),
 	express = require('express'),
-	app = express.createServer();
+	app = express.createServer(),
+	crypto = require("crypto"),
+	fs = require("fs");
 
 var source =  ["http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050101T000000Z,20050102T000000Z/Magnitude,BGSEc?format=text",
 "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050102T000000Z,20050103T000000Z/Magnitude,BGSEc?format=text",
@@ -17,7 +19,9 @@ var source =  ["http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/dataset
 // "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050111T000000Z,20050112T000000Z/Magnitude,BGSEc?format=text"
 ];
 
-var result = [];
+var results = [];
+var resultText = "";
+var forceUpdate = false;
 
 app.use(express.bodyParser());
 // app.use(function(err, req, res, next){
@@ -28,64 +32,150 @@ app.use(express.bodyParser());
 app.get('/', function(req, res){
 	res.send("<html><body><form action='/'' method='post'><p>Urls: </p><p><textarea rows='30' cols='100' name='source'>" +
 		source.join("\n") +
-		"</textarea></p><p> <input type='submit'/></p></form><p>Result:</p><p>" + 
-		result +
+		"</textarea></p><p> <input type='submit'/> <input type='checkbox' name='forceUpdate' value='true' "+ (forceUpdate ? "checked" : "")+"> Update cache</p></form><p>Result:</p><p>" + 
+		resultText +
 		"</p></body></html>");
 })
 app.post('/', function(req, res){
 	source = req.body.source.trim().split("\n");
-	result = [];
+	forceUpdate = req.body.forceUpdate;
+	results = [];
 	source.forEach(function(url){
+		processUrl(url, results, function(result){
+			// when all urls are processed, make a http response
+			if(results.length==source.length){
+				resultText = results
+				// restore urls' order
+				.sort(function(a, b){
+					return source.indexOf(a.url) - source.indexOf(b.url);
+				})
+				.map(function(d){
+					if(d.error){
+						return "URL: "+d.url+"<br><font color='red'>Error:"+d.error+"</font>";
+					} else {
+						return "URL: "+d.url
+							 + (d.fromCache ? "<br><font color='orange'>Found in cache.</font>" : "")
+							+"<br>Time: <font color='green'>"+d.time + "ms</font>"
+							+"<br> md5: "+d.md5
+							// +"<br>Header: "+JSON.stringify(d.header)
+							// +"<br>date: "+formatTime(d.date)
+							// +"<br>data:<pre>"+d.data+"</pre>";
+					}
+				}).join('<br><br>');
+				res.redirect("back");
+			}
+		});
+	});
+})
+
+app.listen(9000);
+
+function processUrl(url, results, callback){
+	var result;
+	if(!forceUpdate && isCached(url)){
+		result = newResult(url);
+		result.fromCache = true;
+		results.push(result);
+		writeCache(result);
+		callback(result);
+	} else {
 		request.get({uri: url}, function(error, response, body) {
 			if(error || response.statusCode!==200) {
-				result.push({error : true, url : url});
-				checkAndRespond();
+				result = newResult(url);
+				result.error = "Can't fetch meta data";
+				results.push(result);
+				callback(result);
 			} else {
 				var start = +new Date();
 		    	parser.parseString(body, function(err, res){
 		    		if(err){
-		    			result.push({url: url, error: true});
-		    			checkAndRespond();
+		    			result = newResult(url);
+		    			result.error = "Can't parse meta data";
+		    			results.push(result);
+		    			callback(result);
 		    		} else{
 		    			if(!res.FileDescription || !res.FileDescription.Name){
-		    				result.push({url: url, error: true});
-		    				checkAndRespond();
+		   					result = newResult(url);
+		   					result.error = "Can't parse meta data";
+		   					results.push(result);
+		    				callback(result);
 		    			} else {
 		    				var url2 = res.FileDescription.Name;
 				    		request.get({uri:url2}, function(error, response, body){
 				    			if(error || response.statusCode!==200){
-				    				result.push({error : true, url : url2});
-				    				checkAndRespond();
+				    				result = newResult(url2);
+				    				result.error = "Can't fetch data";
+				    				results.push(result);
+				    				callback(result);
 				    			} else {
 				    				var end = +new Date();
-				    				result.push({"url" : url, "time" : (end - start)});
-				    				checkAndRespond();
+				    				result = newResult(url);
+				    				result.time = (end -start);
+				    				result.md5 =  crypto.createHash("md5").update(body).digest("hex");
+				    				result.data = body;
+				    				result.header = response.headers;
+				    				results.push(result);
+				    				writeCache(result);
+				    				callback(result);
 				    			}
 				    		})
 		    			}
 			    	}
 		    	});
 		    }
-		})
-	})
-	
-	function checkAndRespond(){
-		if(result.length==source.length){
-			result = result
-			// restore urls' order
-			.sort(function(a, b){
-				return source.indexOf(a.url) - source.indexOf(b.url);
-			})
-			.map(function(d){
-				if(d.error){
-					return "URL: "+d.url+"<br><font color='red'>Error!</font>";
-				} else {
-					return "URL: "+d.url+"<br>Time: <font color='green'>"+d.time + "ms</font>";
-				}
-			}).join('<br><br>');
-			res.redirect("back");
-		}
+		});
 	}
-})
+}
 
-app.listen(9000);
+function isCached(url){
+	// return false;
+	try{
+		return fs.statSync(__dirname + "/cache/" + encodeURIComponent(url)+".log");
+	} catch(err){
+		return false;
+	}
+	
+}
+
+function writeCache(result){
+	var filename = __dirname + "/cache/" + encodeURIComponent(result.url);
+	try{
+		if(!result.fromCache) {
+			fs.writeFileSync(filename+".data", result.data);
+			fs.writeFileSync(filename+".header", JSON.stringify(result.header));
+			fs.writeFileSync(filename+".md5", result.md5);
+		}
+		fs.appendFile(filename+".log", 
+			formatTime(result.date) + "\t"+result.time+"\t"+result.md5+"\n");
+	}catch(error){
+		result.error ="Can't write to cache";
+	}
+}
+
+function formatTime(date){
+	if(!date){
+		return;
+	}
+	return [date.getFullYear(),
+		(date.getMonth()+"").length==2 ? date.getMonth() : "0"+date.getMonth(),
+		(date.getDate()+"").length==2 ? date.getDate() : "0"+date.getDate(),
+		(date.getHours()+"").length==2 ? date.getHours() : "0"+date.getHours(),
+		(date.getMinutes()+"").length==2 ? date.getMinutes() : "0"+date.getMinutes(),
+		(date.getSeconds()+"").length==2 ? date.getSeconds() : "0"+date.getSeconds(),
+		(date.getMilliseconds()+"").length==3 ? date.getMilliseconds() : 
+			(date.getMilliseconds()+"").length==2 ? "0"+date.getMilliseconds() : "00"+date.getMilliseconds()
+	].join(" ");
+}
+
+function newResult(url){
+	return {
+		url : url,
+		md5 : "",
+		data : "",
+		header : "",
+		date : new Date(),
+		time : 0,
+		fromCache : false,
+		error : false
+	}
+}
