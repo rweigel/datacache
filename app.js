@@ -24,12 +24,20 @@ var resultText = "";
 var forceUpdate = false;
 
 app.use(express.bodyParser());
-app.use(express.errorHandler({ showStack: true, dumpExceptions: true }));
+// set default content-type to "text"
+app.use(function(req, res, next){
+	res.contentType("text");
+	next();
+})
+app.use("/cache", express.static(__dirname + "/cache"));
+app.use("/cache", express.directory(__dirname+"/cache"));
+// app.use(express.errorHandler({ showStack: true, dumpExceptions: true }));
 
 app.get('/', function(req, res){
+	res.contentType("html");
 	res.send("<html><body><form action='/'' method='post'><p>Urls: </p><p><textarea rows='30' cols='100' name='source'>" +
 		source.join("\n") +
-		"</textarea></p><p> <input type='submit'/> <input type='checkbox' name='forceUpdate' value='true' "+ (forceUpdate ? "checked" : "")+"> Update cache</p></form><p>Result:</p><p>" + 
+		"</textarea></p><p> <input type='submit'/> <input type='checkbox' name='forceUpdate' value='true' "+ (forceUpdate ? "checked" : "")+"> Update cache (<a href='cache'>Click here to browse current cache</a>)</p></form><p>Result:</p><p>" + 
 		resultText +
 		"</p></body></html>");
 })
@@ -51,7 +59,7 @@ app.post('/', function(req, res, next){
 						return "URL: "+d.url+"<br><font color='red'>Error:"+d.error+"</font>";
 					} else {
 						return "URL: "+d.url
-							 + (d.fromCache ? "<br><font color='orange'>Found in cache.</font>" : "")
+							 + (d.isFromCache ? "<br><font color='orange'>Found in cache.</font>" : "")
 							+"<br>Time: <font color='green'>"+d.time + "ms</font>"
 							+"<br> md5: "+d.md5
 							// +"<br>Header: "+JSON.stringify(d.header)
@@ -71,7 +79,7 @@ function processUrl(url, results, callback){
 	var result;
 	if(!forceUpdate && isCached(url)){
 		result = newResult(url);
-		result.fromCache = true;
+		result.isFromCache = true;
 		results.push(result);
 		writeCache(result);
 		callback(result);
@@ -107,14 +115,6 @@ function processUrl(url, results, callback){
 	}
 }
 
-function isCached(url){
-	// return false;
-	try{
-		return fs.statSync(__dirname + "/cache/" + md5(url)+".log");
-	} catch(err){
-		return false;
-	}
-}
 
 function getDataUrl(url, callback){ 	//callback(err, url)
 	if(url.split("/")[2].toLowerCase()==="cdaweb.gsfc.nasa.gov"){
@@ -136,11 +136,27 @@ function getDataUrl(url, callback){ 	//callback(err, url)
 	}
 }
 
+function isCached(url){
+	var directory =  __dirname + "/cache/" + url.split("/")[2];
+	try{
+		return fs.statSync(directory + "/" + md5(url)+".log");
+	} catch(err){
+		return false;
+	}
+}
+
 // Sync version
 function writeCache(result){
-	var filename = __dirname + "/cache/" + md5(result.url);
+	var directory =  __dirname + "/cache/" + result.url.split("/")[2];
+	var filename = directory + "/" + md5(result.url);
+	// create dir if not exist
 	try{
-		if(!result.fromCache) {
+		fs.statSync(directory);
+	}catch(err){
+		fs.mkdirSync(directory);
+	};
+	try{
+		if(!result.isFromCache) {
 			fs.writeFileSync(filename+".data", result.data);
 			fs.writeFileSync(filename+".header", JSON.stringify(result.header));
 			fs.writeFileSync(filename+".md5", result.md5);
@@ -156,7 +172,7 @@ function writeCache(result){
 // Async version
 // function writeCacheAsync(result){
 // 	var filename = __dirname + "/cache/" + encodeURIComponent(result.url);
-// 	if(!result.fromCache) {
+// 	if(!result.isFromCache) {
 // 		fs.writeFile(filename+".data", result.data, log);
 // 		fs.writeFile(filename+".header", JSON.stringify(result.header), log);
 // 		fs.writeFile(filename+".md5", result.md5, log);
@@ -195,7 +211,7 @@ function newResult(url){
 		header : "",
 		date : new Date(),
 		time : 0,
-		fromCache : false,
+		isFromCache : false,
 		error : false
 	}
 }
