@@ -236,14 +236,22 @@ function formatTime(date){
 		return;
 	}
 	return [date.getFullYear(),
-		(date.getMonth()+"").length==2 ? date.getMonth() : "0"+date.getMonth(),
-		(date.getDate()+"").length==2 ? date.getDate() : "0"+date.getDate(),
-		(date.getHours()+"").length==2 ? date.getHours() : "0"+date.getHours(),
-		(date.getMinutes()+"").length==2 ? date.getMinutes() : "0"+date.getMinutes(),
-		(date.getSeconds()+"").length==2 ? date.getSeconds() : "0"+date.getSeconds(),
-		(date.getMilliseconds()+"").length==3 ? date.getMilliseconds() : 
-			(date.getMilliseconds()+"").length==2 ? "0"+date.getMilliseconds() : "00"+date.getMilliseconds()
+		pad(date.getMonth(),2),
+		pad(date.getDate(), 2),
+		pad(date.getHours(), 2),
+		pad(date.getMinutes(), 2),
+		pad(date.getSeconds(), 2),
+		pad(date.getMilliseconds(), 3)
 	].join(" ");
+
+	function pad(str, num){
+		// convert to string
+		str = str+"";
+		while(str.length < num) {
+			str = "0"+str;
+		}
+		return str;
+	}
 }
 
 // construct a result object with default values
