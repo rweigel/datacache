@@ -65,7 +65,7 @@ app.post('/', function(req, res, next){
 	});
 })
 
-app.listen(9000);
+app.listen(8000);
 
 function processUrl(url, results, callback){
 	var result;
@@ -76,66 +76,69 @@ function processUrl(url, results, callback){
 		writeCache(result);
 		callback(result);
 	} else {
-		request.get({uri: url}, function(error, response, body) {
-			if(error || response.statusCode!==200) {
+		getDataUrl(url, function(err, url2){
+			if(err){
 				result = newResult(url);
-				result.error = "Can't fetch meta data";
+				result.error = "Error getting data url";
 				results.push(result);
 				callback(result);
 			} else {
 				var start = +new Date();
-		    	parser.parseString(body, function(err, res){
-		    		if(err){
-		    			result = newResult(url);
-		    			result.error = "Can't parse meta data";
-		    			results.push(result);
-		    			callback(result);
-		    		} else{
-		    			if(!res.FileDescription || !res.FileDescription.Name){
-		   					result = newResult(url);
-		   					result.error = "Can't parse meta data";
-		   					results.push(result);
-		    				callback(result);
-		    			} else {
-		    				var url2 = res.FileDescription.Name;
-				    		request.get({uri:url2}, function(error, response, body){
-				    			if(error || response.statusCode!==200){
-				    				result = newResult(url2);
-				    				result.error = "Can't fetch data";
-				    				results.push(result);
-				    				callback(result);
-				    			} else {
-				    				var end = +new Date();
-				    				result = newResult(url);
-				    				result.time = (end -start);
-				    				result.md5 =  crypto.createHash("md5").update(body).digest("hex");
-				    				result.data = body;
-				    				result.header = response.headers;
-				    				results.push(result);
-				    				writeCache(result);
-				    				callback(result);
-				    			}
-				    		})
-		    			}
-			    	}
-		    	});
-		    }
-		});
+	    		request.get({uri:url2}, function(error, response, body){
+	    			if(error || response.statusCode!==200){
+	    				result = newResult(url);
+	    				result.error = "Can't fetch data";
+	    				results.push(result);
+	    				callback(result);
+	    			} else {
+	    				var end = +new Date();
+	    				result = newResult(url);
+	    				result.time = (end -start);
+	    				result.md5 =  md5(body);
+	    				result.data = body;
+	    				result.header = response.headers;
+	    				results.push(result);
+	    				writeCache(result);
+	    				callback(result);
+	    			}
+	    		})
+			}
+		})
 	}
 }
 
 function isCached(url){
 	// return false;
 	try{
-		return fs.statSync(__dirname + "/cache/" + encodeURIComponent(url)+".log");
+		return fs.statSync(__dirname + "/cache/" + md5(url)+".log");
 	} catch(err){
 		return false;
 	}
-	
 }
 
+function getDataUrl(url, callback){ 	//callback(err, url)
+	if(url.split("/")[2].toLowerCase()==="cdaweb.gsfc.nasa.gov"){
+		request.get({uri: url}, function(error, response, body) {
+			if(error || response.statusCode!==200) {
+				callback(true, undefined);
+			} else {
+				parser.parseString(body, function(err, res){
+					if(err || !res.FileDescription || !res.FileDescription.Name){
+						callback(true, undefined);
+					} else{
+						callback(false, res.FileDescription.Name);
+					}
+				});
+			}
+		});
+	} else {
+		callback(false, url);
+	}
+}
+
+// Sync version
 function writeCache(result){
-	var filename = __dirname + "/cache/" + encodeURIComponent(result.url);
+	var filename = __dirname + "/cache/" + md5(result.url);
 	try{
 		if(!result.fromCache) {
 			fs.writeFileSync(filename+".data", result.data);
@@ -146,8 +149,27 @@ function writeCache(result){
 			formatTime(result.date) + "\t"+result.time+"\t"+result.md5+"\n");
 	}catch(error){
 		result.error ="Can't write to cache";
+		console.error(error);
 	}
 }
+
+// Async version
+// function writeCacheAsync(result){
+// 	var filename = __dirname + "/cache/" + encodeURIComponent(result.url);
+// 	if(!result.fromCache) {
+// 		fs.writeFile(filename+".data", result.data, log);
+// 		fs.writeFile(filename+".header", JSON.stringify(result.header), log);
+// 		fs.writeFile(filename+".md5", result.md5, log);
+// 	}
+// 	fs.appendFile(filename+".log", 
+// 		formatTime(result.date) + "\t"+result.time+"\t"+result.md5+"\n");
+
+// 	function log(err){
+// 		if(err){
+// 			console.log("Error occured when writing cache!");
+// 		}
+// 	}
+// }
 
 function formatTime(date){
 	if(!date){
@@ -164,6 +186,7 @@ function formatTime(date){
 	].join(" ");
 }
 
+// construct a result object with default values
 function newResult(url){
 	return {
 		url : url,
@@ -175,4 +198,8 @@ function newResult(url){
 		fromCache : false,
 		error : false
 	}
+}
+
+function md5(str){
+	return crypto.createHash("md5").update(str).digest("hex");
 }
