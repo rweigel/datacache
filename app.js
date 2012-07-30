@@ -4,19 +4,12 @@ var request = require("request"),
 	express = require('express'),
 	app = express.createServer(),
 	crypto = require("crypto"),
-	fs = require("fs");
+	fs = require("fs"),
+	hogan = require('hogan.js');
 
 var source =  ["http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050101T000000Z,20050102T000000Z/Magnitude,BGSEc?format=text",
 "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050102T000000Z,20050103T000000Z/Magnitude,BGSEc?format=text",
-"http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050103T000000Z,20050104T000000Z/Magnitude,BGSEc?format=text",
-// "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050104T000000Z,20050105T000000Z/Magnitude,BGSEc?format=text",
-// "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050105T000000Z,20050106T000000Z/Magnitude,BGSEc?format=text",
-// "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050106T000000Z,20050107T000000Z/Magnitude,BGSEc?format=text",
-// "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050107T000000Z,20050108T000000Z/Magnitude,BGSEc?format=text",
-// "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050108T000000Z,20050109T000000Z/Magnitude,BGSEc?format=text",
-// "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050109T000000Z,20050110T000000Z/Magnitude,BGSEc?format=text",
-// "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050110T000000Z,20050111T000000Z/Magnitude,BGSEc?format=text",
-// "http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050111T000000Z,20050112T000000Z/Magnitude,BGSEc?format=text"
+"http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050103T000000Z,20050104T000000Z/Magnitude,BGSEc?format=text"
 ];
 
 var results = [];
@@ -29,6 +22,14 @@ app.use(function(req, res, next){
 	res.contentType("text");
 	next();
 })
+
+// create cache dir if not exist
+try{
+	fs.statSync(__dirname+"/cache");
+}catch(err){
+	fs.mkdirSync(__dirname+"/cache");
+};
+
 app.use("/cache", express.static(__dirname + "/cache"));
 app.use("/cache", express.directory(__dirname+"/cache"));
 // app.use(express.errorHandler({ showStack: true, dumpExceptions: true }));
@@ -42,7 +43,12 @@ app.get('/', function(req, res){
 		"</p></body></html>");
 })
 app.post('/', function(req, res, next){
-	source = req.body.source.trim().split("\n");
+	source = req.body.source
+			.trim()
+			.split("\n")
+			.filter(function(line){
+				return line.trim()!="";
+			});
 	forceUpdate = req.body.forceUpdate;
 	results = [];
 	source.forEach(function(url){
@@ -102,8 +108,9 @@ function processUrl(url, results, callback){
 	    				var end = +new Date();
 	    				result = newResult(url);
 	    				result.time = (end -start);
-	    				result.md5 =  md5(body);
-	    				result.data = body;
+	    				result.body = body;
+	    				result.data = getData(url, body);
+	    				result.md5 =  md5(result.data);
 	    				result.header = response.headers;
 	    				results.push(result);
 	    				writeCache(result);
@@ -115,6 +122,27 @@ function processUrl(url, results, callback){
 	}
 }
 
+function getData(url, doc){
+	var re;
+	switch(url.split("/")[2].toLowerCase()){
+	case "cdaweb.gsfc.nasa.gov": 
+		re = /^([\d-]+)\s+([\d:\.]+)\s+([\d\.]+)\s+([+-\.\d]+)\s+([+-\.\d]+)\s+([+-\.\d]+)$/;
+		break;
+	case "sscweb.gsfc.nasa.gov":
+		re = /^([\d]+)\s+([\d]+)\s+([\d:]+)\s+([+-\.\d]+)\s+([+-\.\d]+)\s+([+-\.\d]+)$/;
+		break;
+	case "supermag.uib.no":
+		re = /^([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)$|^BRW\s+([\d-]+)\s([\d-]+)\s([\d-]+)$/;
+		break;
+	default:
+		re = /.*/;
+	}
+	return doc.split("\n")
+			.filter(function(line){
+				return line.search(re)!=-1;
+			})
+			.join("\n");
+}
 
 function getDataUrl(url, callback){ 	//callback(err, url)
 	if(url.split("/")[2].toLowerCase()==="cdaweb.gsfc.nasa.gov"){
@@ -158,6 +186,7 @@ function writeCache(result){
 	try{
 		if(!result.isFromCache) {
 			fs.writeFileSync(filename+".data", result.data);
+			fs.writeFileSync(filename+".out", result.body);
 			fs.writeFileSync(filename+".header", JSON.stringify(result.header));
 			fs.writeFileSync(filename+".md5", result.md5);
 		}
