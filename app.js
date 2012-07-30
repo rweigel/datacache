@@ -36,7 +36,7 @@ app.use("/cache", express.directory(__dirname+"/cache"));
 app.get('/', function(req, res){
 	res.contentType("html");
 	res.send("<html><body><form action='/'' method='post'><p>Urls: </p><p><textarea rows='30' cols='100' name='source'>" +
-		source.join("\n") +
+		escapeHTML(source.join("\n")) +
 		"</textarea></p><p> <input type='submit'/> <input type='checkbox' name='forceUpdate' value='true' "+ (forceUpdate ? "checked" : "")+"> Update cache (<a href='cache'>Click here to browse current cache</a>)</p></form><p>Result:</p><p>" + 
 		resultText +
 		"</p></body></html>");
@@ -218,4 +218,11 @@ function newResult(url){
 
 function md5(str){
 	return crypto.createHash("md5").update(str).digest("hex");
+}
+
+function escapeHTML(s) {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
 }
