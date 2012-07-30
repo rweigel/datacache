@@ -58,7 +58,7 @@ app.post('/', function(req, res, next){
 					if(d.error){
 						return "URL: "+escapeHTML(d.url)+"<br><font color='red'>Error:"+d.error+"</font>";
 					} else {
-						return "URL: "+d.url
+						return "URL: "+escapeHTML(d.url)
 							 + (d.isFromCache ? "<br><font color='orange'>Found in cache.</font>" : "")
 							+"<br>Time: <font color='green'>"+d.time + "ms</font>"
 							+"<br> md5: "+d.md5
