@@ -38,7 +38,7 @@ app.get('/', function(req, res){
 	res.send("<html><body><form action='/'' method='post'><p>Urls: </p><p><textarea rows='30' cols='100' name='source'>" +
 		escapeHTML(source.join("\n")) +
 		"</textarea></p><p> <input type='submit'/> <input type='checkbox' name='forceUpdate' value='true' "+ (forceUpdate ? "checked" : "")+"> Update cache (<a href='cache'>Click here to browse current cache</a>)</p></form><p>Result:</p><p>" + 
-		escapeHTML(resultText) +
+		resultText +
 		"</p></body></html>");
 })
 app.post('/', function(req, res, next){
@@ -56,7 +56,7 @@ app.post('/', function(req, res, next){
 				})
 				.map(function(d){
 					if(d.error){
-						return "URL: "+d.url+"<br><font color='red'>Error:"+d.error+"</font>";
+						return "URL: "+escapeHTML(d.url)+"<br><font color='red'>Error:"+d.error+"</font>";
 					} else {
 						return "URL: "+d.url
 							 + (d.isFromCache ? "<br><font color='orange'>Found in cache.</font>" : "")
