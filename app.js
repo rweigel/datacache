@@ -25,6 +25,7 @@ var source = [];
 var results = [];
 var resultText = "";
 var forceUpdate = false;
+var memLock = {};
 
 app.use(express.bodyParser());
 // set default content-type to "text"
@@ -79,10 +80,15 @@ app.post('/', function(req, res, next){
 					if(d.error){
 						return "URL: "+escapeHTML(d.url)+"<br><font color='red'>Error:"+d.error+"</font>";
 					} else {
+						var cacheUrl = "/cache/"+d.url.split("/")[2]+"/"+md5(d.url);
 						return "URL: "+escapeHTML(d.url)
 							 + (d.isFromCache ? "<br><font color='orange'>Found in cache.</font>" : "")
 							+"<br>Time: <font color='green'>"+d.time + "ms</font>"
 							+"<br> md5: "+d.md5
+							+"<br> File: <a href='"+ cacheUrl+".data'>data</a> | <a href='"
+							+cacheUrl+".out'> response </a>  | <a href='"
+							+cacheUrl+".header'> header </a> | <a href='"
+							+cacheUrl + ".log'> log </a>"
 							// +"<br>Header: "+JSON.stringify(d.header)
 							// +"<br>date: "+formatTime(d.date)
 							// +"<br>data:<pre>"+d.data+"</pre>";
@@ -189,47 +195,49 @@ function isCached(url){
 }
 
 // Sync version
-function writeCache(result){
-	var directory =  __dirname + "/cache/" + result.url.split("/")[2];
-	var filename = directory + "/" + md5(result.url);
-	// create dir if not exist
-	try{
-		fs.statSync(directory);
-	}catch(err){
-		fs.mkdirSync(directory);
-	};
-	try{
-		if(!result.isFromCache) {
-			fs.writeFileSync(filename+".data", result.data);
-			fs.writeFileSync(filename+".out", result.body);
-			fs.writeFileSync(filename+".header", JSON.stringify(result.header));
-			fs.writeFileSync(filename+".md5", result.md5);
-		}
-		fs.appendFile(filename+".log", 
-			formatTime(result.date) + "\t"+result.time+"\t"+result.md5+"\n");
-	}catch(error){
-		result.error ="Can't write to cache";
-		console.error(error);
-	}
-}
-
-// Async version
-// function writeCacheAsync(result){
-// 	var filename = __dirname + "/cache/" + encodeURIComponent(result.url);
-// 	if(!result.isFromCache) {
-// 		fs.writeFile(filename+".data", result.data, log);
-// 		fs.writeFile(filename+".header", JSON.stringify(result.header), log);
-// 		fs.writeFile(filename+".md5", result.md5, log);
-// 	}
-// 	fs.appendFile(filename+".log", 
-// 		formatTime(result.date) + "\t"+result.time+"\t"+result.md5+"\n");
-
-// 	function log(err){
-// 		if(err){
-// 			console.log("Error occured when writing cache!");
+// function writeCache(result){
+// 	var directory =  __dirname + "/cache/" + result.url.split("/")[2];
+// 	var filename = directory + "/" + md5(result.url);
+// 	// create dir if not exist
+// 	try{
+// 		fs.statSync(directory);
+// 	}catch(err){
+// 		fs.mkdirSync(directory);
+// 	};
+// 	try{
+// 		if(!result.isFromCache) {
+// 			fs.writeFileSync(filename+".data", result.data);
+// 			fs.writeFileSync(filename+".out", result.body);
+// 			fs.writeFileSync(filename+".header", JSON.stringify(result.header));
+// 			fs.writeFileSync(filename+".md5", result.md5);
 // 		}
+// 		fs.appendFile(filename+".log", 
+// 			formatTime(result.date) + "\t"+result.time+"\t"+result.md5+"\n");
+// 	}catch(error){
+// 		result.error ="Can't write to cache";
+// 		console.error(error);
 // 	}
 // }
+
+// Async version
+function writeCache(result){
+	var filename = __dirname + "/cache/" + encodeURIComponent(result.url);
+	if(!result.isFromCache && !memLock[result.url]) {
+		memLock[result.url] = 3;
+		fs.writeFile(filename+".data", result.data, finish);
+		fs.writeFile(filename+".header", JSON.stringify(result.header), finish);
+		fs.writeFile(filename+".md5", result.md5, finish);
+	}
+	fs.appendFile(filename+".log", 
+		formatTime(result.date) + "\t"+result.time+"\t"+result.md5+"\n");
+
+	function finish(err){
+		if(err){
+			console.log("Error occured when writing cache!");
+		}
+		memLock.url--;
+	}
+}
 
 function formatTime(date){
 	if(!date){
