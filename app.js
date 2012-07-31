@@ -238,21 +238,37 @@ function isCached(url){
 
 // Async version
 function writeCache(result){
-	var filename = __dirname + "/cache/" + result.url.split("/")[2]+"/"+md5(result.url);
+	var directory =  __dirname + "/cache/" + result.url.split("/")[2];
+	var filename = directory + "/" + md5(result.url);
 	var header = [];
 	for(var key in result.header){
 		header.push(key + " : " + result.header[key]);
 	}
 	if(!memLock[result.url]) {
 		// if memLock[result.url] is undefine or 0, no writting is on-going
-		memLock[result.url] = 3;
-		fs.writeFile(filename+".data", result.data, finish);
-		fs.writeFile(filename+".header", header.join("\n"), finish);
-		fs.writeFile(filename+".md5", result.md5, finish);
-	}
+		memLock[result.url] = 4;
 
-	fs.appendFile(filename+".log", 
-		formatTime(result.date) + "\t"+result.time+"\t"+result.md5+"\n");
+		// create dir if not exist
+		try{
+			fs.existsSync(directory);
+		}catch(err){
+			fs.mkdir(directory, function(err){
+				if(err){
+					throw err;
+				} else {
+					fs.writeFile(filename+".data", result.data, finish);
+					fs.writeFile(filename+".header", header.join("\n"), finish);
+					fs.writeFile(filename+".md5", result.md5, finish);
+					fs.appendFile(filename+".log", 
+						formatTime(result.date) + "\t"+result.time+"\t"+result.md5+"\n",
+						finish
+					);
+				}
+
+			});
+		};
+		
+	}
 
 	function finish(err){
 		if(err){
