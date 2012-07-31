@@ -50,7 +50,7 @@ app.get('/', function(req, res){
 		+JSON.stringify(presets)
 		+"</script><body><form action='/' method='post'><p>Urls: (Presets: <a href='#' onclick='$(urls).val(presets[0].join(\"\\n\\n\"));'>CDAWeb</a> <a href='#' onclick='$(urls).val(presets[1].join(\"\\n\\n\"));'>supermag</a> <a href='#' onclick='$(urls).val(presets[2].join(\"\\n\\n\"));'>sscweb</a>)</p><p><textarea id='urls' rows='30' cols='100' name='source'>" +
 		escapeHTML(source.join("\n\n")) +
-		"</textarea></p><p> <input type='submit'/> <input type='checkbox' name='forceUpdate' value='true' "+ (forceUpdate ? "checked" : "")+"> Update cache (<a href='cache'>Click here to browse current cache</a>)</p></form><p>Result:</p><p>" + 
+		"</textarea></p><p> <input type='submit'/> <input type='checkbox' name='forceUpdate' value='true' "+ (forceUpdate ? "checked" : "")+"> Ignore cache (<a href='cache'>Click here to browse current cache</a>)</p></form><p>Result:</p><p>" + 
 		resultText +
 		"</p></body></html>");
 })
@@ -236,7 +236,7 @@ function formatTime(date){
 		return;
 	}
 	return [date.getFullYear(),
-		pad(date.getMonth(),2),
+		pad(date.getMonth()+1,2),
 		pad(date.getDate(), 2),
 		pad(date.getHours(), 2),
 		pad(date.getMinutes(), 2),
