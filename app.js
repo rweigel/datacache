@@ -121,16 +121,16 @@ function renderIndex(context){
 };
 
 function processUrl(url, results, forceUpdate, callback){
-	var result;
+	var result = newResult(url);
+	console.log("###", forceUpdate, isCached(url));
+
 	if(!forceUpdate && isCached(url)){
-		result = newResult(url);
 		result.isFromCache = true;
 		results.push(result);
 		callback(result);
 	} else {
 		getDataUrl(url, function(err, url2){
 			if(err){
-				result = newResult(url);
 				result.error = "Error getting data url";
 				results.push(result);
 				callback(result);
@@ -138,13 +138,11 @@ function processUrl(url, results, forceUpdate, callback){
 				var start = +new Date();
 	    		request.get({uri:url2}, function(error, response, body){
 	    			if(error || response.statusCode!==200){
-	    				result = newResult(url);
 	    				result.error = "Can't fetch data";
 	    				results.push(result);
 	    				callback(result);
 	    			} else {
 	    				var end = +new Date();
-	    				result = newResult(url);
 	    				result.time = (end -start);
 	    				result.body = body;
 	    				result.data = getData(url, body);
@@ -244,30 +242,38 @@ function writeCache(result){
 	for(var key in result.header){
 		header.push(key + " : " + result.header[key]);
 	}
+	console.log("@@@", memLock[result.url]);
 	if(!memLock[result.url]) {
 		// if memLock[result.url] is undefine or 0, no writting is on-going
 		memLock[result.url] = 4;
 
 		// create dir if not exist
-		try{
-			fs.existsSync(directory);
-		}catch(err){
-			fs.mkdir(directory, function(err){
-				if(err){
-					throw err;
-				} else {
-					fs.writeFile(filename+".data", result.data, finish);
-					fs.writeFile(filename+".header", header.join("\n"), finish);
-					fs.writeFile(filename+".md5", result.md5, finish);
-					fs.appendFile(filename+".log", 
-						formatTime(result.date) + "\t"+result.time+"\t"+result.md5+"\n",
-						finish
-					);
-				}
+		fs.exists(directory, function(exist){
+			if(!exist){
+				fs.mkdir(directory, function(err){
+					if(err){
+						console.error(err);
+					} else {
+						writeCacheFiles();
+					}
+				});
+			} else{
+				writeCacheFiles();
+			}
+			
+		});	
+	}
 
-			});
-		};
-		
+	function writeCacheFiles(){
+
+		fs.writeFile(filename+".data", result.data, finish);
+		fs.writeFile(filename+".header", header.join("\n"), finish);
+		fs.writeFile(filename+".out", result.body);
+		fs.writeFile(filename+".md5", result.md5, finish);
+		fs.appendFile(filename+".log", 
+			formatTime(result.date) + "\t"+result.time+"\t"+result.md5+"\n",
+			finish
+		);
 	}
 
 	function finish(err){
