@@ -1,2 +1,1 @@
-tsds_fe
-=======
+A cache frontend for tsds(http://tsds.net/)
