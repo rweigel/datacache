@@ -7,6 +7,9 @@ var request = require("request"),
 	fs = require("fs"),
 	hogan = require("hogan.js");
 
+var DEFAULT_CONCURRENCY = 1000;
+var DEFAULT_TRIES = 3;
+
 var memLock = {};
 var indexTmpl = hogan.compile(fs.readFileSync(__dirname+"/index.html", "utf8"));
 
@@ -38,14 +41,21 @@ app.get('/', function(req, res){
 })
 
 app.post('/', function(req, res, next){
+	var request_start = +new Date();
 	var source = [];
 	var results = [];
 	var options = {};
 	
 	options.forceUpdate = req.body.forceUpdate;
 	
-	var concurrency = req.body.concurrency ? +req.body.concurrency : 1;
-	var tries = req.body.tries ? req.body.tries : 3;
+	var concurrency = +req.body.concurrency;
+	if(!concurrency || concurrency <1 || concurrency >1000){
+		concurrency = DEFAULT_CONCURRENCY;
+	};
+	var tries = req.body.tries;
+	if(!tries || tries<1 || tries>10){
+		tries = DEFAULT_TRIES;
+	}
 
 
 	source = req.body.source
@@ -87,13 +97,15 @@ app.post('/', function(req, res, next){
 			});
 		} 
 		if(results.length == source.length){
+			var request_end = +new Date();
 			res.contentType("html");	
 			res.send(renderIndex({
 				source: source,
 				results : results,
 				forceUpdate: options.forceUpdate,
 				concurrency : concurrency,
-				tries : tries
+				tries : tries,
+				total_time : request_end - request_start
 			}))
 		}
 	}
@@ -126,8 +138,9 @@ function renderIndex(context){
 		source : context.source.join("\n\n"),
 		resultText : resultText,
 		forceUpdate : context.forceUpdate ? "checked" : "",
-		concurrency : context.concurrency || 1,
-		tries : context.tries
+		concurrency : context.concurrency || DEFAULT_CONCURRENCY,
+		tries : context.tries || DEFAULT_TRIES,
+		total_time : context.total_time
 	});
 };
 

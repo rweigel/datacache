@@ -33,13 +33,13 @@ var presets = [
 		<p>
 			<input type='submit'/> 
 			<input type='checkbox' name='forceUpdate' value='true' {{forceUpdate}}> Update cache (<a href='cache'>Click here to browse current cache</a>) &nbsp; &nbsp; &nbsp;
-			Concurrency(0=unlimited): <input type="text" name="concurrency" size="3" value="{{concurrency}}"/> &nbsp; &nbsp; &nbsp;
+			Concurrency(1-1000): <input type="text" name="concurrency" size="3" value="{{concurrency}}"/> &nbsp; &nbsp; &nbsp;
 			Max # of tries: <input type="text" name="tries" size="3" value="{{tries}}"/> &nbsp; &nbsp; &nbsp;
 		</p>
 	</form>
 </div>
 <div>
-<p>Results: </p>
+<p>Results: ({{total_time}}ms)</p>
 {{{resultText}}
 </div>
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
