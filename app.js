@@ -33,8 +33,7 @@ app.get('/', function(req, res){
 	res.send(renderIndex({
 		source: [],
 		results: [],
-		forceUpdate: false,
-		concurrency: 1
+		forceUpdate: false
 	}))
 })
 
@@ -46,6 +45,7 @@ app.post('/', function(req, res, next){
 	options.forceUpdate = req.body.forceUpdate;
 	
 	var concurrency = req.body.concurrency ? +req.body.concurrency : 1;
+	var tries = req.body.tries ? req.body.tries : 3;
 
 
 	source = req.body.source
@@ -61,17 +61,28 @@ app.post('/', function(req, res, next){
 	results = [];
 
 	var running = 0;
-	var jobs = source.slice(); // a copy of source array
-
+	var jobs = source.slice().map(function(url){
+		return {
+			url : url,
+			tries : 1
+		}
+	});
 	runJob();
 
 	function runJob(){
 		while(running < concurrency && jobs.length>0) {
 			running++;
-			var url = jobs.pop();
-			processUrl(url, results, options, function(result){
+			var job = jobs.pop();
+			processUrl(job.url, results, options, function(result){
 				running--;
-				results.push(result);
+				if(result.error && job.tries < tries){
+					job.tries += 1;
+					jobs.push(job);
+				} else{
+					result.tries = job.tries;
+					results.push(result);
+				}
+				
 				runJob();
 			});
 		} 
@@ -81,7 +92,8 @@ app.post('/', function(req, res, next){
 				source: source,
 				results : results,
 				forceUpdate: options.forceUpdate,
-				concurrency : concurrency
+				concurrency : concurrency,
+				tries : tries
 			}))
 		}
 	}
@@ -97,7 +109,7 @@ function renderIndex(context){
 	})
 	.map(function(d){
 		if(d.error){
-			return "URL: "+escapeHTML(d.url)+"<br><font color='red'>Error:"+d.error+"</font>";
+			return "URL: "+escapeHTML(d.url)+"<br><font color='red'>Error:"+d.error+"</font><br>Tried " + (d.tries || 1) + " times";
 		} else {
 			var cacheUrl = "/cache/"+d.url.split("/")[2]+"/"+md5(d.url);
 			return "URL: "+escapeHTML(d.url)
@@ -114,7 +126,8 @@ function renderIndex(context){
 		source : context.source.join("\n\n"),
 		resultText : resultText,
 		forceUpdate : context.forceUpdate ? "checked" : "",
-		concurrency : context.concurrency 
+		concurrency : context.concurrency || 1,
+		tries : context.tries
 	});
 };
 
