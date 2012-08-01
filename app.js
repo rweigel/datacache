@@ -83,7 +83,7 @@ app.post('/', function(req, res, next){
 		while(running < concurrency && jobs.length>0) {
 			running++;
 			var job = jobs.pop();
-			processUrl(job.url, results, options, function(result){
+			processUrl(job, results, options, function(result, job){
 				running--;
 				if(result.error && job.tries < tries){
 					job.tries += 1;
@@ -144,14 +144,15 @@ function renderIndex(context){
 	});
 };
 
-function processUrl(url, results, options, callback){
+function processUrl(job, results, options, callback){
+	var url = job.url;
 	var start = +new Date();
 	var result = newResult(url);
 	if(!options.forceUpdate){
 		isCached(url, function(exist){
 			if(exist) {
 				result.isFromCache = true;
-				callback(result);
+				callback(result, job);
 			} else {
 				fetch();
 			}
@@ -164,12 +165,12 @@ function processUrl(url, results, options, callback){
 		getDataUrl(url, function(err, url2){
 			if(err){
 				result.error = "Error getting data url";
-				callback(result);
+				callback(result, job);
 			} else {
 	    		request.get({uri:url2}, function(error, response, body){
 	    			if(error || response.statusCode!==200){
 	    				result.error = "Can't fetch data";
-	    				callback(result);
+	    				callback(result, job);
 	    			} else {
 	    				var end = +new Date();
 	    				result.time = (end -start);
@@ -178,7 +179,7 @@ function processUrl(url, results, options, callback){
 	    				result.md5 =  md5(result.data);
 	    				result.header = response.headers;
 	    				writeCache(result);
-	    				callback(result);
+	    				callback(result, job);
 	    			}
 	    		})
 			}
