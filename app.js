@@ -4,7 +4,8 @@ var request = require("request"),
 	express = require('express'),
 	app = express.createServer(),
 	crypto = require("crypto"),
-	fs = require("fs");
+	fs = require("fs"),
+	hogan = require("hogan.js");
 
 var presets = [
 	[
@@ -23,6 +24,7 @@ var presets = [
 ]
 
 var memLock = {};
+var indexTmpl = hogan.compile(fs.readFileSync(__dirname+"/index.html", "utf8"));
 
 app.use(express.bodyParser());
 // set default content-type to "text"
@@ -32,11 +34,9 @@ app.use(function(req, res, next){
 })
 
 // create cache dir if not exist
-try{
-	fs.statSync(__dirname+"/cache");
-}catch(err){
+if(!fs.existsSync(__dirname+"/cache")){
 	fs.mkdirSync(__dirname+"/cache");
-};
+}
 
 app.use("/cache", express.static(__dirname + "/cache"));
 app.use("/cache", express.directory(__dirname+"/cache"));
@@ -46,7 +46,7 @@ app.get('/', function(req, res){
 	res.contentType("html");
 	res.send(renderIndex({
 		source: [],
-		resultText: "",
+		results: [],
 		forceUpdate: false
 	}))
 })
@@ -54,8 +54,7 @@ app.get('/', function(req, res){
 app.post('/', function(req, res, next){
 	var source = [];
 	var results = [];
-	var resultText = "";
-	var forceUpdate = false;
+	var options = {};
 
 	source = req.body.source
 			.trim()
@@ -66,41 +65,17 @@ app.post('/', function(req, res, next){
 	if(source.length==0){
 		return res.redirect("back");
 	}
-	forceUpdate = req.body.forceUpdate;
+	options.forceUpdate = req.body.forceUpdate;
 	results = [];
 	source.forEach(function(url){
-		processUrl(url, results, forceUpdate, function(result){
+		processUrl(url, results, options, function(result){
 			// when all urls are processed, make a http response
 			if(results.length==source.length){
-				resultText = results
-				// restore urls' order
-				.sort(function(a, b){
-					return source.indexOf(a.url) - source.indexOf(b.url);
-				})
-				.map(function(d){
-					if(d.error){
-						return "URL: "+escapeHTML(d.url)+"<br><font color='red'>Error:"+d.error+"</font>";
-					} else {
-						var cacheUrl = "/cache/"+d.url.split("/")[2]+"/"+md5(d.url);
-						return "URL: "+escapeHTML(d.url)
-							 + (d.isFromCache ? "<br><font color='orange'>Found in cache.</font>" : "")
-							+"<br>Time: <font color='green'>"+d.time + "ms</font>"
-							+"<br> md5: "+d.md5
-							+"<br> File: <a href='"+ cacheUrl+".data'>data</a> | <a href='"
-							+cacheUrl+".out'> response </a>  | <a href='"
-							+cacheUrl+".header'> header </a> | <a href='"
-							+cacheUrl + ".log'> log </a>"
-							// +"<br>Header: "+JSON.stringify(d.header)
-							// +"<br>date: "+formatTime(d.date)
-							// +"<br>data:<pre>"+d.data+"</pre>";
-					}
-				}).join('<br><br>');
-				// res.redirect("back");
 				res.contentType("html");
 				res.send(renderIndex({
 					source: source,
-					resultText: resultText,
-					forceUpdate: forceUpdate
+					results : results,
+					forceUpdate: options.forceUpdate
 				}))
 			}
 		});
@@ -110,21 +85,40 @@ app.post('/', function(req, res, next){
 app.listen(8000);
 
 function renderIndex(context){
-	var index  = "<html><script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js'></script><script>var presets ="
-		+JSON.stringify(presets)
-		+"</script><body><form action='/' method='post'><p>Urls: (Presets: <a href='#' onclick='$(urls).val(presets[0].join(\"\\n\\n\"));'>CDAWeb</a> <a href='#' onclick='$(urls).val(presets[1].join(\"\\n\\n\"));'>supermag</a> <a href='#' onclick='$(urls).val(presets[2].join(\"\\n\\n\"));'>sscweb</a>)</p><p><textarea id='urls' rows='30' cols='100' name='source'>" +
-		escapeHTML(context.source.join("\n\n")) +
-		"</textarea></p><p> <input type='submit'/> <input type='checkbox' name='forceUpdate' value='true' "+ (context.forceUpdate ? "checked" : "")+"> Ignore cache (<a href='cache'>Click here to browse current cache</a>)</p></form><p>Result:</p><p>" + 
-		context.resultText +
-		"</p></body></html>";
-	return index;
+	var resultText = context.results
+	// restore urls' order
+	.sort(function(a, b){
+		return context.source.indexOf(a.url) - context.source.indexOf(b.url);
+	})
+	.map(function(d){
+		if(d.error){
+			return "URL: "+escapeHTML(d.url)+"<br><font color='red'>Error:"+d.error+"</font>";
+		} else {
+			var cacheUrl = "/cache/"+d.url.split("/")[2]+"/"+md5(d.url);
+			return "URL: "+escapeHTML(d.url)
+				 + (d.isFromCache ? "<br><font color='orange'>Found in cache.</font>" : "")
+				+"<br>Time: <font color='green'>"+d.time + "ms</font>"
+				+"<br> md5: "+d.md5
+				+"<br> File: <a href='"+ cacheUrl+".data'>data</a> | <a href='"
+				+cacheUrl+".out'> response </a>  | <a href='"
+				+cacheUrl+".header'> header </a> | <a href='"
+				+cacheUrl + ".log'> log </a>"
+				// +"<br>Header: "+JSON.stringify(d.header)
+				// +"<br>date: "+formatTime(d.date)
+				// +"<br>data:<pre>"+d.data+"</pre>";
+		}
+	}).join('<br><br>');
+	return indexTmpl.render({
+		presets : JSON.stringify(presets),
+		source : context.source.join("\n\n"),
+		resultText : resultText,
+		forceUpdate : context.forceUpdate ? "checked" : "" 
+	});
 };
 
-function processUrl(url, results, forceUpdate, callback){
+function processUrl(url, results, options, callback){
 	var result = newResult(url);
-	console.log("###", forceUpdate, isCached(url));
-
-	if(!forceUpdate && isCached(url)){
+	if(!options.forceUpdate && isCached(url)){
 		result.isFromCache = true;
 		results.push(result);
 		callback(result);
@@ -242,7 +236,6 @@ function writeCache(result){
 	for(var key in result.header){
 		header.push(key + " : " + result.header[key]);
 	}
-	console.log("@@@", memLock[result.url]);
 	if(!memLock[result.url]) {
 		// if memLock[result.url] is undefine or 0, no writting is on-going
 		memLock[result.url] = 4;

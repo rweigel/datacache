@@ -1,0 +1,31 @@
+<html>
+<head>
+	<title>tsds_fe</title>
+	<script type="text/javascript">
+		var presets = {{{presets}}};
+	</script>
+</head>
+<body>
+<div>
+	<form action="/" method="post">
+		<p>Urls: (Presets: 
+			<a href='#' onclick='$(urls).val(presets[0].join("\n\n"));'>CDAWeb</a> 
+			<a href='#' onclick='$(urls).val(presets[1].join("\n\n"));'>supermag</a> 
+			<a href='#' onclick='$(urls).val(presets[2].join("\n\n"));'>sscweb</a>)
+		</p>
+		<p>
+			<textarea id='urls' rows='30' cols='100' name='source'>{{source}}</textarea>
+		</p>
+		<p>
+			<input type='submit'/> 
+			<input type='checkbox' name='forceUpdate' value='true' {{forceUpdate}}> Ignore cache (<a href='cache'>Click here to browse current cache</a>)
+		</p>
+	</form>
+</div>
+<div>
+<p>Results: </p>
+{{{resultText}}
+</div>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+</body>
+</html>
