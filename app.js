@@ -145,6 +145,7 @@ function renderIndex(context){
 };
 
 function processUrl(url, results, options, callback){
+	var start = +new Date();
 	var result = newResult(url);
 	if(!options.forceUpdate){
 		isCached(url, function(exist){
@@ -165,7 +166,6 @@ function processUrl(url, results, options, callback){
 				result.error = "Error getting data url";
 				callback(result);
 			} else {
-				var start = +new Date();
 	    		request.get({uri:url2}, function(error, response, body){
 	    			if(error || response.statusCode!==200){
 	    				result.error = "Can't fetch data";
