@@ -178,7 +178,7 @@ function processUrl(job, results, options, callback){
 	    				result.data = getData(url, body);
 	    				result.md5 =  md5(result.data);
 	    				result.header = response.headers;
-	    				writeCache(result);
+	    				writeCache(result, start);
 	    				callback(result, job);
 	    			}
 	    		})
@@ -237,7 +237,7 @@ function isCached(url, callback){
 }
 
 // Async version
-function writeCache(result){
+function writeCache(result, start){
 	var directory =  __dirname + "/cache/" + result.url.split("/")[2];
 	var filename = directory + "/" + md5(result.url);
 	var header = [];
@@ -282,6 +282,9 @@ function writeCache(result){
 			console.trace(err);
 		}
 		memLock[result.url]--;
+		if(memLock[result.url]==0){
+			console.log("Write finished: ", (+new Date() - start));
+		}
 	}
 }
 
