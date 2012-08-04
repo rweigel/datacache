@@ -167,7 +167,7 @@ function processUrl(job, results, options, callback){
 				result.error = "Error getting data url";
 				callback(result, job);
 			} else {
-	    		request.get({uri:url2}, function(error, response, body){
+	    		request.get({uri:url2, headers:{"accept-encoding" : "gzip, deflate"}}, function(error, response, body){
 	    			if(error || response.statusCode!==200){
 	    				result.error = "Can't fetch data";
 	    				callback(result, job);
