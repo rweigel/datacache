@@ -199,6 +199,9 @@ function getData(url, doc){
 	case "supermag.uib.no":
 		re = /^([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)$|^([a-zA-Z]+)\s+([\d-]+)\s([\d-]+)\s([\d-]+)$/;
 		break;
+	case "spidr.ngdc.noaa.gov":
+		re = /^([-\d]+)\s+([\.,:\d]+)/;
+		break;
 	default:
 		re = /.*/;
 	}
