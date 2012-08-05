@@ -77,6 +77,7 @@ app.post('/', function(req, res, next){
 			tries : 1
 		}
 	});
+	log("Job started.");
 	runJob();
 
 	function runJob(){
@@ -107,6 +108,7 @@ app.post('/', function(req, res, next){
 				tries : tries,
 				total_time : request_end - request_start
 			}))
+			log("Job ended.");
 		}
 	}
 })
@@ -148,6 +150,9 @@ function processUrl(job, results, options, callback){
 	var url = job.url;
 	var start = +new Date();
 	var result = newResult(url);
+
+	log("Processing URL: "+url);
+	
 	if(!options.forceUpdate){
 		isCached(url, function(exist){
 			if(exist) {
@@ -278,12 +283,13 @@ function writeCache(result, start){
 
 	function finish(err){
 		if(err){
-			console.log("Error occured when writing cache!: "+err);
+			log("Error occured when writing cache: " + filename + "\n" + err);
 			console.trace(err);
 		}
 		memLock[result.url]--;
 		if(memLock[result.url]==0){
-			console.log("Write finished: ", (+new Date() - start));
+			console.log("cached stored: ", (+new Date() - start), "ms");
+			log("Cached stored: "+filename);
 		}
 	}
 }
@@ -334,4 +340,9 @@ function escapeHTML(s) {
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
+}
+
+function log(msg){
+	var file = __dirname + "/application.log";
+	fs.appendFile(file, formatTime(new Date()) + "\t" + msg+"\n");
 }
