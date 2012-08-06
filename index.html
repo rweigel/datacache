@@ -37,10 +37,16 @@ var presets = [
 			<textarea id='urls' rows='30' cols='100' name='source'>{{source}}</textarea>
 		</p>
 		<p>
-			<input type='submit'/> 
 			<input type='checkbox' name='forceUpdate' value='true' {{forceUpdate}}> Update cache (<a href='cache'>Click here to browse current cache</a>) &nbsp; &nbsp; &nbsp;
 			Concurrency(1-1000): <input type="text" name="concurrency" size="3" value="{{concurrency}}"/> &nbsp; &nbsp; &nbsp;
 			Max # of tries: <input type="text" name="tries" size="3" value="{{tries}}"/> &nbsp; &nbsp; &nbsp;
+			<input type='checkbox' name='acceptGzip' value='true' {{acceptGzip}}> accept-encoding: gzip, compress</input> 
+			<select name='output'>
+				<option value='html' selected>Live-update</option>
+				<option value='json'>Stats: JSON</option>
+			</select>
+			<br>
+			<input type='submit'/> 
 		</p>
 	</form>
 </div>

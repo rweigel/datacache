@@ -47,6 +47,8 @@ app.post('/', function(req, res, next){
 	var options = {};
 	
 	options.forceUpdate = req.body.forceUpdate;
+	options.acceptGzip = req.body.acceptGzip;
+	options.output = req.body.output;
 	
 	var concurrency = +req.body.concurrency;
 	if(!concurrency || concurrency <1 || concurrency >1000){
@@ -99,15 +101,30 @@ app.post('/', function(req, res, next){
 		} 
 		if(results.length == source.length){
 			var request_end = +new Date();
-			res.contentType("html");	
-			res.send(renderIndex({
-				source: source,
-				results : results,
-				forceUpdate: options.forceUpdate,
-				concurrency : concurrency,
-				tries : tries,
-				total_time : request_end - request_start
-			}))
+			if(options.output==="json"){
+				var urlnum = 1;
+				res.json(results.map(function(result){
+					return [
+						urlnum++, 
+						result.url, 
+						md5(result.url),
+						result.isCached ? 1 : 0,
+						result.time,
+
+
+					];
+				}));
+			} else {
+				res.contentType("html");	
+				res.send(renderIndex({
+					source: source,
+					results : results,
+					forceUpdate: options.forceUpdate,
+					concurrency : concurrency,
+					tries : tries,
+					total_time : request_end - request_start
+				}))
+			}
 			log("Job ended.");
 		}
 	}
@@ -153,18 +170,19 @@ function processUrl(job, results, options, callback){
 
 	log("Processing URL: "+url);
 	
-	if(!options.forceUpdate){
-		isCached(url, function(exist){
-			if(exist) {
-				result.isFromCache = true;
+	isCached(url, function(exist){
+		if(exist) {
+			result.foundInCache = true;
+			 if(options.forceUpdate){
+			 	fetch();
+			 } else {
+			 	result.isFromCache = true;
 				callback(result, job);
-			} else {
-				fetch();
-			}
-		});
-	} else {
-		fetch();
-	}
+			 }
+		} else {
+			fetch();
+		}
+	});
 
 	function fetch(){
 		getDataUrl(url, function(err, url2){
@@ -172,7 +190,8 @@ function processUrl(job, results, options, callback){
 				result.error = "Error getting data url";
 				callback(result, job);
 			} else {
-	    		request.get({uri:url2, headers:{"accept-encoding" : "gzip, deflate"}}, function(error, response, body){
+				var headers = options.acceptGzip ? {"accept-encoding" : "gzip, deflate"} : {};
+	    		request.get({uri:url2, headers:headers}, function(error, response, body){
 	    			if(error || response.statusCode!==200){
 	    				result.error = "Can't fetch data";
 	    				callback(result, job);
@@ -327,7 +346,12 @@ function newResult(url){
 		date : new Date(),
 		time : 0,
 		isFromCache : false,
-		error : false
+		isCached : false,
+		error : false,
+		requestSentTime : 0,
+		responseTime : 0,
+		responseFinshedTime : 0,
+		writeFinishedTime : 0,
 	}
 }
 
