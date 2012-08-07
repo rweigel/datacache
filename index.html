@@ -26,7 +26,7 @@ var presets = [
 </head>
 <body>
 <div>
-	<form action="/" method="post">
+	<form action="{{postUrl}}" method="post">
 		<p>Urls: (Presets: 
 			<a href='#' onclick='$(urls).val(presets[0].join("\n\n"));'>CDAWeb</a> 
 			<a href='#' onclick='$(urls).val(presets[1].join("\n\n"));'>supermag</a> 
@@ -41,11 +41,11 @@ var presets = [
 			Concurrency(1-1000): <input type="text" name="concurrency" size="3" value="{{concurrency}}"/> &nbsp; &nbsp; &nbsp;
 			Max # of tries: <input type="text" name="tries" size="3" value="{{tries}}"/> &nbsp; &nbsp; &nbsp;
 			<input type='checkbox' name='acceptGzip' value='true' {{acceptGzip}}> accept-encoding: gzip, compress</input> 
-			<select name='output'>
+			<!-- <select name='output'>
 				<option value='html' selected>Live-update</option>
 				<option value='json'>Stats: JSON</option>
-			</select>
-			<br>
+			</select>-->
+			<br> 
 			<input type='submit'/> 
 		</p>
 	</form>

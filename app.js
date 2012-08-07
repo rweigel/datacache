@@ -44,71 +44,80 @@ app.get('/', function(req, res){
 
 app.post('/', function(req, res, next){
 	var request_start = +new Date();
-	var source = [];
-	var options = {};
-	
-	options.forceUpdate = req.body.forceUpdate;
-	options.acceptGzip = req.body.acceptGzip;
-	options.output = req.body.output;
-	
-	var concurrency = +req.body.concurrency;
-	if(!concurrency || concurrency <1 || concurrency >1000){
-		concurrency = DEFAULT_CONCURRENCY;
-	};
-	var tries = req.body.tries;
-	if(!tries || tries<1 || tries>10){
-		tries = DEFAULT_TRIES;
-	}
+	var options = parseOptions(req);
+	var source = parseSource(req);
 
-	options.concurrency = concurrency;
-	options.tries = tries;
-
-
-	source = req.body.source
-			.trim()
-			.split("\n")
-			.filter(function(line){
-				return line.trim()!="";
-			});
 	if(source.length==0){
 		return res.redirect("back");
 	}
 
-	util.log("Job started.");
+
 	jobRunner.runJob(source, options, function(results){
 		var request_end = +new Date();
-		if(options.output==="json"){
-			var urlnum = 1;
-			res.json(results.map(function(result){
-				return [
-					urlnum++, 
-					result.url, 
-					util.md5(result.url),
-					result.isCached ? 1 : 0,
-					result.time,
-
-
-				];
-			}));
-		} else {
-			res.contentType("html");	
-			res.send(renderIndex({
-				source: source,
-				results : results,
-				forceUpdate: options.forceUpdate,
-				concurrency : concurrency,
-				tries : tries,
-				total_time : request_end - request_start
-			}))
-		}
-		util.log("Job ended.");
+		res.contentType("html");	
+		res.send(renderIndex({
+			source: source,
+			results : results,
+			forceUpdate: options.forceUpdate,
+			concurrency : options.concurrency,
+			tries : options.tries,
+			total_time : request_end - request_start
+		}))
 	});
+})
+
+app.get('/submit', function(req, res){
+	res.contentType("html");
+	res.send(renderIndex({
+		source: [],
+		results: [],
+		forceUpdate: false,
+		postUrl : "/submit"
+	}))
+})
+
+app.post("/submit", function(req, res){
+	var options = parseOptions(req);
+	var source = parseSource(req);
+	var jobId = jobRunner.runJob(source, options);
+	var resultText = "Job submitted. Job ID: "+jobId +" <a href='/status/"+jobId+"'>Check status</a> <br> <a href='/status'>See all jobs</a>";
+	res.contentType("html");
+	res.send(renderIndex({
+		source: source,
+		resultText : resultText,
+		forceUpdate: options.forceUpdate,
+		concurrency : options.concurrency,
+		tries : options.tries,
+		postUrl : "/submit",
+		total_time : 0
+	}));
+})
+
+app.get("/status/:id", function(req, res){
+	return res.send(jobRunner.getStatus(req.params.id));
+})
+
+app.get("/status", function(req, res){
+	var all = jobRunner.getAll();
+	var ret = [];
+	for(var id in all){
+		ret.push({
+			id : all[id].id,
+			isFinished : all[id].isFinished 
+		})
+	}
+	// res.contentType("html");
+	// res.send(ret.map(function(job){
+	// 	return "<a href='/status/"+job.id+"'>"+job.id+"</a><br>";
+	// }).join(""));
+	res.send(ret);
 })
 
 app.listen(8000);
 
 function renderIndex(context){
-	var resultText = context.results
+	var resultText = context.resultText || 
+	context.results
 	// restore urls' order
 	.sort(function(a, b){
 		return context.source.indexOf(a.url) - context.source.indexOf(b.url);
@@ -134,6 +143,38 @@ function renderIndex(context){
 		forceUpdate : context.forceUpdate ? "checked" : "",
 		concurrency : context.concurrency || DEFAULT_CONCURRENCY,
 		tries : context.tries || DEFAULT_TRIES,
-		total_time : context.total_time
+		total_time : context.total_time,
+		postUrl : context.postUrl ? context.postUrl : "/"
 	});
 };
+
+function parseOptions(req){
+	var options = {};
+	
+	options.forceUpdate = req.body.forceUpdate;
+	options.acceptGzip = req.body.acceptGzip;
+	
+	var concurrency = +req.body.concurrency;
+	if(!concurrency || concurrency <1 || concurrency >1000){
+		concurrency = DEFAULT_CONCURRENCY;
+	};
+	var tries = req.body.tries;
+	if(!tries || tries<1 || tries>10){
+		tries = DEFAULT_TRIES;
+	}
+
+	options.concurrency = concurrency;
+	options.tries = tries;
+
+	return options;
+}
+
+function parseSource(req){
+	var source = req.body.source
+			.trim()
+			.split("\n")
+			.filter(function(line){
+				return line.trim()!="";
+			});
+	return source;
+}

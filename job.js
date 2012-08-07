@@ -6,14 +6,44 @@ var fs = require("fs"),
 var util = require("./util.js");
 
 module.exports.runJob = runJob;
+module.exports.getStatus = getStatus;
+module.exports.getAll = getAll;
 
 var running = 0;
 var memLock = {};
+var jobId = 1;
+var jobStatus = {};
+
+function getAll(){
+	return jobStatus;
+}
+
+function getStatus(id){
+	return jobStatus[id] ? 
+		{
+			id : jobStatus[id].id,
+			isFinished : jobStatus[id].isFinished, 
+			result : jobStatus[id].map(function(result){
+				var ret = {};
+				for(var field in result){
+					if(field!=="data" && field!=="header" && field !== "body"){
+						ret[field] = result[field];
+					}
+				}
+				return ret;
+			})
+		} :
+		"Job not found.";
+}
 
 function runJob(source, options, callback){
 	var concurrency = options.concurrency;
 	var tries = options.tries;
-	var results = [];
+	var id = jobId++;
+	jobStatus[id] = [];
+	var results = jobStatus[id];
+	results.isFinished = false;
+	results.id = id;
 
 	var jobs = source.slice().map(function(url){
 		return {
@@ -21,7 +51,8 @@ function runJob(source, options, callback){
 			tries : 1
 		}
 	});
-
+ 
+ 	util.log("Job#"+id+" started.");
 	run();
 
 	function run(){
@@ -42,9 +73,15 @@ function runJob(source, options, callback){
 			});
 		} 
 		if(results.length == source.length){
-			callback(results);
+			util.log("Job#"+id+" ended.");
+			results.isFinished = true;
+			if(callback){
+				callback(results);
+			}
 		}
 	}
+
+	return id;
 }
 
 function processUrl(job, results, options, callback){
@@ -191,8 +228,8 @@ function writeCache(result, start){
 		}
 		memLock[result.url]--;
 		if(memLock[result.url]==0){
-			console.log("cached stored: ", (+new Date() - start), "ms");
-			util.log("Cached stored: "+filename);
+			util.log("cached stored: ", (+new Date() - start), "ms");
+			util.log("Cached stored: " + filename);
 		}
 	}
 }
