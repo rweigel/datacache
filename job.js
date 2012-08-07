@@ -113,7 +113,7 @@ function processUrl(job, results, options, callback){
 			} else {
 				var headers = options.acceptGzip ? {"accept-encoding" : "gzip, deflate"} : {};
 				result.requestSentTime = new Date();
-	    		request.get({uri:url2, headers:headers}, function(error, response, body){
+	    		request.get({uri:url2, headers:headers, encoding: null}, function(error, response, body){
 	    			if(error || response.statusCode!==200){
 	    				result.error = "Can't fetch data";
 	    				callback(result, job);
@@ -141,28 +141,32 @@ function processUrl(job, results, options, callback){
 }
 
 function getData(url, doc){
-	var re;
-	switch(url.split("/")[2].toLowerCase()){
-	case "cdaweb.gsfc.nasa.gov": 
-		re = /^([\d-]+)\s+([\d:\.]+)\s+([\d\.]+)\s+([+-\.\d]+)\s+([+-\.\d]+)\s+([+-\.\d]+)$/;
-		break;
-	case "sscweb.gsfc.nasa.gov":
-		re = /^([\d]+)\s+([\d]+)\s+([\d:]+)\s+([+-\.\d]+)\s+([+-\.\d]+)\s+([+-\.\d]+)$/;
-		break;
-	case "supermag.uib.no":
-		re = /^([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)$|^([a-zA-Z]+)\s+([\d-]+)\s([\d-]+)\s([\d-]+)$/;
-		break;
-	case "spidr.ngdc.noaa.gov":
-		re = /^([-\d]+)\s+([\.,:\d]+)/;
-		break;
-	default:
-		re = /.*/;
+	try {
+		var re;
+		switch(url.split("/")[2].toLowerCase()){
+		case "cdaweb.gsfc.nasa.gov": 
+			re = /^([\d-]+)\s+([\d:\.]+)\s+([\d\.]+)\s+([+-\.\d]+)\s+([+-\.\d]+)\s+([+-\.\d]+)$/;
+			break;
+		case "sscweb.gsfc.nasa.gov":
+			re = /^([\d]+)\s+([\d]+)\s+([\d:]+)\s+([+-\.\d]+)\s+([+-\.\d]+)\s+([+-\.\d]+)$/;
+			break;
+		case "supermag.uib.no":
+			re = /^([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)$|^([a-zA-Z]+)\s+([\d-]+)\s([\d-]+)\s([\d-]+)$/;
+			break;
+		case "spidr.ngdc.noaa.gov":
+			re = /^([-\d]+)\s+([\.,:\d]+)/;
+			break;
+		default:
+			re = /.*/;
+		}
+		return doc.split("\n")
+				.filter(function(line){
+					return line.search(re)!=-1;
+				})
+				.join("\n");
+	} catch(e) { // doc is binary 
+		return doc;
 	}
-	return doc.split("\n")
-			.filter(function(line){
-				return line.search(re)!=-1;
-			})
-			.join("\n");
 }
 
 function getDataUrl(url, callback){ 	//callback(err, url)
@@ -236,8 +240,7 @@ function writeCache(result, start, callback){
 		}
 		memLock[result.url]--;
 		if(memLock[result.url]==0){
-			util.log("cached stored: ", (+new Date() - start), "ms");
-			util.log("Cached stored: " + filename);
+			util.log("Cached stored: " + filename + (+new Date() - start) + "ms");
 			result.writeFinishedTime = new Date();
 			callback();
 		}
