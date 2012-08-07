@@ -8,7 +8,7 @@ exports.escapeHTML = escapeHTML;
 
 function log(msg){
 	var file = __dirname + "/application.log";
-	var entry = formatTime(new Date()) + "\t" + msg+"\n";
+	var entry = formatTime(new Date()) + "\t" + msg;
 	fs.appendFile(file, entry);
 	console.log(entry);
 }

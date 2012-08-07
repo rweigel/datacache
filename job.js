@@ -112,6 +112,7 @@ function processUrl(job, results, options, callback){
 				callback(result, job);
 			} else {
 				var headers = options.acceptGzip ? {"accept-encoding" : "gzip, deflate"} : {};
+				result.requestSentTime = new Date();
 	    		request.get({uri:url2, headers:headers}, function(error, response, body){
 	    			if(error || response.statusCode!==200){
 	    				result.error = "Can't fetch data";
@@ -123,10 +124,17 @@ function processUrl(job, results, options, callback){
 	    				result.data = getData(url, body);
 	    				result.md5 =  util.md5(result.data);
 	    				result.header = response.headers;
-	    				writeCache(result, start);
-	    				callback(result, job);
+	    				result.responseFinshedTime = new Date();
+	    				writeCache(result, start, function(){
+	    					callback(result, job);
+	    				});
 	    			}
 	    		})
+	    		.on("data", function(data){
+					if(!result.responseTime) {
+						result.responseTime = new Date();
+					}
+				});
 			}
 		})
 	}
@@ -171,7 +179,7 @@ function getDataUrl(url, callback){ 	//callback(err, url)
 					}
 				});
 			}
-		});
+		})
 	} else {
 		callback(false, url);
 	}
@@ -182,7 +190,7 @@ function isCached(url, callback){
 }
 
 // Async version
-function writeCache(result, start){
+function writeCache(result, start, callback){
 	var directory =  __dirname + "/cache/" + result.url.split("/")[2];
 	var filename = directory + "/" + util.md5(result.url);
 	var header = [];
@@ -230,6 +238,8 @@ function writeCache(result, start){
 		if(memLock[result.url]==0){
 			util.log("cached stored: ", (+new Date() - start), "ms");
 			util.log("Cached stored: " + filename);
+			result.writeFinishedTime = new Date();
+			callback();
 		}
 	}
 }
