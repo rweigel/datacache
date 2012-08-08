@@ -172,7 +172,8 @@ function parseOptions(req){
 function parseSource(req){
 	var source = req.body.source
 			.trim()
-			.split("\n")
+			.replace("\r", "")
+			.split(/[\r\n]+/)
 			.filter(function(line){
 				return line.trim()!="";
 			});

@@ -11,8 +11,31 @@ module.exports.getAll = getAll;
 
 var running = 0;
 var memLock = {};
-var jobId = 1;
 var jobStatus = {};
+
+var getJobId = (function(){
+	var jobId = 1;
+	var timeStamp = "";
+
+	function pad(str, num){
+		// convert to string
+		str = str+"";
+		while(str.length < num) {
+			str = "0"+str;
+		}
+		return str;
+	}
+
+	return function(){
+		var now = new Date();
+		var ret = "" + now.getFullYear() + pad(now.getMonth() + 1, 2) + pad(now.getDate(), 2);
+		if(ret!==timeStamp){
+			timeStamp = ret;
+			jobId = 1;
+		}
+		return ret+"-"+(jobId++);
+	}
+})();
 
 function getAll(){
 	return jobStatus;
@@ -22,7 +45,8 @@ function getStatus(id){
 	return jobStatus[id] ? 
 		{
 			id : jobStatus[id].id,
-			isFinished : jobStatus[id].isFinished, 
+			isFinished : jobStatus[id].isFinished,
+			finishTime : jobStatus[id].finishTime, 
 			result : jobStatus[id].map(function(result){
 				var ret = {};
 				for(var field in result){
@@ -39,7 +63,7 @@ function getStatus(id){
 function runJob(source, options, callback){
 	var concurrency = options.concurrency;
 	var tries = options.tries;
-	var id = jobId++;
+	var id = getJobId();
 	jobStatus[id] = [];
 	var results = jobStatus[id];
 	results.isFinished = false;
@@ -75,6 +99,7 @@ function runJob(source, options, callback){
 		if(results.length == source.length){
 			util.log("Job#"+id+" ended.");
 			results.isFinished = true;
+			results.finishTime = new Date();
 			if(callback){
 				callback(results);
 			}
