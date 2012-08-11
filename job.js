@@ -205,7 +205,6 @@ function runJob(job, callback){
 		    				work.body = body;
 		    				work.data = getData(url, body);
 		    				work.md5 =  util.md5(work.data);
-		    				work.urlMd5 = util.md5(url);
 		    				work.header = response.headers;
 		    				work.responseFinshedTime = new Date();
 		    				writeCache(work, start, function(){
@@ -333,6 +332,7 @@ function newWork(url){
 		// job : null,
 		url : url,
 		md5 : "",
+		urlMd5 : util.md5(url),
 		data : "",
 		header : "",
 		date : new Date(),
