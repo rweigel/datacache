@@ -35,6 +35,19 @@
 		    e.preventDefault(); // prevent native submit
 		    $(this).ajaxSubmit();
 		});
+
+		$.getJSON("/api/presets", function(data){
+			data.forEach(function(d){
+				var a = $("<a>")
+					.attr("href", "#")
+					.click(function(){
+						$(urls).val(d.urls);
+					})
+					.html(d.name);
+				$("#presets").append(a);
+				$("#presets").append("&nbsp;");
+			})
+		})
 	})
 
 	function jobMonitor(job){
@@ -120,11 +133,7 @@
 			<div class="row">
 				<h2>Submit URLs</h2>
 				<form id="urlForm" action="/submit" method="post">
-				<p>Urls: (Presets: 
-					<a href='#' onclick='$(urls).val(presets[0].join("\n\n"));'>CDAWeb</a> 
-					<a href='#' onclick='$(urls).val(presets[1].join("\n\n"));'>supermag</a> 
-					<a href='#' onclick='$(urls).val(presets[2].join("\n\n"));'>sscweb</a>
-					<a href='#' onclick='$(urls).val(presets[3].join("\n\n"));'>spidr</a>)
+				<p>Urls: (Presets: <span id="presets"></span>)
 				</p>
 				<p>
 					<textarea id='urls' rows='30' cols='100' name='source'></textarea>

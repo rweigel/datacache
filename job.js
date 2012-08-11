@@ -16,7 +16,7 @@ var params = {
 	concurrency : CONCURRENCY,
 }
 
-// module.exports.runJob = runJob;
+// module.exports.runJob = runJob;	
 module.exports.getStatus = getStatus;
 module.exports.getAll = getAll;
 module.exports.getRunningJob = function(){return runningJob};

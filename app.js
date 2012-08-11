@@ -86,33 +86,65 @@ app.post("/api/setParams", function(req, res){
 	return res.send(jobRunner.setParams(params));
 })
 
+app.get("/api/presets", function(req,res){
+	fs.readdir(__dirname+"/presets", function(err, files){
+		if(err){
+			return res.send("");
+		}
+		var results = [];
+		files.forEach(function(file){
+			fs.readFile(__dirname+"/presets/"+file, "utf8", function(err, data){
+				if (file.split(".")[1].toLowerCase()==="js"){
+					try {
+						data = eval(data);
+					} catch(err){
+
+					}
+				}
+				results.push({
+						name : file.split(".")[0],
+						urls : data
+					});
+				if(results.length===files.length){
+					results.sort(function(a,b){
+						return a.name > b.name;
+					});
+					res.contentType("js");
+					res.send(results);
+				}
+			});
+		})
+	})
+	
+})
+
 app.get("/status/job/:id", function(req, res){
 	return res.send(jobRunner.getStatus(req.params.id));
 })
 
-app.get("/status/running", function(req, res){
-	return res.send(jobRunner.getRunningJob());
-})
+// app.get("/status/running", function(req, res){
+// 	return res.send(jobRunner.getRunningJob());
+// })
 
-app.get("/status/finished", function(req, res){
-	return res.send(jobRunner.getFinishedJobs());
-})
+// app.get("/status/finished", function(req, res){
+// 	return res.send(jobRunner.getFinishedJobs());
+// })
 
-app.get("/status", function(req, res){
-	var all = jobRunner.getAll();
-	var ret = [];
-	for(var id in all){
-		ret.push({
-			id : all[id].id,
-			isFinished : all[id].isFinished 
-		})
-	}
-	// res.contentType("html");
-	// res.send(ret.map(function(job){
-	// 	return "<a href='/status/"+job.id+"'>"+job.id+"</a><br>";
-	// }).join(""));
-	res.send(ret);
-})
+// app.get("/status", function(req, res){
+// 	var all = jobRunner.getAll();
+// 	var ret = [];
+// 	for(var id in all){
+// 		ret.push({
+// 			id : all[id].id,
+// 			isFinished : all[id].isFinished 
+// 		})
+// 	}
+// 	// res.contentType("html");
+// 	// res.send(ret.map(function(job){
+// 	// 	return "<a href='/status/"+job.id+"'>"+job.id+"</a><br>";
+// 	// }).join(""));
+// 	res.send(ret);
+// })
 
 app.listen(8000);
 
