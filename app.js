@@ -35,6 +35,10 @@ app.get('/', function(req, res){
 	res.send(fs.readFileSync(__dirname+"/index.html", "utf8"));
 })
 
+app.get('/log', function(req, res){
+	res.send(fs.readFileSync(__dirname+"/application.log", "utf8"));
+})
+
 app.post('/', function(req, res, next){
 	var request_start = +new Date();
 	var options = parseOptions(req);
