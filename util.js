@@ -46,3 +46,15 @@ function escapeHTML(s) {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 }
+
+Array.prototype.remove = function(el){
+	this.splice(this.indexOf(el), 1);
+}
+
+Array.prototype.find = function(match){
+	for(var i=0;i<this.length;i++){
+		if(match(this[i])){
+			return this[i];
+		}
+	}
+} 

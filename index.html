@@ -1,59 +1,168 @@
+<!DOCTYPE html>
 <html>
 <head>
 	<title>tsds_fe</title>
+	<link rel="stylesheet" type="text/css" href="asset/bootstrap.css">
+	<style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+
+      textarea {
+      	width: 90%;
+      }
+      input {
+      	width : 40px;
+      	margin : 0 0 9px;
+      }
+    </style>
+    <link rel="stylesheet" type="text/css" href="asset/bootstrap-responsive.css">
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 	<script type="text/javascript">
-var presets = [
-	[
-		"http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050101T000000Z,20050102T000000Z/Magnitude,BGSEc?format=text",
-		"http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050102T000000Z,20050103T000000Z/Magnitude,BGSEc?format=text",
-		"http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050103T000000Z,20050104T000000Z/Magnitude,BGSEc?format=text"
-	], [
-		"http://supermag.uib.no/cgi-bin/cgiwrap.cgi?command=../script/download.mag&cli=wei+19800101+00%3A00+24%3A00+-s+BRW+-ncol+ff333333+-smlcol+ff666666+-smucol+ff999999+-index+-imfgsm+-ymin+-800+-ymax+200...",
-		"http://supermag.uib.no/cgi-bin/cgiwrap.cgi?command=../script/download.mag&cli=wei+19800102+00%3A00+24%3A00+-s+BRW+-ncol+ff333333+-smlcol+ff666666+-smucol+ff999999+-index+-imfgsm+-ymin+-800+-ymax+200...",
-		"http://supermag.uib.no/cgi-bin/cgiwrap.cgi?command=../script/download.mag&cli=wei+19800103+00%3A00+24%3A00+-s+BRW+-ncol+ff333333+-smlcol+ff666666+-smucol+ff999999+-index+-imfgsm+-ymin+-800+-ymax+200..."
-	], [
-		"http://sscweb.gsfc.nasa.gov/cgi-bin/Locator.cgi?SPCR=ace&START_TIME=2000+200+00%3A00%3A00&STOP_TIME=2000+201+23%3A59%3A59&RESOLUTION=1&TOD=7&J2000=&GEO=&GM=&GSE=&GSM=&SM=&REG_OPT=&MNMX_FLTR_ACCURACY=2&OPT=&TRC_GEON=&TRC_GEOS=&TRC_GMN=&TRC_GMS=&FILTER_DIST_UNITS=1&TOD_APPLY_FILTER=&TODX_MNMX=&TOD_XGT=&TOD_XLT=&TODY_MNMX=&TOD_YGT=&TOD_YLT=&TODZ_MNMX=&TOD_ZGT=&TOD_ZLT=&TODLAT_MNMX=&TOD_LATGT=&TOD_LATLT=&TODLON_MNMX=&TOD_LONGT=&TOD_LONLT=&TODLT_MNMX=&TOD_LTGT=&TOD_LTLT=&J2000_APPLY_FILTER=&J2000X_MNMX=&J2000_XGT=&J2000_XLT=&J2000Y_MNMX=&J2000_YGT=&J2000_YLT=&J2000Z_MNMX=&J2000_ZGT=&J2000_ZLT=&J2000LAT_MNMX=&J2000_LATGT=&J2000_LATLT=&J2000LON_MNMX=&J2000_LONGT=&J2000_LONLT=&J2000LT_MNMX=&J2000_LTGT=&J2000_LTLT=&GEO_APPLY_FILTER=&GEOX_MNMX=&GEO_XGT=&GEO_XLT=&GEOY_MNMX=&GEO_YGT=&GEO_YLT=&GEOZ_MNMX=&GEO_ZGT=&GEO_ZLT=&GEOLAT_MNMX=&GEO_LATGT=&GEO_LATLT=&GEOLON_MNMX=&GEO_LONGT=&GEO_LONLT=&GEOLT_MNMX=&GEO_LTGT=&GEO_LTLT=&GM_APPLY_FILTER=&GMX_MNMX=&GM_XGT=&GM_XLT=&GMY_MNMX=&GM_YGT=&GM_YLT=&GMZ_MNMX=&GM_ZGT=&GM_ZLT=&GMLAT_MNMX=&GM_LATGT=&GM_LATLT=&GMLON_MNMX=&GM_LONGT=&GM_LONLT=&GMLT_MNMX=&GM_LTGT=&GM_LTLT=&GSE_APPLY_FILTER=&GSEX_MNMX=&GSE_XGT=&GSE_XLT=&GSEY_MNMX=&GSE_YGT=&GSE_YLT=&GSEZ_MNMX=&GSE_ZGT=&GSE_ZLT=&GSELAT_MNMX=&GSE_LATGT=&GSE_LATLT=&GSELON_MNMX=&GSE_LONGT=&GSE_LONLT=&GSELT_MNMX=&GSE_LTGT=&GSE_LTLT=&GSM_APPLY_FILTER=&GSMX_MNMX=&GSM_XGT=&GSM_XLT=&GSMY_MNMX=&GSM_YGT=&GSM_YLT=&GSMZ_MNMX=&GSM_ZGT=&GSM_ZLT=&GSMLAT_MNMX=&GSM_LATGT=&GSM_LATLT=&GSMLON_MNMX=&GSM_LONGT=&GSM_LONLT=&GSMLT_MNMX=&GSM_LTGT=&GSM_LTLT=&SM_APPLY_FILTER=&SMX_MNMX=&SM_XGT=&SM_XLT=&SMY_MNMX=&SM_YGT=&SM_YLT=&SMZ_MNMX=&SM_ZGT=&SM_ZLT=&SMLAT_MNMX=&SM_LATGT=&SM_LATLT=&SMLON_MNMX=&SM_LONGT=&SM_LONLT=&SMLT_MNMX=&SM_LTGT=&SM_LTLT=&OTHER_FILTER_DIST_UNITS=1&RD_APPLY=&FS_APPLY=&NS_APPLY=&BS_APPLY=&MG_APPLY=&LV_APPLY=&IL_APPLY=&REG_FLTR_SWITCH=&SCR_APPLY=&SCR=&RTR_APPLY=&RTR=&BTR_APPLY=&NBTR=&SBTR=&EXTERNAL=3&EXT_T1989c=1&KP_LONG_89=4&INTERNAL=1&ALTITUDE=100&DAY=1&TIME=3&DISTANCE=1&DIST_DEC=2&DEG=1&DEG_DEC=2&DEG_DIR=1&OUTPUT_CDF=1&LINES_PAGE=1&RNG_FLTR_METHOD=&PREV_SECTION=SCS&SSC=LOCATOR_GENERAL&SUBMIT=Submit+query+and+wait+for+output&.cgifields=SPCR",
-		"http://sscweb.gsfc.nasa.gov/cgi-bin/Locator.cgi?SPCR=ace&START_TIME=2000+201+00%3A00%3A00&STOP_TIME=2000+202+23%3A59%3A59&RESOLUTION=1&TOD=7&J2000=&GEO=&GM=&GSE=&GSM=&SM=&REG_OPT=&MNMX_FLTR_ACCURACY=2&OPT=&TRC_GEON=&TRC_GEOS=&TRC_GMN=&TRC_GMS=&FILTER_DIST_UNITS=1&TOD_APPLY_FILTER=&TODX_MNMX=&TOD_XGT=&TOD_XLT=&TODY_MNMX=&TOD_YGT=&TOD_YLT=&TODZ_MNMX=&TOD_ZGT=&TOD_ZLT=&TODLAT_MNMX=&TOD_LATGT=&TOD_LATLT=&TODLON_MNMX=&TOD_LONGT=&TOD_LONLT=&TODLT_MNMX=&TOD_LTGT=&TOD_LTLT=&J2000_APPLY_FILTER=&J2000X_MNMX=&J2000_XGT=&J2000_XLT=&J2000Y_MNMX=&J2000_YGT=&J2000_YLT=&J2000Z_MNMX=&J2000_ZGT=&J2000_ZLT=&J2000LAT_MNMX=&J2000_LATGT=&J2000_LATLT=&J2000LON_MNMX=&J2000_LONGT=&J2000_LONLT=&J2000LT_MNMX=&J2000_LTGT=&J2000_LTLT=&GEO_APPLY_FILTER=&GEOX_MNMX=&GEO_XGT=&GEO_XLT=&GEOY_MNMX=&GEO_YGT=&GEO_YLT=&GEOZ_MNMX=&GEO_ZGT=&GEO_ZLT=&GEOLAT_MNMX=&GEO_LATGT=&GEO_LATLT=&GEOLON_MNMX=&GEO_LONGT=&GEO_LONLT=&GEOLT_MNMX=&GEO_LTGT=&GEO_LTLT=&GM_APPLY_FILTER=&GMX_MNMX=&GM_XGT=&GM_XLT=&GMY_MNMX=&GM_YGT=&GM_YLT=&GMZ_MNMX=&GM_ZGT=&GM_ZLT=&GMLAT_MNMX=&GM_LATGT=&GM_LATLT=&GMLON_MNMX=&GM_LONGT=&GM_LONLT=&GMLT_MNMX=&GM_LTGT=&GM_LTLT=&GSE_APPLY_FILTER=&GSEX_MNMX=&GSE_XGT=&GSE_XLT=&GSEY_MNMX=&GSE_YGT=&GSE_YLT=&GSEZ_MNMX=&GSE_ZGT=&GSE_ZLT=&GSELAT_MNMX=&GSE_LATGT=&GSE_LATLT=&GSELON_MNMX=&GSE_LONGT=&GSE_LONLT=&GSELT_MNMX=&GSE_LTGT=&GSE_LTLT=&GSM_APPLY_FILTER=&GSMX_MNMX=&GSM_XGT=&GSM_XLT=&GSMY_MNMX=&GSM_YGT=&GSM_YLT=&GSMZ_MNMX=&GSM_ZGT=&GSM_ZLT=&GSMLAT_MNMX=&GSM_LATGT=&GSM_LATLT=&GSMLON_MNMX=&GSM_LONGT=&GSM_LONLT=&GSMLT_MNMX=&GSM_LTGT=&GSM_LTLT=&SM_APPLY_FILTER=&SMX_MNMX=&SM_XGT=&SM_XLT=&SMY_MNMX=&SM_YGT=&SM_YLT=&SMZ_MNMX=&SM_ZGT=&SM_ZLT=&SMLAT_MNMX=&SM_LATGT=&SM_LATLT=&SMLON_MNMX=&SM_LONGT=&SM_LONLT=&SMLT_MNMX=&SM_LTGT=&SM_LTLT=&OTHER_FILTER_DIST_UNITS=1&RD_APPLY=&FS_APPLY=&NS_APPLY=&BS_APPLY=&MG_APPLY=&LV_APPLY=&IL_APPLY=&REG_FLTR_SWITCH=&SCR_APPLY=&SCR=&RTR_APPLY=&RTR=&BTR_APPLY=&NBTR=&SBTR=&EXTERNAL=3&EXT_T1989c=1&KP_LONG_89=4&INTERNAL=1&ALTITUDE=100&DAY=1&TIME=3&DISTANCE=1&DIST_DEC=2&DEG=1&DEG_DEC=2&DEG_DIR=1&OUTPUT_CDF=1&LINES_PAGE=1&RNG_FLTR_METHOD=&PREV_SECTION=SCS&SSC=LOCATOR_GENERAL&SUBMIT=Submit+query+and+wait+for+output&.cgifields=SPCR",
-		"http://sscweb.gsfc.nasa.gov/cgi-bin/Locator.cgi?SPCR=ace&START_TIME=2000+202+00%3A00%3A00&STOP_TIME=2000+203+23%3A59%3A59&RESOLUTION=1&TOD=7&J2000=&GEO=&GM=&GSE=&GSM=&SM=&REG_OPT=&MNMX_FLTR_ACCURACY=2&OPT=&TRC_GEON=&TRC_GEOS=&TRC_GMN=&TRC_GMS=&FILTER_DIST_UNITS=1&TOD_APPLY_FILTER=&TODX_MNMX=&TOD_XGT=&TOD_XLT=&TODY_MNMX=&TOD_YGT=&TOD_YLT=&TODZ_MNMX=&TOD_ZGT=&TOD_ZLT=&TODLAT_MNMX=&TOD_LATGT=&TOD_LATLT=&TODLON_MNMX=&TOD_LONGT=&TOD_LONLT=&TODLT_MNMX=&TOD_LTGT=&TOD_LTLT=&J2000_APPLY_FILTER=&J2000X_MNMX=&J2000_XGT=&J2000_XLT=&J2000Y_MNMX=&J2000_YGT=&J2000_YLT=&J2000Z_MNMX=&J2000_ZGT=&J2000_ZLT=&J2000LAT_MNMX=&J2000_LATGT=&J2000_LATLT=&J2000LON_MNMX=&J2000_LONGT=&J2000_LONLT=&J2000LT_MNMX=&J2000_LTGT=&J2000_LTLT=&GEO_APPLY_FILTER=&GEOX_MNMX=&GEO_XGT=&GEO_XLT=&GEOY_MNMX=&GEO_YGT=&GEO_YLT=&GEOZ_MNMX=&GEO_ZGT=&GEO_ZLT=&GEOLAT_MNMX=&GEO_LATGT=&GEO_LATLT=&GEOLON_MNMX=&GEO_LONGT=&GEO_LONLT=&GEOLT_MNMX=&GEO_LTGT=&GEO_LTLT=&GM_APPLY_FILTER=&GMX_MNMX=&GM_XGT=&GM_XLT=&GMY_MNMX=&GM_YGT=&GM_YLT=&GMZ_MNMX=&GM_ZGT=&GM_ZLT=&GMLAT_MNMX=&GM_LATGT=&GM_LATLT=&GMLON_MNMX=&GM_LONGT=&GM_LONLT=&GMLT_MNMX=&GM_LTGT=&GM_LTLT=&GSE_APPLY_FILTER=&GSEX_MNMX=&GSE_XGT=&GSE_XLT=&GSEY_MNMX=&GSE_YGT=&GSE_YLT=&GSEZ_MNMX=&GSE_ZGT=&GSE_ZLT=&GSELAT_MNMX=&GSE_LATGT=&GSE_LATLT=&GSELON_MNMX=&GSE_LONGT=&GSE_LONLT=&GSELT_MNMX=&GSE_LTGT=&GSE_LTLT=&GSM_APPLY_FILTER=&GSMX_MNMX=&GSM_XGT=&GSM_XLT=&GSMY_MNMX=&GSM_YGT=&GSM_YLT=&GSMZ_MNMX=&GSM_ZGT=&GSM_ZLT=&GSMLAT_MNMX=&GSM_LATGT=&GSM_LATLT=&GSMLON_MNMX=&GSM_LONGT=&GSM_LONLT=&GSMLT_MNMX=&GSM_LTGT=&GSM_LTLT=&SM_APPLY_FILTER=&SMX_MNMX=&SM_XGT=&SM_XLT=&SMY_MNMX=&SM_YGT=&SM_YLT=&SMZ_MNMX=&SM_ZGT=&SM_ZLT=&SMLAT_MNMX=&SM_LATGT=&SM_LATLT=&SMLON_MNMX=&SM_LONGT=&SM_LONLT=&SMLT_MNMX=&SM_LTGT=&SM_LTLT=&OTHER_FILTER_DIST_UNITS=1&RD_APPLY=&FS_APPLY=&NS_APPLY=&BS_APPLY=&MG_APPLY=&LV_APPLY=&IL_APPLY=&REG_FLTR_SWITCH=&SCR_APPLY=&SCR=&RTR_APPLY=&RTR=&BTR_APPLY=&NBTR=&SBTR=&EXTERNAL=3&EXT_T1989c=1&KP_LONG_89=4&INTERNAL=1&ALTITUDE=100&DAY=1&TIME=3&DISTANCE=1&DIST_DEC=2&DEG=1&DEG_DEC=2&DEG_DIR=1&OUTPUT_CDF=1&LINES_PAGE=1&RNG_FLTR_METHOD=&PREV_SECTION=SCS&SSC=LOCATOR_GENERAL&SUBMIT=Submit+query+and+wait+for+output&.cgifields=SPCR"
-	],
-	[
-		"http://spidr.ngdc.noaa.gov/spidr/servlet/GetData?format=csv&dateFrom=19910101&dateTo=19910102&param=amie_ae",
-		"http://spidr.ngdc.noaa.gov/spidr/servlet/GetData?format=csv&dateFrom=19910102&dateTo=19910103&param=amie_ae",
-		"http://spidr.ngdc.noaa.gov/spidr/servlet/GetData?format=csv&dateFrom=19910103&dateTo=19910104&param=amie_ae"
-	]
-]
+	$(document).ready(function(){
+		$('#urlForm').on('submit', function(e) {
+		    e.preventDefault(); // prevent native submit
+		    $(this).ajaxSubmit({
+		        success: function(res){
+		        	$("#result").prepend($("<div/>", {id : res.id, class : "jobMonitor"}));
+		        	jobMonitor(res);
+		        }
+		    })
+		});
+
+		$('#paramsForm').on('submit', function(e) {
+		    e.preventDefault(); // prevent native submit
+		    $(this).ajaxSubmit();
+		});
+	})
+
+	function jobMonitor(job){
+		$.ajax({
+			url : "/status/job/"+job.id,
+			success : function(data){
+				var status = "<h3>Job " + job.id;
+				var details = data.works.map(function(d){
+					if(d.error){
+						return "URL: "+escapeHTML(d.url)+"<br><font color='red'>Error:"+d.error+"</font><br>Tried " + (d.tries || 1) + " times";
+					} else {
+						var cacheUrl = "/cache/"+d.url.split("/")[2]+"/"+d.urlMd5;
+						return "URL: "+d.url
+							 + (d.isFromCache ? "<br><font color='orange'>Found in cache.</font>" : "")
+							+"<br>Time: <font color='green'>"+d.time + "ms</font>"
+							+"<br> md5: "+d.md5
+							+"<br> File: <a target='_blank' href='"+ cacheUrl+".data'>data</a> | <a target='_blank' href='"
+							+cacheUrl+".out'> response </a>  | <a target='_blank' href='"
+							+cacheUrl+".header'> header </a> | <a target='_blank' href='"
+							+cacheUrl + ".log'> log </a>";
+					}
+				}).join('<br><br>');
+				if(data.isFinished){
+					status += " has finished. </h3>"+details;
+				} else {
+					status += " is running ";
+					var count = 0;
+					data.works.forEach(function(work){
+						if(work.isFinished){
+							count++;
+						}
+					});
+					status +="("+count+"/"+job.num+") </h3>"+details;
+					setTimeout(function(){jobMonitor(job);}, 300);
+				}
+				$("#"+job.id).html(status);
+			}
+		})
+	}
 	</script>
 </head>
 <body>
-<div>
-	<form action="{{postUrl}}" method="post">
-		<p>Urls: (Presets: 
-			<a href='#' onclick='$(urls).val(presets[0].join("\n\n"));'>CDAWeb</a> 
-			<a href='#' onclick='$(urls).val(presets[1].join("\n\n"));'>supermag</a> 
-			<a href='#' onclick='$(urls).val(presets[2].join("\n\n"));'>sscweb</a>
-			<a href='#' onclick='$(urls).val(presets[3].join("\n\n"));'>spidr</a>)
-		</p>
-		<p>
-			<textarea id='urls' rows='30' cols='100' name='source'>{{source}}</textarea>
-		</p>
-		<p>
-			<input type='checkbox' name='forceUpdate' value='true' {{forceUpdate}}> Update cache (<a href='cache'>Click here to browse current cache</a>) &nbsp; &nbsp; &nbsp;
-			Concurrency(1-1000): <input type="text" name="concurrency" size="3" value="{{concurrency}}"/> &nbsp; &nbsp; &nbsp;
-			Max # of tries: <input type="text" name="tries" size="3" value="{{tries}}"/> &nbsp; &nbsp; &nbsp;
-			<input type='checkbox' name='acceptGzip' value='true' {{acceptGzip}}> accept-encoding: gzip, compress</input> 
-			<!-- <select name='output'>
-				<option value='html' selected>Live-update</option>
-				<option value='json'>Stats: JSON</option>
-			</select>-->
-			<br> 
-			<input type='submit'/> 
-		</p>
-	</form>
+ <div class="navbar navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container">
+      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </a>
+      <a class="brand" href="#">TSDS_FE</a>
+      <div class="nav-collapse">
+        <ul class="nav">
+          <li class="active"><a href="#" target='_blank'>Home</a></li>
+          <li><a href="/cache" target='_blank'>Cache</a></li>
+          <li><a href="https://github.com/weiribao/tsds_fe" target='_blank'>Source</a></li>
+        </ul>
+      </div><!--/.nav-collapse -->
+    </div>
+  </div>
 </div>
-<div>
-<p>Results: ({{total_time}}ms)</p>
-{{{resultText}}
+<div class="container">
+	      <!-- Main hero unit for a primary marketing message or call to action -->
+<!--       <div class="hero-unit">
+        <h1>Hello, world!</h1>
+        <p>This is a template for a simple marketing or informational website. It includes a large callout called the hero unit and three supporting pieces of content. Use it as a starting point to create something more unique.</p>
+        <p><a class="btn btn-primary btn-large">Learn more &raquo;</a></p>
+      </div> -->
+
+	<div class="row">
+		<div class="span6">
+			<div class="row">
+				<h2>System parameters</h2>
+				<form id="paramsForm" action="/api/setParams" method="post">
+					<p>
+						Concurrency(1-1000): <input type="text" name="concurrency" size="3" value="1000"/> &nbsp; &nbsp; &nbsp;
+						Max # of tries: <input type="text" name="tries" size="3" value="3"/> &nbsp; &nbsp; &nbsp;
+						Timeout: <input type="text" name="timeout" size="3" value="50000"/> &nbsp; &nbsp; &nbsp;
+						<input type='submit' value="Set"/> 
+					</p>
+				</form>
+			</div>
+			<div class="row">
+				<h2>Submit URLs</h2>
+				<form id="urlForm" action="/submit" method="post">
+				<p>Urls: (Presets: 
+					<a href='#' onclick='$(urls).val(presets[0].join("\n\n"));'>CDAWeb</a> 
+					<a href='#' onclick='$(urls).val(presets[1].join("\n\n"));'>supermag</a> 
+					<a href='#' onclick='$(urls).val(presets[2].join("\n\n"));'>sscweb</a>
+					<a href='#' onclick='$(urls).val(presets[3].join("\n\n"));'>spidr</a>)
+				</p>
+				<p>
+					<textarea id='urls' rows='30' cols='100' name='source'></textarea>
+				</p>
+				<p>
+					<input type='submit'/> &nbsp; &nbsp; &nbsp;
+					<input type='checkbox' name='forceUpdate' value='true' > Update <a href='cache'>cache</a> &nbsp; &nbsp; &nbsp;
+					<input type='checkbox' name='acceptGzip' value='true' > accept-encoding: gzip, compress</input> 
+					
+				</p>
+			</form>
+			</div>		
+		</div>
+
+		<div class="span6">	
+			<div class="row">
+				<h2>Log:</h2>
+				<a href="#" onClick="$('#result').html('')"> Clear </a>	
+				<div id="result">
+
+				
+				</div>
+			</div>
+			
+		</div>
+	
+	</div>
+
+
+    <hr>
+
+   <footer>
+    <p>&copy; 2012</p>
+   </footer>
 </div>
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	
+<script type="text/javascript" src="asset/jquery.form.js"></script>
+<script type="text/javascript" src="asset/preset.js"></script>
+<script type="text/javascript" src="asset/bootstrap.min.js"></script>
 </body>
 </html>
