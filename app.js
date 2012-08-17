@@ -5,7 +5,8 @@ var request = require("request"),
 	app = express.createServer(),
 	crypto = require("crypto"),
 	fs = require("fs"),
-	hogan = require("hogan.js");
+	hogan = require("hogan.js"),
+	moment = require("moment");
 
 var jobRunner = require("./job.js");
 var util = require("./util.js");
