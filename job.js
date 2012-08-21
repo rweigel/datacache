@@ -14,6 +14,7 @@ var params = {
 	maxTries : MAXTRIES,
 	timeout : TIMEOUT,
 	concurrency : CONCURRENCY,
+	previousTime : Infinity
 }
 
 // module.exports.runJob = runJob;	
@@ -144,6 +145,16 @@ function runJob(job, callback){
 					work.tries += 1;
 					worksQueue.push(work);
 				} else{
+					params.previousTime = work.time;
+					if(work.time > params.previousTime) {
+						if(params.concurrency < 300){
+							params.concurrency += 1;
+						}
+					} else {
+						if(params.concurrency > 1){
+							params.concurrency -= 1;
+						}
+					}
 					work.isFinished = true;
 					job.finishedCount++;
 					if(job.finishedCount === job.works.length){

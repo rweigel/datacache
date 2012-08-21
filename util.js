@@ -1,5 +1,6 @@
 var fs = require("fs"),
-	crypto = require("crypto");
+	crypto = require("crypto"),
+	moment = require("prettydate");
 
 exports.log = log;
 exports.md5 = md5;
@@ -8,7 +9,7 @@ exports.escapeHTML = escapeHTML;
 
 function log(msg){
 	var file = __dirname + "/application.log";
-	var entry = formatTime(new Date()) + "\t" + msg;
+	var entry = formatTime(new Date()) + "\t" + msg + "\n";
 	fs.appendFile(file, entry);
 	console.log(entry);
 }
@@ -57,4 +58,4 @@ Array.prototype.find = function(match){
 			return this[i];
 		}
 	}
-} 
+}

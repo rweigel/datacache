@@ -31,17 +31,17 @@
 		    })
 		});
 
-		$('#paramsForm').on('submit', function(e) {
-		    e.preventDefault(); // prevent native submit
-		    $(this).ajaxSubmit();
-		});
+		// $('#paramsForm').on('submit', function(e) {
+		//     e.preventDefault(); // prevent native submit
+		//     $(this).ajaxSubmit();
+		// });
 
 		$.getJSON("/api/presets", function(data){
 			data.forEach(function(d){
 				var a = $("<a>")
 					.attr("href", "#")
 					.click(function(){
-						$(urls).val(d.urls);
+						$("#urls").val(d.urls);
 					})
 					.html(d.name);
 				$("#presets").append(a);
@@ -57,7 +57,7 @@
 				var status = "<h3>Job " + job.id;
 				var details = data.works.map(function(d){
 					if(d.error){
-						return "URL: "+escapeHTML(d.url)+"<br><font color='red'>Error:"+d.error+"</font><br>Tried " + (d.tries || 1) + " times";
+						return "URL: "+d.url+"<br><font color='red'>Error:"+d.error+"</font><br>Tried " + (d.tries || 1) + " times";
 					} else {
 						var cacheUrl = "/cache/"+d.url.split("/")[2]+"/"+d.urlMd5;
 						return "URL: "+d.url
@@ -120,7 +120,7 @@
 
 	<div class="row">
 		<div class="span6">
-			<div class="row">
+<!-- 			<div class="row">
 				<h2>System parameters</h2>
 				<form id="paramsForm" action="/api/setParams" method="post">
 					<p>
@@ -130,7 +130,7 @@
 						<input type='submit' value="Set"/> 
 					</p>
 				</form>
-			</div>
+			</div> -->
 			<div class="row">
 				<h2>Submit URLs</h2>
 				<form id="urlForm" action="/submit" method="post">
