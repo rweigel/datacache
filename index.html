@@ -18,76 +18,6 @@
       }
     </style>
     <link rel="stylesheet" type="text/css" href="asset/bootstrap-responsive.css">
-	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
-	<script type="text/javascript">
-	$(document).ready(function(){
-		$('#urlForm').on('submit', function(e) {
-		    e.preventDefault(); // prevent native submit
-		    $(this).ajaxSubmit({
-		        success: function(res){
-		        	$("#result").prepend($("<div/>", {id : res.id, class : "jobMonitor"}));
-		        	jobMonitor(res);
-		        }
-		    })
-		});
-
-		// $('#paramsForm').on('submit', function(e) {
-		//     e.preventDefault(); // prevent native submit
-		//     $(this).ajaxSubmit();
-		// });
-
-		$.getJSON("/api/presets", function(data){
-			data.forEach(function(d){
-				var a = $("<a>")
-					.attr("href", "#")
-					.click(function(){
-						$("#urls").val(d.urls);
-					})
-					.html(d.name);
-				$("#presets").append(a);
-				$("#presets").append("&nbsp;");
-			})
-		})
-	})
-
-	function jobMonitor(job){
-		$.ajax({
-			url : "/status/job/"+job.id,
-			success : function(data){
-				var status = "<h3>Job " + job.id;
-				var details = data.works.map(function(d){
-					if(d.error){
-						return "URL: "+d.url+"<br><font color='red'>Error:"+d.error+"</font><br>Tried " + (d.tries || 1) + " times";
-					} else {
-						var cacheUrl = "/cache/"+d.url.split("/")[2]+"/"+d.urlMd5;
-						return "URL: "+d.url
-							 + (d.isFromCache ? "<br><font color='orange'>Found in cache.</font>" : "")
-							+"<br>Time: <font color='green'>"+d.time + "ms</font>"
-							+"<br> md5: "+d.md5
-							+"<br> File: <a target='_blank' href='"+ cacheUrl+".data'>data</a> | <a target='_blank' href='"
-							+cacheUrl+".out'> response </a>  | <a target='_blank' href='"
-							+cacheUrl+".header'> header </a> | <a target='_blank' href='"
-							+cacheUrl + ".log'> log </a>";
-					}
-				}).join('<br><br>');
-				if(data.isFinished){
-					status += " has finished. "+data.time+"ms </h3>"+details;
-				} else {
-					status += " is running ";
-					var count = 0;
-					data.works.forEach(function(work){
-						if(work.isFinished){
-							count++;
-						}
-					});
-					status +="("+count+"/"+job.num+") </h3>"+details;
-					setTimeout(function(){jobMonitor(job);}, 300);
-				}
-				$("#"+job.id).html(status);
-			}
-		})
-	}
-	</script>
 </head>
 <body>
  <div class="navbar navbar-fixed-top">
@@ -170,9 +100,34 @@
     <p>&copy; 2012</p>
    </footer>
 </div>
-	
+
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 <script type="text/javascript" src="asset/jquery.form.js"></script>
 <script type="text/javascript" src="asset/preset.js"></script>
 <script type="text/javascript" src="asset/bootstrap.min.js"></script>
+<script type="text/javascript" src="http://cdn.socket.io/stable/socket.io.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+	$('#urlForm').ajaxForm();
+
+	// $('#paramsForm').on('submit', function(e) {
+	//     e.preventDefault(); // prevent native submit
+	//     $(this).ajaxSubmit();
+	// });
+
+	$.getJSON("/api/presets", function(data){
+		data.forEach(function(d){
+			var a = $("<a>")
+				.attr("href", "#")
+				.click(function(){
+					$("#urls").val(d.urls);
+				})
+				.html(d.name);
+			$("#presets").append(a);
+			$("#presets").append("&nbsp;");
+		})
+	})
+})
+</script>
 </body>
 </html>

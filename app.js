@@ -8,7 +8,8 @@ var request = require("request"),
 	hogan = require("hogan.js"),
 	moment = require("moment");
 
-var jobRunner = require("./job.js");
+// var jobRunner = require("./job.js");
+var scheduler = require("./scheduler.js");
 var util = require("./util.js");
 
 // create cache dir if not exist
@@ -18,7 +19,6 @@ if(!fs.existsSync(__dirname+"/cache")){
 
 // middleware
 app.use(express.bodyParser());
-
 
 app.use("/asset", express.static(__dirname + "/asset"));
 
@@ -40,55 +40,11 @@ app.get('/log', function(req, res){
 	res.send(fs.readFileSync(__dirname+"/application.log", "utf8"));
 })
 
-app.post('/', function(req, res, next){
-	var request_start = +new Date();
-	var options = parseOptions(req);
-	var source = parseSource(req);
-
-	if(source.length==0){
-		return res.redirect("back");
-	}
-
-
-	jobRunner.runJob(source, options, function(results){
-		var request_end = +new Date();
-		res.contentType("html");	
-		res.send(renderIndex({
-			source: source,
-			results : results,
-			forceUpdate: options.forceUpdate,
-			concurrency : options.concurrency,
-			tries : options.tries,
-			total_time : request_end - request_start
-		}))
-	});
-})
-
 app.post("/submit", function(req, res){
 	var options = parseOptions(req);
 	var source = parseSource(req);
-	var jobId = jobRunner.submitJob(source, options);
-	res.send({
-		id : jobId,
-		num : source.length
-	});
-})
-
-app.post("/api/setParams", function(req, res){
-	var params = {}; 
-	var concurrency = +req.body.concurrency;
-	if(!concurrency || concurrency <1 || concurrency >1000){
-		params.concurrency = concurrency;
-	};
-	var tries = req.body.tries;
-	if(!tries || tries<1 || tries>10){
-		params.maxTries = tries;
-	}
-	var timeout = req.body.timeout;
-	if(!timeout || timeout<100 || timeout>10){
-		params.timeout = timeout;
-	}
-	return res.send(jobRunner.setParams(params));
+	scheduler.addURLs(source, options);
+	res.send(200);
 })
 
 app.get("/api/presets", function(req,res){
@@ -122,34 +78,6 @@ app.get("/api/presets", function(req,res){
 	})
 	
 })
-
-app.get("/status/job/:id", function(req, res){
-	return res.send(jobRunner.getStatus(req.params.id));
-})
-
-// app.get("/status/running", function(req, res){
-// 	return res.send(jobRunner.getRunningJob());
-// })
-
-// app.get("/status/finished", function(req, res){
-// 	return res.send(jobRunner.getFinishedJobs());
-// })
-
-// app.get("/status", function(req, res){
-// 	var all = jobRunner.getAll();
-// 	var ret = [];
-// 	for(var id in all){
-// 		ret.push({
-// 			id : all[id].id,
-// 			isFinished : all[id].isFinished 
-// 		})
-// 	}
-// 	// res.contentType("html");
-// 	// res.send(ret.map(function(job){
-// 	// 	return "<a href='/status/"+job.id+"'>"+job.id+"</a><br>";
-// 	// }).join(""));
-// 	res.send(ret);
-// })
 
 app.listen(8000);
 

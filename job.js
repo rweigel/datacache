@@ -290,54 +290,6 @@ function isCached(url, callback){
 	fs.exists(__dirname + "/cache/" + url.split("/")[2] + "/" + util.md5(url)+".log", callback);
 }
 
-// Async version
-function writeCache(work, start, callback){
-	var directory =  __dirname + "/cache/" + work.url.split("/")[2];
-	var filename = directory + "/" + util.md5(work.url);
-	var header = [];
-	for(var key in work.header){
-		header.push(key + " : " + work.header[key]);
-	}
-	if(!memLock[work.url]) {
-		// if memLock[result.url] is undefine or 0, no writting is on-going
-		memLock[work.url] = 4;
-
-		// create dir if not exist
-		fs.exists(directory, function(exist){
-			if(!exist){
-				fs.mkdirSync(directory);
-			}
-			writeCacheFiles();
-		});	
-	} else {
-		callback();
-	}
-
-	function writeCacheFiles(){
-		fs.writeFile(filename+".data", work.data, finish);
-		fs.writeFile(filename+".header", header.join("\n"), finish);
-		fs.writeFile(filename+".out", work.body);
-		fs.writeFile(filename+".md5", work.md5, finish);
-		fs.appendFile(filename+".log", 
-			util.formatTime(work.date) + "\t"+work.time+"\t"+work.md5+"\n",
-			finish
-		);
-	}
-
-	function finish(err){
-		if(err){
-			log("Error occured when writing cache: " + filename + "\n" + err);
-			console.trace(err);
-		}
-		memLock[work.url]--;
-		if(memLock[work.url]==0){
-			util.log("Cached stored: " + filename + (+new Date() - start) + "ms");
-			work.writeFinishedTime = new Date();
-			callback();
-		}
-	}
-}
-
 function newWork(url){
 	return {
 		// job : null,
