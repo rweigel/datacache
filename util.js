@@ -1,7 +1,7 @@
 var fs = require("fs"),
 	crypto = require("crypto"),
 	moment = require("prettydate"),
-	request = require("request");
+	request = require("moment");
 
 var logger = require("./logger.js");
 
