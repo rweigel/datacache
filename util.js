@@ -88,7 +88,7 @@ var writeCache = function(work, callback){
 	for(var key in work.header){
 		header.push(key + " : " + work.header[key]);
 	}
-	if(!memLock[work.url]) {
+	if(!memLock[work.id]) {
 		// if memLock[result.url] is undefine or 0, no writting is on-going
 		memLock[work.id] = 5;
 

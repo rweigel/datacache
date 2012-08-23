@@ -4,7 +4,7 @@ var util = require("./util.js"),
 var logger = require("./logger.js");
 
 var MAXTRIES = 3;
-var CONCURRENCY = 1000;
+var CONCURRENCY = 20;
 
 var params = {
 	maxTries : MAXTRIES,
