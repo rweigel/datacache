@@ -130,7 +130,7 @@ $(document).ready(function(){
 	})
 })
 
-var socket = io.connect(window.location.origin);
+var socket = io.connect();
 socket.on("log", function(data){
 	var entry = $("<div/>", {class: "log"});
 	entry.append(data.msg);
