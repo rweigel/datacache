@@ -3,10 +3,10 @@
   	"version": "0.1.0",
 	"dependencies": {
 		"xml2js" : "0.1.14",
-		"request" : "*",
+		"request" : "2.9.203",
 		"express" : "3.0.0beta7",
-		"hogan.js" : "*",
-		"moment" : "*",
-		"socket.io": "*"
+		"hogan.js" : "2.0.0",
+		"moment" : "1.7.0",
+		"socket.io": "0.9.10"
 	}
 }
