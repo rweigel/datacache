@@ -2,15 +2,17 @@ var request = require("request"),
 	xml2js = require('xml2js'),
 	parser = new xml2js.Parser(),
 	express = require('express'),
-	app = express.createServer(),
+	app = express(),
+	server = require("http").createServer(app),
+	sio = require("socket.io").listen(server),
 	crypto = require("crypto"),
 	fs = require("fs"),
 	hogan = require("hogan.js"),
 	moment = require("moment");
 
-// var jobRunner = require("./job.js");
 var scheduler = require("./scheduler.js");
 var util = require("./util.js");
+var logger = require("./logger.js");
 
 // create cache dir if not exist
 if(!fs.existsSync(__dirname+"/cache")){
@@ -79,7 +81,17 @@ app.get("/api/presets", function(req,res){
 	
 })
 
-app.listen(8000);
+server.listen(8000);
+var clients = [];
+
+sio.sockets.on("connection", function(socket){
+	clients.push(socket);
+	socket.on("disconnect", function(){
+		clients.remove(socket);
+	})
+})
+sio.set("log level", 1);
+logger.bindClientList(clients);
 
 function parseOptions(req){
 	var options = {};

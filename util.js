@@ -1,14 +1,17 @@
 var fs = require("fs"),
 	crypto = require("crypto"),
-	moment = require("prettydate");
+	moment = require("prettydate"),
+	request = require("request");
 
-function log(msg){
-	var file = __dirname + "/application.log";
-	var entry = formatTime(new Date()) + "\t" + msg + "\n";
-	fs.appendFile(file, entry);
-	console.log(entry);
+var logger = require("./logger.js");
+
+var TIMEOUT = 20000;
+var MAXCONNECTION = 1000;
+
+function get(url, callback){
+	return request.get({uri: url, timeout : TIMEOUT,  pool: {maxSockets : MAXCONNECTION}}, callback);
 }
-exports.log = log;
+exports.get = get;
 
 function formatTime(date){
 	if(!date){
@@ -73,14 +76,14 @@ var getId = (function(){
 exports.getId = getId;
 
 var isCached = function isCached(url, callback){
-	fs.exists(__dirname + "/cache/" + url.split("/")[2] + "/" + util.md5(url)+".log", callback);
+	fs.exists(__dirname + "/cache/" + url.split("/")[2] + "/" + md5(url)+".log", callback);
 }
 exports.isCached = isCached;
 
 var memLock = {};
 var writeCache = function(work, callback){
 	var directory =  __dirname + "/cache/" + work.url.split("/")[2];
-	var filename = directory + "/" + md5(work.url);
+	var filename = directory + "/" + work.urlMd5;
 	var header = [];
 	for(var key in work.header){
 		header.push(key + " : " + work.header[key]);
@@ -106,20 +109,20 @@ var writeCache = function(work, callback){
 		fs.writeFile(filename+".out", work.body, finish);
 		fs.writeFile(filename+".md5", work.md5, finish);
 		fs.appendFile(filename+".log", 
-			formatTime(work.date) + "\t"+work.time+"\t"+work.md5+"\n",
+			formatTime(work.createTime) + "\t"+work.time+"\t"+work.md5+"\n",
 			finish
 		);
 	}
 
 	function finish(err){
 		if(err){
-			log("Error occured when writing cache: " + filename + "\n" + err);
+			logger.log("Error occured when writing cache: " + filename + "\n" + err);
 			console.trace(err);
 		}
 		memLock[work.id]--;
 		if(memLock[work.id]==0){
 			work.writeFinishedTime = new Date();
-			log("cache written "+work.md5);
+			logger.log("Cache written: "+work.md5);
 			callback(work);
 		}
 	}

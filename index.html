@@ -16,6 +16,12 @@
       	width : 40px;
       	margin : 0 0 9px;
       }
+
+      div.log {
+      	padding-bottom: 0.5em;
+      	margin-bottom: 0.5em;
+      	border-bottom: dotted 1px #ccc;
+      }
     </style>
     <link rel="stylesheet" type="text/css" href="asset/bootstrap-responsive.css">
 </head>
@@ -105,15 +111,10 @@
 <script type="text/javascript" src="asset/jquery.form.js"></script>
 <script type="text/javascript" src="asset/preset.js"></script>
 <script type="text/javascript" src="asset/bootstrap.min.js"></script>
-<script type="text/javascript" src="http://cdn.socket.io/stable/socket.io.js"></script>
+<script type="text/javascript" src="/socket.io/socket.io.js"></script>
 <script type="text/javascript">
 $(document).ready(function(){
 	$('#urlForm').ajaxForm();
-
-	// $('#paramsForm').on('submit', function(e) {
-	//     e.preventDefault(); // prevent native submit
-	//     $(this).ajaxSubmit();
-	// });
 
 	$.getJSON("/api/presets", function(data){
 		data.forEach(function(d){
@@ -127,6 +128,28 @@ $(document).ready(function(){
 			$("#presets").append("&nbsp;");
 		})
 	})
+})
+
+var socket = io.connect(window.location.origin);
+socket.on("log", function(data){
+	var entry = $("<div/>", {class: "log"});
+	entry.append(data.msg);
+	var work = data.work;
+	if(work){
+		if(work.error){
+			entry.append("<br><font color='red'>Error:"+work.error+"</font><br>Tried " + (work.tries || 1) + " times");
+		} else {
+			var cacheUrl = "/cache/"+work.url.split("/")[2]+"/"+work.urlMd5;
+			entry.append((work.isFromCache ? "<br><font color='orange'>Found in cache.</font>" : "")
+				+"<br>Time: <font color='green'>"+work.time + "ms</font>"
+				+"<br> md5: "+work.md5
+				+"<br> File: <a target='_blank' href='"+ cacheUrl+".data'>data</a> | <a target='_blank' href='"
+				+cacheUrl+".out'> response </a>  | <a target='_blank' href='"
+				+cacheUrl+".header'> header </a> | <a target='_blank' href='"
+				+cacheUrl + ".log'> log </a>");
+		}
+	}
+	$("#result").prepend(entry);
 })
 </script>
 </body>

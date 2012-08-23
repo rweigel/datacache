@@ -6,6 +6,7 @@
 		"request" : "*",
 		"express" : "3.0.0beta7",
 		"hogan.js" : "*",
-		"moment" : "*"
+		"moment" : "*",
+		"socket.io": "*"
 	}
 }
