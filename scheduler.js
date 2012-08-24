@@ -12,13 +12,15 @@ var params = {
 }
 
 var plugins = [];
-var defaultPlugin = require("./default_plugin.js");
+var defaultPlugin = require("./plugins/default.js");
 fs.readdir(__dirname+"/plugins", function(err, files){
 	if(!err){
 		files.forEach(function(file){
-			var p = require("./plugins/"+file);
-			p.__proto__ = defaultPlugin;
-			plugins.push(p);
+			if(file!=="default.js"){
+				var p = require("./plugins/"+file);
+				p.__proto__ = defaultPlugin;
+				plugins.push(p);
+			}
 		});
 	}
 })

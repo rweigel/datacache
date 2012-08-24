@@ -1,7 +1,6 @@
 var request = require("request"),
-	util = require("./util.js");
-
-var logger = require("./logger.js");
+	util = require("../util.js"),
+	logger = require("../logger.js");
 
 exports.match = function(url){
 	return false;
