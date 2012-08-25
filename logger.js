@@ -23,6 +23,7 @@ function log(msg, work){
 		socket.emit("log", {
 			msg: msg,
 			work: work ? {
+				id: work.id,
 				error: work.error,
 				time: work.time,
 				tries: work.tries,

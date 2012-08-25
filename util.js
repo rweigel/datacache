@@ -75,8 +75,11 @@ var getId = (function(){
 })();
 exports.getId = getId;
 
-var isCached = function isCached(url, callback){
-	fs.exists(__dirname + "/cache/" + url.split("/")[2] + "/" + md5(url)+".log", callback);
+var isCached = function isCached(work, callback){
+	fs.exists(__dirname + "/cache/" + work.url.split("/")[2] + "/" + work.urlMd5 + ".log", function(exist){
+		work.foundInCache = true;
+		callback(work);
+	});
 }
 exports.isCached = isCached;
 

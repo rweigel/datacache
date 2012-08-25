@@ -42,30 +42,23 @@ function run(){
 		var work = worksQueue.shift();
 		work.requestSentTime = new Date();
 		runningWorks.push(work);
-		util.isCached(work.url, function(exist){
-			if(exist){
-				work.foundInCache = true;
-			}
-			if(!exist || work.options.forceUpdate){
+		util.isCached(work, function(work){
+			if(!work.foundInCache || work.options.forceUpdate){
 				work.preprocess(function(err, work){
 					work.process(function(err, work){
 						work.responseFinshedTime = new Date();
 						work.time = (work.responseFinshedTime - work.requestSentTime);
 						work.postprocess(function(err, work){
-							runningWorks.remove(work);
-							if(work.error && work.tries < params.maxTries){
-								work.tries += 1;
-								worksQueue.push(work);
-							} else{
-								work.isFinished = true;
-								logger.log("URL finshed: "+work.url, work);
-							}
-							run();
+							workFinsih();
 						});
 					});
 				})
 			} else {
 				work.isFromCache = true;
+				workFinsih();
+			}
+
+			function workFinsih(){
 				runningWorks.remove(work);
 				if(work.error && work.tries < params.maxTries){
 					work.tries += 1;
@@ -89,9 +82,10 @@ function newWork(url, options){
 	var plugin = plugins.find(function(d){ return d.match(url);}) 
 		|| defaultPlugin;
 	return {
+		id: util.getId(),
 		plugin : plugin,
 		url : url,
-		options : options || {},
+		options : options ? {forceUpdate: options.forceUpdate, acceptGzip: options.acceptGzip} : {},
 		md5 : "",
 		urlMd5 : util.md5(url),
 		data : "",
