@@ -65,7 +65,7 @@ app.get("/api/presets", function(req,res){
 					}
 				}
 				results.push({
-						name : file.split(".")[0],
+						name : file.split(".").slice(0, -1).join("."),
 						urls : data
 					});
 				if(results.length===files.length){

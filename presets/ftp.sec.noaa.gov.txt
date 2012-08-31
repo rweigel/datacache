@@ -1,0 +1,5 @@
+ftp://ftp.sec.noaa.gov/pub/lists/xray/20120820_Gp_xr_5m.txt
+
+ftp://ftp.sec.noaa.gov/pub/lists/xray/20120819_Gp_xr_5m.txt
+
+ftp://ftp.sec.noaa.gov/pub/lists/xray/20120818_Gp_xr_5m.txt

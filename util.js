@@ -77,7 +77,9 @@ exports.getId = getId;
 
 var isCached = function isCached(work, callback){
 	fs.exists(__dirname + "/cache/" + work.url.split("/")[2] + "/" + work.urlMd5 + ".log", function(exist){
-		work.foundInCache = true;
+		if(exist) {
+			work.foundInCache = true;
+		}
 		callback(work);
 	});
 }
