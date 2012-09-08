@@ -11,6 +11,19 @@ var params = {
 	concurrency : CONCURRENCY
 }
 
+var runningWorks = [];
+var worksQueue = [];
+
+function addURLs(source, options){
+	options = options || {};
+	var works = source.slice().map(function(url){
+		return newWork(url, options);
+	});
+	worksQueue = worksQueue.concat(works);
+	run();
+}
+exports.addURLs = addURLs;
+
 var plugins = [];
 var defaultPlugin = require("./plugins/default.js");
 fs.readdir(__dirname+"/plugins", function(err, files){
@@ -24,18 +37,6 @@ fs.readdir(__dirname+"/plugins", function(err, files){
 		});
 	}
 })
-
-var runningWorks = [];
-var worksQueue = [];
-
-function addURLs(source, options){
-	var works = source.slice().map(function(url){
-		return newWork(url, options);
-	});
-	worksQueue = worksQueue.concat(works);
-	run();
-}
-exports.addURLs = addURLs;
 
 function run(){
 	while(runningWorks.length < params.concurrency && worksQueue.length>0) {

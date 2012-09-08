@@ -9,7 +9,7 @@ var TIMEOUT = 20000;
 var MAXCONNECTION = 1000;
 
 function get(url, callback){
-	return request.get({uri: url, timeout : TIMEOUT,  pool: {maxSockets : MAXCONNECTION}}, callback);
+	return request.get({uri: url, timeout : TIMEOUT, encoding:null,  pool: {maxSockets : MAXCONNECTION}}, callback);
 }
 exports.get = get;
 
@@ -49,6 +49,14 @@ function escapeHTML(s) {
       .replace(/>/g, '&gt;');
 }
 exports.escapeHTML = escapeHTML;
+
+function unescapeHTML(s) {
+    return s
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>');
+}
+exports.unescapeHTML = unescapeHTML;
 
 var getId = (function(){
 	var Id = 1;
