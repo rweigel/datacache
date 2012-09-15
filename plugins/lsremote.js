@@ -42,6 +42,10 @@ function listToUrls(url, list){
 					.query
 					.path;
 	return list.map(function(item){
-		return urlBase + util.unescapeHTML(item[3].substring(2));
+		var path = item[3];
+		if(path.substring(0,2)==="./"){
+			path = path.substring(2);
+		}
+		return urlBase + util.unescapeHTML(path);
 	});
 }
