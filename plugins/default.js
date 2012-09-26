@@ -18,8 +18,8 @@ exports.process = function(work, callback){
 			work.error = "Can't fetch data";
 			callback(true, work);
 		} else {
-			work.body = body;
-			work.data = work.extractData(body);
+			work.body = body || "";
+			work.data = work.extractData(work.body);
 			work.md5 =  util.md5(work.data);
 			work.header = response.headers;
 			util.writeCache(work, function(){

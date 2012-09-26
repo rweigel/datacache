@@ -139,7 +139,8 @@ socket.on("log", function(data){
 			var cacheUrl = "/cache/"+work.url.split("/")[2]+"/"+work.urlMd5;
 			entry.append((work.isFromCache ? "<br><font color='orange'>Found in cache.</font>" : "")
 				+"<br>Time: <font color='green'>"+work.time + "ms</font>"
-				+"<br> md5: "+work.md5
+				+"<br> data md5: "+work.md5
+				+"<br> url md5: "+work.urlMd5
 				+"<br> File: <a target='_blank' href='"+ cacheUrl+".data'>data</a> | <a target='_blank' href='"
 				+cacheUrl+".out'> response </a>  | <a target='_blank' href='"
 				+cacheUrl+".header'> header </a> | <a target='_blank' href='"

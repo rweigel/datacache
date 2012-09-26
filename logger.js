@@ -13,7 +13,9 @@ function log(msg, work){
 	//write to application.log
 	var file = __dirname + "/application.log";
 	var entry = util.formatTime(new Date()) + "\t" + msg + "\n";
-	fs.appendFile(file, entry);
+	fs.appendFile(file, entry, function(err){
+		// console.log(err);
+	});
 
 	// write to stout
 	console.log(entry);
