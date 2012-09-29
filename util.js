@@ -129,13 +129,13 @@ var writeCache = function(work, callback){
 
 	function finish(err){
 		if(err){
-			logger.log("Error occured when writing cache: " + filename + "\n" + err);
+			logger.log("error", work);
 			console.trace(err);
 		}
 		memLock[work.id]--;
 		if(memLock[work.id]==0){
 			work.writeFinishedTime = new Date();
-			logger.log("Cache written: "+work.md5);
+			logger.log("updated", work);
 			callback(work);
 		}
 	}

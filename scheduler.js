@@ -66,7 +66,7 @@ function run(){
 					worksQueue.push(work);
 				} else{
 					work.isFinished = true;
-					logger.log("URL finshed: "+work.url, work);
+					logger.log("finish", work);
 				}
 				run();
 			}
@@ -79,10 +79,9 @@ function run(){
 }
 
 function newWork(url, options){
-	logger.log("URL submitted: "+url);
 	var plugin = plugins.find(function(d){ return d.match(url);}) 
 		|| defaultPlugin;
-	return {
+	var work = {
 		id: util.getId(),
 		plugin : plugin,
 		url : url,
@@ -115,4 +114,6 @@ function newWork(url, options){
 			return this.plugin.extractData(data);
 		}
 	}
+	logger.log("submit", work);
+	return work;
 }

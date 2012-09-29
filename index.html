@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html ng-app>
 <head>
 	<title>tsds_fe</title>
 	<link rel="stylesheet" type="text/css" href="asset/bootstrap.css">
@@ -86,10 +86,26 @@
 		<div class="span6">	
 			<div class="row">
 				<h2>Log:</h2>
-				<a href="#" onClick="$('#result').html('')"> Clear </a>	
-				<div id="result">
+				<div id="result" ng-controller="LogCtrl">
+					<a href="#" ng-click="clear()"> Clear </a>
+					<input type="checkbox" ng-model="pendingOnly"> Show pending tasks only	
+					<div class="log" ng-repeat="log in showLogs()">
+						{{log.type}} : {{log.work.url}}<br>
 
-				
+						<div ng-show="log.work.isFromCache"><font color="orange">Found in cache.</font></div>
+						<div ng-show="log.type=='finish'"> 
+							<div ng-show="!log.work.isFromCache">
+								Time: <font color="green">{{log.work.time}}ms</font>
+							</div>
+							data md5: {{log.work.md5}}<br>
+							url md5: {{log.work.urlMd5}}<br>
+							File: <a target="_blank" href="{{cacheUrl(log)+'.data'}}">data</a> 
+							| <a target="_blank" href="{{cacheUrl(log)+'.response'}}"> response </a>  
+							| <a target="_blank" href="{{cacheUrl(log)+'.header'}}"> header </a> 
+							| <a target="_blank" href="{{cacheUrl(log)+'.log'}}"> log </a>
+						</div>
+	
+					</div>
 				</div>
 			</div>
 			
@@ -104,7 +120,7 @@
     <p>&copy; 2012</p>
    </footer>
 </div>
-
+<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.2/angular.min.js"></script>
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 <script type="text/javascript" src="asset/jquery.form.js"></script>
 <script type="text/javascript" src="asset/bootstrap.min.js"></script>
@@ -128,27 +144,67 @@ $(document).ready(function(){
 })
 
 var socket = io.connect();
-socket.on("log", function(data){
-	var entry = $("<div/>", {class: "log"});
-	entry.append(data.msg);
-	var work = data.work;
-	if(work){
-		if(work.error){
-			entry.append("<br><font color='red'>Error:"+work.error+"</font><br>Tried " + (work.tries || 1) + " times");
+// socket.on("log", function(data){
+// 	var entry = $("<div/>", {class: "log"});
+// 	entry.append(data.msg);
+// 	var work = data.work;
+// 	if(work){
+// 		if(work.error){
+// 			entry.append("<br><font color='red'>Error:"+work.error+"</font><br>Tried " + (work.tries || 1) + " times");
+// 		} else {
+// 			var cacheUrl = "/cache/"+work.url.split("/")[2]+"/"+work.urlMd5;
+// 			entry.append((work.isFromCache ? "<br><font color='orange'>Found in cache.</font>" : "")
+// 				+"<br>Time: <font color='green'>"+work.time + "ms</font>"
+// 				+"<br> data md5: "+work.md5
+// 				+"<br> url md5: "+work.urlMd5
+// 				+"<br> File: <a target='_blank' href='"+ cacheUrl+".data'>data</a> | <a target='_blank' href='"
+// 				+cacheUrl+".out'> response </a>  | <a target='_blank' href='"
+// 				+cacheUrl+".header'> header </a> | <a target='_blank' href='"
+// 				+cacheUrl + ".log'> log </a>");
+// 		}
+// 	}
+// 	$("#result").prepend(entry);
+// })
+function LogCtrl($scope){
+	$scope.logs = [];
+	$scope.pendingLogs = [];
+	$scope.clear = function(){
+		$scope.pendingLogs = [];
+		$scope.logs = [];
+	}
+	$scope.cacheUrl = function(log){
+		return "/cache/"+log.work.url.split("/")[2]+"/"+log.work.urlMd5;
+	}
+	$scope.showLogs = function(){
+		if(!$scope.pendingOnly){
+			return $scope.logs;
 		} else {
-			var cacheUrl = "/cache/"+work.url.split("/")[2]+"/"+work.urlMd5;
-			entry.append((work.isFromCache ? "<br><font color='orange'>Found in cache.</font>" : "")
-				+"<br>Time: <font color='green'>"+work.time + "ms</font>"
-				+"<br> data md5: "+work.md5
-				+"<br> url md5: "+work.urlMd5
-				+"<br> File: <a target='_blank' href='"+ cacheUrl+".data'>data</a> | <a target='_blank' href='"
-				+cacheUrl+".out'> response </a>  | <a target='_blank' href='"
-				+cacheUrl+".header'> header </a> | <a target='_blank' href='"
-				+cacheUrl + ".log'> log </a>");
+			return $scope.pendingLogs;
 		}
 	}
-	$("#result").prepend(entry);
-})
+
+	socket.on("log", function(data){
+		$scope.logs.unshift(data);
+		if(data.type==="finish"){
+			var tmp = [];
+			for(var i=0;i<$scope.pendingLogs.length;i++){
+				if($scope.pendingLogs[i].work.id!==data.work.id){
+					tmp.push($scope.pendingLogs[i]);
+				}
+			}
+			$scope.pendingLogs = tmp;
+		} else {
+			$scope.pendingLogs.unshift(data);
+		}
+	})
+
+	setInterval(function(){
+		$scope.$apply(function(){
+			// $scope.logs = $scope.logsBuffer;
+
+		});
+	}, 300);
+}
 </script>
 </body>
 </html>

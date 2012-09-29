@@ -9,10 +9,10 @@ function bindClientList(list){
 }
 exports.bindClientList = bindClientList;
 
-function log(msg, work){
+function log(type, work){
 	//write to application.log
 	var file = __dirname + "/application.log";
-	var entry = util.formatTime(new Date()) + "\t" + msg + "\n";
+	var entry = util.formatTime(new Date()) + "\t" + type + "\t" +work.url+"\n";
 	fs.appendFile(file, entry, function(err){
 		// console.log(err);
 	});
@@ -23,7 +23,7 @@ function log(msg, work){
 	// write to clients
 	clients.forEach(function(socket){
 		socket.emit("log", {
-			msg: msg,
+			type: type,
 			work: work ? {
 				id: work.id,
 				error: work.error,
