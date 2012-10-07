@@ -35,12 +35,62 @@ app.use("/cache", express.directory(__dirname+"/cache"));
 
 app.get('/', function(req, res){
 	res.contentType("html");
-	res.send(fs.readFileSync(__dirname+"/index.html", "utf8"));
+	fs.readFile(__dirname+"/index.html", "utf8", function(err, data){
+		res.send(data);
+	})
 })
 
 app.get('/log', function(req, res){
 	res.send(fs.readFileSync(__dirname+"/application.log", "utf8"));
 })
+
+app.get("/syncsubmit", function(req,res){
+	res.contentType("html");
+	fs.readFile(__dirname+"/syncsubmit.html", "utf8", function(err, data){
+		res.send(data);
+	})
+})
+
+app.post("/syncsubmit", function(req, res){
+	var options = parseOptions(req);
+	var source = parseSource(req);
+	var results = [];
+	scheduler.addURLs(source, options);
+	scheduler.on("finish", function(work){
+		if(source.find(function(url){
+			return url === work.url;
+		})){
+			results.push(work);
+			if(results.length === source.length){
+				res.send(results);
+			}
+		}
+	})
+})
+
+app.get("/tsds_fe", function(req, res){
+	var options = parseOptions(req);
+	var source = []
+	source.push(req.query.url);
+	// res.send(req.query.url);
+	scheduler.addURLs(source, options);
+	scheduler.once("finish", function(work){
+		if(source.find(function(url){
+			return url === work.url;
+		})){
+			// res.send(work);
+			// res.redirect("/cache/"+work.url.split("/")[2]+"/"+work.urlMd5+".out");
+			fs.readFile(__dirname+"/cache/"+work.url.split("/")[2]+"/"+work.urlMd5+".out", function(err, data){
+				if(err){
+					res.send(404);
+				} else{
+					res.send(data);
+				}
+			})
+		}
+	})
+})
+
 
 app.post("/submit", function(req, res){
 	var options = parseOptions(req);
@@ -96,8 +146,8 @@ logger.bindClientList(clients);
 function parseOptions(req){
 	var options = {};
 	
-	options.forceUpdate = req.body.forceUpdate;
-	options.acceptGzip = req.body.acceptGzip;
+	options.forceUpdate = req.body.forceUpdate || req.query.update==="true";
+	options.acceptGzip = req.body.acceptGzip || req.acceptGzip;
 
 	return options;
 }

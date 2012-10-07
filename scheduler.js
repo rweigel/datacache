@@ -1,5 +1,9 @@
 var util = require("./util.js"),
-	fs = require("fs");
+	fs = require("fs"),
+	EventEmitter = require("events").EventEmitter;
+
+module.exports = exports = new EventEmitter();
+exports.setMaxListeners(1000);
 
 var logger = require("./logger.js");
 
@@ -17,7 +21,9 @@ var worksQueue = [];
 function addURLs(source, options){
 	options = options || {};
 	var works = source.slice().map(function(url){
-		return newWork(url, options);
+		var work = newWork(url, options);
+		exports.emit("submit", work);
+		return work;
 	});
 	worksQueue = worksQueue.concat(works);
 	run();
@@ -66,6 +72,7 @@ function run(){
 					worksQueue.push(work);
 				} else{
 					work.isFinished = true;
+					exports.emit("finish", work);
 					logger.log("finish", work);
 				}
 				run();
@@ -102,15 +109,19 @@ function newWork(url, options){
 		writeFinishedTime : 0,
 		tries : 0,
 		process : function(callback){
+			exports.emit("process", this);
 			this.plugin.process(this, callback);
 		},
 		preprocess : function(callback){
+			exports.emit("preprocess", this);
 			this.plugin.preprocess(this, callback);
 		},
 		postprocess : function(callback){
+			exports.emit("postprocess", this);
 			this.plugin.postprocess(this, callback);
 		},
 		extractData: function(data){
+			exports.emit("extractdata", this);
 			return this.plugin.extractData(data);
 		}
 	}
