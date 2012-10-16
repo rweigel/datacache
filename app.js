@@ -80,7 +80,13 @@ app.get("/tsds_fe", function(req, res){
 		})){
 			// res.send(work);
 			// res.redirect("/cache/"+work.url.split("/")[2]+"/"+work.urlMd5+".out");
-			fs.readFile(__dirname+"/cache/"+work.url.split("/")[2]+"/"+work.urlMd5+".out", function(err, data){
+			var filePath = __dirname+"/cache/"+work.url.split("/")[2]+"/"+work.urlMd5;
+			if(options.type==="data"){
+				filePath+=".data";
+			} else {
+				filePath+=".out";
+			}
+			fs.readFile(filePath, function(err, data){
 				if(err){
 					res.send(404);
 				} else{
@@ -148,6 +154,7 @@ function parseOptions(req){
 	
 	options.forceUpdate = req.body.forceUpdate || req.query.update==="true";
 	options.acceptGzip = req.body.acceptGzip || req.acceptGzip;
+	options.type = req.query.type || "response";
 
 	return options;
 }
