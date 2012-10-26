@@ -18,17 +18,28 @@ var params = {
 var runningWorks = [];
 var worksQueue = [];
 
-function addURLs(source, options){
-	options = options || {};
-	var works = source.slice().map(function(url){
-		var work = newWork(url, options);
-		exports.emit("submit", work);
-		return work;
-	});
-	worksQueue = worksQueue.concat(works);
-	run();
+function addURLs(source, options, callback){
+	callback = callback || function(){};
+	var finished = [];
+	source.forEach(function(url){
+		addURL(url, options, function(work){
+			finished.push(work);
+			if(finished.length==source.length){
+				callback(finished);
+			}
+		});
+	})
 }
 exports.addURLs = addURLs;
+
+function addURL(url, options, callback){
+	options = options || {};
+	var work = newWork(url, options, callback);
+	exports.emit("submit", work);
+	worksQueue.push(work);
+	run();
+}
+exports.addURL = addURL;
 
 var plugins = [];
 var defaultPlugin = require("./plugins/default.js");
@@ -74,6 +85,7 @@ function run(){
 					work.isFinished = true;
 					exports.emit("finish", work);
 					logger.log("finish", work);
+					work.callback(work);
 				}
 				run();
 			}
@@ -85,7 +97,8 @@ function run(){
 	}
 }
 
-function newWork(url, options){
+function newWork(url, options, callback){
+	console.log(url, typeof url);
 	var plugin = plugins.find(function(d){ return d.match(url);}) 
 		|| defaultPlugin;
 	var work = {
@@ -108,6 +121,7 @@ function newWork(url, options){
 		responseFinshedTime : 0,
 		writeFinishedTime : 0,
 		tries : 0,
+		callback : callback || function(){},
 		process : function(callback){
 			exports.emit("process", this);
 			this.plugin.process(this, callback);

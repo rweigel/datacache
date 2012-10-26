@@ -55,46 +55,32 @@ app.post("/syncsubmit", function(req, res){
 	var options = parseOptions(req);
 	var source = parseSource(req);
 	var results = [];
-	scheduler.addURLs(source, options);
-	scheduler.on("finish", function(work){
-		if(source.find(function(url){
-			return url === work.url;
-		})){
-			results.push(work);
-			if(results.length === source.length){
-				res.send(results);
-			}
-		}
-	})
+	scheduler.addURLs(source, options, function(results){
+		res.send(results);
+	});
 })
 
 app.get("/tsds_fe", function(req, res){
 	var options = parseOptions(req);
-	var source = []
-	source.push(req.query.url);
-	// res.send(req.query.url);
-	scheduler.addURLs(source, options);
-	scheduler.once("finish", function(work){
-		if(source.find(function(url){
-			return url === work.url;
-		})){
-			// res.send(work);
-			// res.redirect("/cache/"+work.url.split("/")[2]+"/"+work.urlMd5+".out");
-			var filePath = __dirname+"/cache/"+work.url.split("/")[2]+"/"+work.urlMd5;
-			if(options.type==="data"){
-				filePath+=".data";
-			} else {
-				filePath+=".out";
-			}
-			fs.readFile(filePath, function(err, data){
-				if(err){
-					res.send(404);
-				} else{
-					res.send(data);
-				}
-			})
+	scheduler.addURL(req.query.url, options, function(work){
+		if(options.type==="json"){
+			return res.send(work);
 		}
-	})
+		// res.redirect("/cache/"+work.url.split("/")[2]+"/"+work.urlMd5+".out");
+		var filePath = __dirname+"/cache/"+work.url.split("/")[2]+"/"+work.urlMd5;
+		if(options.type==="data"){
+			filePath+=".data";
+		} else { // default to options.type = "repsonse"
+			filePath+=".out";
+		}
+		fs.readFile(filePath, function(err, data){
+			if(err){
+				return res.send(404);
+			} else{
+				return res.send(data);
+			}
+		})
+	});
 })
 
 
@@ -154,7 +140,7 @@ function parseOptions(req){
 	
 	options.forceUpdate = req.body.forceUpdate || req.query.update==="true";
 	options.acceptGzip = req.body.acceptGzip || req.acceptGzip;
-	options.type = req.query.type || "response";
+	options.type = req.query.type || "response"; // valid values: "data", "response", "json"
 
 	return options;
 }
