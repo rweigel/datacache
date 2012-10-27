@@ -85,7 +85,7 @@ function run(){
 					work.isFinished = true;
 					exports.emit("finish", work);
 					logger.log("finish", work);
-					work.callback(work);
+					work.callback(work2result(work));
 				}
 				run();
 			}
@@ -97,6 +97,19 @@ function run(){
 	}
 }
 
+function work2result(work){
+	var ret = {};
+	console.log(typeof work.options.includeData, work.options.includeData, work.options);
+	console.log("###", work.options.includeData === "true")
+	for(var key in work){
+		if(work.options.includeData === "true" || key !== "data"){
+			ret[key] = work[key];
+		}
+	}
+	return ret;
+
+}
+
 function newWork(url, options, callback){
 	console.log(url, typeof url);
 	var plugin = plugins.find(function(d){ return d.match(url);}) 
@@ -105,7 +118,7 @@ function newWork(url, options, callback){
 		id: util.getId(),
 		plugin : plugin,
 		url : url,
-		options : options ? {forceUpdate: options.forceUpdate, acceptGzip: options.acceptGzip} : {},
+		options : options ? options : {},
 		md5 : "",
 		urlMd5 : util.md5(url),
 		data : "",

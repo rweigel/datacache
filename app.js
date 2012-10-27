@@ -53,6 +53,7 @@ app.get("/syncsubmit", function(req,res){
 
 app.post("/syncsubmit", function(req, res){
 	var options = parseOptions(req);
+	console.log(options);
 	var source = parseSource(req);
 	var results = [];
 	scheduler.addURLs(source, options, function(results){
@@ -141,6 +142,7 @@ function parseOptions(req){
 	options.forceUpdate = req.body.forceUpdate || req.query.update==="true";
 	options.acceptGzip = req.body.acceptGzip || req.acceptGzip;
 	options.type = req.query.type || "response"; // valid values: "data", "response", "json"
+	options.includeData = req.query.includeData || req.body.includeData || "false";
 
 	return options;
 }
