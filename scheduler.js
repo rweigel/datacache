@@ -25,6 +25,9 @@ function addURLs(source, options, callback){
 		addURL(url, options, function(work){
 			finished.push(work);
 			if(finished.length==source.length){
+				finished.sort(function(a,b){
+					return +a.id.split("-")[1] - b.id.split("-")[1];
+				});
 				callback(finished);
 			}
 		});
@@ -113,7 +116,7 @@ function work2result(work){
 	console.log(typeof work.options.includeData, work.options.includeData, work.options);
 	console.log("###", work.options.includeData === "true")
 	for(var key in work){
-		if(work.options.includeData === "true" || key !== "data"){
+		if(work.options.includeData === "true" || key !== "data" && key!=="body" ){
 			ret[key] = work[key];
 		}
 	}
