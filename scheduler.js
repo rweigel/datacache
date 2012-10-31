@@ -82,10 +82,21 @@ function run(){
 					work.tries += 1;
 					worksQueue.push(work);
 				} else{
-					work.isFinished = true;
-					exports.emit("finish", work);
-					logger.log("finish", work);
-					work.callback(work2result(work));
+					if(!work.options.forceUpdate && work.options.includeData){
+						util.getCachedData(work, function(err, data){
+							work.data = data;
+							work.dataMd5 = util.md5(data);
+							work.isFinished = true;
+							exports.emit("finish", work);
+							logger.log("finish", work);
+							work.callback(work2result(work));
+						})
+					} else {
+						work.isFinished = true;
+						exports.emit("finish", work);
+						logger.log("finish", work);
+						work.callback(work2result(work));
+					}
 				}
 				run();
 			}
@@ -119,7 +130,7 @@ function newWork(url, options, callback){
 		plugin : plugin,
 		url : url,
 		options : options ? options : {},
-		md5 : "",
+		dataMd5 : "",
 		urlMd5 : util.md5(url),
 		data : "",
 		header : "",

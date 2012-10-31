@@ -31,7 +31,7 @@ function log(type, work){
 				tries: work.tries,
 				url: work.url,
 				urlMd5: work.urlMd5,
-				md5: work.md5,
+				dataMd5: work.dataMd5,
 				isFromCache: work.isFromCache
 			} 
 			: false

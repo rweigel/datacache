@@ -93,6 +93,11 @@ var isCached = function isCached(work, callback){
 }
 exports.isCached = isCached;
 
+function getCachedData(work, callback){
+	fs.readFile(__dirname + "/cache/" + work.url.split("/")[2] + "/" + work.urlMd5 + ".data", "utf8", callback);
+}
+exports.getCachedData = getCachedData;
+
 var memLock = {};
 var writeCache = function(work, callback){
 	var directory =  __dirname + "/cache/" + work.url.split("/")[2];
