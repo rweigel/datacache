@@ -53,8 +53,12 @@ app.get("/syncsubmit", function(req,res){
 
 app.post("/syncsubmit", function(req, res){
 	var options = parseOptions(req);
-	console.log(options);
+	// console.log(options);
 	var source = parseSource(req);
+	// console.log(source, source===[]);
+	if(source.length===0){
+		return res.send(400, "At least one url must be provided.");
+	}
 	var results = [];
 	scheduler.addURLs(source, options, function(results){
 		res.send(results);
@@ -63,6 +67,9 @@ app.post("/syncsubmit", function(req, res){
 
 app.get("/tsds_fe", function(req, res){
 	var options = parseOptions(req);
+	if(source.length===0){
+		return res.send(400, "At least one url must be provided.");
+	}
 	scheduler.addURL(req.query.url, options, function(work){
 		if(options.type==="json"){
 			return res.send(work);
