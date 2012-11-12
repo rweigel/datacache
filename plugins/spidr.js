@@ -1,3 +1,5 @@
+exports.name = "spidr";
+
 exports.match = function(url){
 	return url.split("/")[2].toLowerCase()==="spidr.ngdc.noaa.gov";
 }

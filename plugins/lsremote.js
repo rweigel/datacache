@@ -1,6 +1,8 @@
 var util = require("../util.js"),
 	scheduler = require("../scheduler");
 
+exports.name = "lsremote";
+
 exports.match = function(url){
 	return url.split("?")[0].toLowerCase()==="http://aurora.gmu.edu/lsremote/cgi-bin/lsremote.cgi";
 }

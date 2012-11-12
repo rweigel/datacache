@@ -57,6 +57,7 @@ fs.readdir(__dirname+"/plugins", function(err, files){
 		});
 	}
 })
+exports.plugins = plugins;
 
 function run(){
 	while(runningWorks.length < params.concurrency && worksQueue.length>0) {
@@ -113,10 +114,10 @@ function run(){
 
 function work2result(work){
 	var ret = {};
-	console.log(typeof work.options.includeData, work.options.includeData, work.options);
-	console.log("###", work.options.includeData === "true")
+	// console.log(typeof work.options.includeData, work.options.includeData, work.options);
+	// console.log("###", work.options.includeData === "true")
 	for(var key in work){
-		if(work.options.includeData === "true" || key !== "data" && key!=="body" ){
+		if((work.options.includeData === "true" || key !== "data") && key!=="body" ){
 			ret[key] = work[key];
 		}
 	}
@@ -125,7 +126,7 @@ function work2result(work){
 }
 
 function newWork(url, options, callback){
-	console.log(url, typeof url);
+	// console.log(url, typeof url);
 	var plugin = plugins.find(function(d){ return d.match(url);}) 
 		|| defaultPlugin;
 	var work = {
@@ -164,7 +165,19 @@ function newWork(url, options, callback){
 		extractData: function(data){
 			exports.emit("extractdata", this);
 			return this.plugin.extractData(data);
-		}
+		},
+		extractDataJson: function(data){
+			return this.plugin.extractDataJson(data);
+		},
+		extractMetaJson: function(data){
+			return this.plugin.extractMetaJson(data);
+		},
+		extractRem: function(data){
+			return this.plugin.extractRem(data);
+		},
+		extractMeta: function(data){
+			return this.plugin.extractMeta(data);
+		},
 	}
 	logger.log("submit", work);
 	return work;

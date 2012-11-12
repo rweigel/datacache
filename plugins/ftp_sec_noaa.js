@@ -1,7 +1,12 @@
 var FtpClient  = require("ftp"),
 	util = require("../util");
 
+
+exports.name = "noaa";
+
 exports.match = function(url){
+	console.log(url);
+	console.log(typeof url);
 	return url.split("/")[2].toLowerCase()==="ftp.sec.noaa.gov";
 }
 

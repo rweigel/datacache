@@ -69,8 +69,7 @@ app.get("/tsds_fe", function(req, res){
 	var options = parseOptions(req);
 	if(source.length===0){
 		return res.send(400, "At least one url must be provided.");
-	}
-	scheduler.addURL(req.query.url, options, function(work){
+	}scheduler.addURL(req.query.url, options, function(work){
 		if(options.type==="json"){
 			return res.send(work);
 		}
@@ -98,6 +97,13 @@ app.post("/submit", function(req, res){
 	scheduler.addURLs(source, options);
 	res.send(200);
 })
+
+app.get("/api/plugins", function(req, res){
+	res.send(scheduler.plugins.map(function(p){
+		return p.name;
+	}));
+});
+
 
 app.get("/api/presets", function(req,res){
 	fs.readdir(__dirname+"/presets", function(err, files){

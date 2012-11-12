@@ -19,6 +19,10 @@ exports.process = function(work, callback){
 		} else {
 			work.body = body || "";
 			work.data = work.extractData(work.body);
+			work.dataJson = work.extractDataJson(work.body);
+			work.datax = work.extractRem(work.body);
+			work.meta = work.extractMeta(work.body);
+			work.metaJson = work.extractMetaJson(work.body);
 			work.md5 =  util.md5(work.data);
 			work.header = response.headers;
 			util.writeCache(work, function(){
@@ -33,9 +37,26 @@ exports.process = function(work, callback){
 	});
 };
 
-exports.extractData = function(data){
-	return data;
+exports.extractData = function(body){
+	return body;
 };
+
+exports.extractDataJson = function(body){
+	return {};
+};
+
+exports.extractMeta = function(body){
+	return "";
+}
+
+exports.extractMetaJson = function(body){
+	return {};
+}
+
+
+exports.extractRem = function(body){
+	return "";
+}
 
 exports.postprocess = function(work, callback){
 	var err = false;

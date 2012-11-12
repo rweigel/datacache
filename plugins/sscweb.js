@@ -1,3 +1,5 @@
+exports.name = "sscweb";
+
 exports.match = function(url){
 	return url.split("/")[2].toLowerCase()==="sscweb.gsfc.nasa.gov";
 }

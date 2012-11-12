@@ -38,6 +38,7 @@ function formatTime(date){
 exports.formatTime = formatTime;
 
 function md5(str){
+	if(!str) return "";
 	return crypto.createHash("md5").update(str).digest("hex");
 }
 exports.md5 = md5;
@@ -123,6 +124,8 @@ var writeCache = function(work, callback){
 
 	function writeCacheFiles(){
 		fs.writeFile(filename+".data", work.data, finish);
+		fs.writeFile(filename+".meta", work.meta, finish);
+		fs.writeFile(filename+".datax", work.datax, finish);
 		fs.writeFile(filename+".header", header.join("\n"), finish);
 		fs.writeFile(filename+".out", work.body, finish);
 		fs.writeFile(filename+".md5", work.md5, finish);

@@ -1,3 +1,5 @@
+exports.name = "supermag";
+
 exports.match = function(url){
 	return url.split("/")[2].toLowerCase()==="supermag.uib.no";
 }
