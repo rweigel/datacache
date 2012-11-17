@@ -82,8 +82,8 @@ function run(){
 
 			function workFinsih(){
 				runningWorks.remove(work);
-				if(work.error && work.tries < params.maxTries){
-					work.tries += 1;
+				if(work.error && work.retries < params.maxTries){
+					work.retries += 1;
 					worksQueue.push(work);
 				} else{
 					util.getCachedData(work, function(err){
@@ -107,14 +107,16 @@ function work2result(work){
 	// console.log(typeof work.options.includeData, work.options.includeData, work.options);
 	// console.log("###", work.options.includeData === "true")
 	for(var key in work){
-		if(key!== "data" && key !== "meta" && key!=="body" ){
+		if(key!== "data" && key!=="dataJson" && key !== "meta" && key!== "metaJson" && key!=="body" ){
 			ret[key] = work[key];
 		}
 		if(work.options.includeData === "true"){
 			ret["data"] = work["data"];
+			ret["dataJson"] = work["dataJson"];
 		}
 		if(work.options.includeMeta === "true"){
 			ret["meta"] = work["meta"];
+			ret["metaJson"] = work["metaJson"];
 		}
 	}
 	return ret;
@@ -151,7 +153,7 @@ function newWork(url, options, callback){
 		responseTime : 0,
 		responseFinshedTime : 0,
 		writeFinishedTime : 0,
-		tries : 0,
+		retries : 0,
 		callback : callback || function(){},
 		process : function(callback){
 			exports.emit("process", this);

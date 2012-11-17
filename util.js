@@ -112,12 +112,14 @@ exports.getCachedData = getCachedData;
 
 function getCachePath(work){
 	return __dirname + work.options.dir + work.url.split("/")[2] +"/" + work.urlMd5; 
-
+}
+function getCacheDir(work){
+	return __dirname + work.options.dir + work.url.split("/")[2];
 }
 
 var memLock = {};
 var writeCache = function(work, callback){
-
+	var directory = getCacheDir(work);
 	var filename = getCachePath(work);
 	var header = [];
 	for(var key in work.header){
