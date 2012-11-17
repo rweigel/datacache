@@ -44,6 +44,21 @@ app.get('/log', function(req, res){
 	res.send(fs.readFileSync(__dirname+"/application.log", "utf8"));
 })
 
+app.get("/live", function(req,res){
+	res.contentType("html");
+	fs.readFile(__dirname+"/index.html", "utf8", function(err, data){
+		res.send(data);
+	})
+})
+
+app.get("/wait", function(req,res){
+	res.contentType("html");
+	fs.readFile(__dirname+"/wait.htm", "utf8", function(err, data){
+		res.send(data);
+	    })
+})
+
+
 app.get("/syncsubmit", function(req,res){
 	res.contentType("html");
 	fs.readFile(__dirname+"/syncsubmit.html", "utf8", function(err, data){
