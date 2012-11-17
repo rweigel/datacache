@@ -1,4 +1,4 @@
-1. Install latest node and npm(package management tool for node):
+1. Install latest node and npm (package management tool for node):
 
 		sudo apt-get install python-software-properties
 		sudo add-apt-repository ppa:chris-lea/node.js
@@ -11,11 +11,11 @@
 
 3. Download source code:
 
-		git clone https://github.com/weiribao/tsds_fe.git
+		git clone https://github.com/rweigel/datacache.git
 
 4. Install dependencies (described in package.json):
 		
-		cd tsds_fe
+		cd datacache
 		npm install
 
 5. Run:
@@ -38,4 +38,4 @@
 		sudo npm install -g nodemon
 		nodemon app.js
 
-	any changes to app.js will be automactically loaded and you will never need to restart the server during development. 
+any changes to app.js will be automactically loaded and you will never need to restart the server during development. 

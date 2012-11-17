@@ -3,8 +3,8 @@
 <head>
   <title>Data Cache</title>
   <link rel="stylesheet" type="text/css" href="asset/bootstrap.css">
-  <link rel="stylesheet" type="text/css" href="asset/bootstrap-responsive.css">
   <link rel="stylesheet" type="text/css" href="asset/main.css">
+  <link rel="stylesheet" type="text/css" href="asset/bootstrap-responsive.css">
 </head>
 <body>
   <div class="navbar navbar-fixed-top">
@@ -17,21 +17,20 @@
       </a>
       <a class="brand" href="http://datacache.org/">DataCache</a>
       <div class="nav-collapse">
-	<ul class="nav">
-          <li class="active"><a href="live">Live</a></li>
-          <li><a href="wait">Wait</a></li>
+        <ul class="nav">
+          <li><a href="live">Live</a></li>
+          <li class="active"><a href="wait">Wait</a></li>
           <li><a href="/cache">Cache</a></li>
           <li><a href="https://github.com/weiribao/tsds_fe">Source</a></li>
           <li><a href="log">Log</a></li>
         </ul>
-      </div><!--/.nav-collapse -->
+      </div>
     </div>
   </div>
 </div>
 <div class="container">
-  <!-- Main hero unit for a primary marketing message or call to action -->
-	<div class="row">
-		<div class="span6">
+  <div class="row">
+    <div class="span6">
 <!-- 			<div class="row">
 				<h2>System parameters</h2>
 				<form id="paramsForm" action="/api/setParams" method="post">
@@ -44,23 +43,25 @@
 				</form>
 			</div> -->
 			<h2>Submit URLs</h2>
-			<form id="urlForm" action="submit" method="post">
-				<p>Presets: <span id="presets"></span>
+			<form id="urlForm" action="syncsubmit" method="post">
+				<p>Presets: | <span id="presets"></span>
 				</p>
-				<p>
-					<input type='checkbox' name='forceUpdate' value='true' > Update <a href='cache/'>cache</a> &nbsp; 
+					<input type='checkbox' name='forceUpdate' value='true' > Update <a href='cache'>cache</a> &nbsp; 
 					<input type='checkbox' name='acceptGzip' value='true' > accept-encoding: gzip, compress</input> 
-				</p>
+					<input type='checkbox' name='keepDiffs' value='true' > keep diffs</input> 
+					<br/>
+					<input type='checkbox' name='includeData' value='true' > include data in reponse</input> 
+					<input type='checkbox' name='includeMetadata' value='true' > include metadata in reponse</input> 					
 				<p>
 					<textarea id='urls' rows='30' cols='100' name='source'></textarea>
 				</p>
 				<p>
-					<input type='submit'/>
+					<input type='submit'/> &nbsp; &nbsp; &nbsp;
 				</p>
 			</form>	
 		</div>
 
-		<div class="span6">	
+<!-- 		<div class="span6">	
 			<div class="row">
 				<h2>Log:</h2>
 				<div id="result" ng-controller="LogCtrl">
@@ -74,10 +75,10 @@
 							<div ng-show="!log.work.isFromCache">
 								Time: <font color="green">{{log.work.time}}ms</font>
 							</div>
-							data md5: {{log.work.dataMd5}}<br>
+							data md5: {{log.work.md5}}<br>
 							url md5: {{log.work.urlMd5}}<br>
 							File: <a target="_blank" href="{{cacheUrl(log)+'.data'}}">data</a> 
-							| <a target="_blank" href="{{cacheUrl(log)+'.out'}}"> response </a>  
+							| <a target="_blank" href="{{cacheUrl(log)+'.response'}}"> response </a>  
 							| <a target="_blank" href="{{cacheUrl(log)+'.header'}}"> header </a> 
 							| <a target="_blank" href="{{cacheUrl(log)+'.log'}}"> log </a>
 						</div>
@@ -86,7 +87,7 @@
 				</div>
 			</div>
 			
-		</div>
+		</div> -->
 	
 	</div>
 
@@ -97,13 +98,12 @@
    </footer>
 </div>
 <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.2/angular.min.js"></script>
+<script type="text/javascript" src="asset/bootstrap.min.js"></script>
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 <script type="text/javascript" src="asset/jquery.form.js"></script>
-<script type="text/javascript" src="asset/bootstrap.min.js"></script>
-<script type="text/javascript" src="socket.io/socket.io.js"></script>
 <script type="text/javascript">
 $(document).ready(function(){
-	$('#urlForm').ajaxForm();
+	// $('#urlForm').ajaxForm();
 
 	$.getJSON("api/presets", function(data){
 		data.forEach(function(d){
@@ -114,73 +114,10 @@ $(document).ready(function(){
 				})
 				.html(d.name);
 			$("#presets").append(a);
-			$("#presets").append("&nbsp;");
+			$("#presets").append("&nbsp;|&nbsp;");
 		})
 	})
 })
-
-var socket = io.connect();
-// socket.on("log", function(data){
-// 	var entry = $("<div/>", {class: "log"});
-// 	entry.append(data.msg);
-// 	var work = data.work;
-// 	if(work){
-// 		if(work.error){
-// 			entry.append("<br><font color='red'>Error:"+work.error+"</font><br>Tried " + (work.tries || 1) + " times");
-// 		} else {
-// 			var cacheUrl = "/cache/"+work.url.split("/")[2]+"/"+work.urlMd5;
-// 			entry.append((work.isFromCache ? "<br><font color='orange'>Found in cache.</font>" : "")
-// 				+"<br>Time: <font color='green'>"+work.time + "ms</font>"
-// 				+"<br> data md5: "+work.md5
-// 				+"<br> url md5: "+work.urlMd5
-// 				+"<br> File: <a target='_blank' href='"+ cacheUrl+".data'>data</a> | <a target='_blank' href='"
-// 				+cacheUrl+".out'> response </a>  | <a target='_blank' href='"
-// 				+cacheUrl+".header'> header </a> | <a target='_blank' href='"
-// 				+cacheUrl + ".log'> log </a>");
-// 		}
-// 	}
-// 	$("#result").prepend(entry);
-// })
-function LogCtrl($scope){
-	$scope.logs = [];
-	$scope.pendingLogs = [];
-	$scope.clear = function(){
-		$scope.pendingLogs = [];
-		$scope.logs = [];
-	}
-	$scope.cacheUrl = function(log){
-		return "/cache/"+log.work.url.split("/")[2]+"/"+log.work.urlMd5;
-	}
-	$scope.showLogs = function(){
-		if(!$scope.pendingOnly){
-			return $scope.logs;
-		} else {
-			return $scope.pendingLogs;
-		}
-	}
-
-	socket.on("log", function(data){
-		$scope.logs.unshift(data);
-		if(data.type==="finish"){
-			var tmp = [];
-			for(var i=0;i<$scope.pendingLogs.length;i++){
-				if($scope.pendingLogs[i].work.id!==data.work.id){
-					tmp.push($scope.pendingLogs[i]);
-				}
-			}
-			$scope.pendingLogs = tmp;
-		} else {
-			$scope.pendingLogs.unshift(data);
-		}
-	})
-
-	setInterval(function(){
-		$scope.$apply(function(){
-			// $scope.logs = $scope.logsBuffer;
-
-		});
-	}, 300);
-}
 </script>
 </body>
 </html>
