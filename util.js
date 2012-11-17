@@ -117,7 +117,7 @@ function getCacheDir(work){
 	if(work.options.dir==="/cache/"){
 		return __dirname + work.options.dir + work.url.split("/")[2]+"/";
 	} else {
-		return __dirname + "/cache/"+work.options.dir;
+		return __dirname + "/cache"+work.options.dir;
 	}
 }
 
