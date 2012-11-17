@@ -111,10 +111,14 @@ function getCachedData(work, callback){
 exports.getCachedData = getCachedData;
 
 function getCachePath(work){
-	return __dirname + work.options.dir + work.url.split("/")[2] +"/" + work.urlMd5; 
+	return getCacheDir(work) + work.urlMd5; 
 }
 function getCacheDir(work){
-	return __dirname + work.options.dir + work.url.split("/")[2];
+	if(work.options.dir==="/cache/"){
+		return __dirname + work.options.dir + work.url.split("/")[2]+"/";
+	} else {
+		return __dirname + work.options.dir;
+	}
 }
 
 var memLock = {};
