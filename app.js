@@ -156,7 +156,18 @@ function parseOptions(req){
 	options.acceptGzip = req.body.acceptGzip || req.acceptGzip;
 	options.type = req.query.type || "response"; // valid values: "data", "response", "json"
 	options.includeData = req.query.includeData || req.body.includeData || "false";
-
+	options.includeMeta = req.query.includeMeta || req.body.includeMeta || "false";
+	options.plugin = req.query.plugin || req.body.plugin || false;
+	options.dir = req.query.dir || req.body.dir || "/cache/";
+	if(options.dir){
+		if(options.dir[0]!=='/'){
+			options.dir = '/'+options.dir;
+		}
+		if(options.dir[options.dir.length-1]!=='/'){
+			options.dir = options.dir+'/';
+		}
+	}
+	console.log("###", options);
 	return options;
 }
 

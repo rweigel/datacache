@@ -45,11 +45,19 @@ exports.extractDataJson = function(body){
 	return {};
 };
 
+exports.dataToJson = function(data){
+	return {};
+}
+
 exports.extractMeta = function(body){
 	return "";
 }
 
 exports.extractMetaJson = function(body){
+	return {};
+}
+
+exports.metaToJson = function(meta){
 	return {};
 }
 

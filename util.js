@@ -85,7 +85,7 @@ var getId = (function(){
 exports.getId = getId;
 
 var isCached = function isCached(work, callback){
-	fs.exists(__dirname + "/cache/" + work.url.split("/")[2] + "/" + work.urlMd5 + ".log", function(exist){
+	fs.exists(getCachePath(work) + ".log", function(exist){
 		if(exist) {
 			work.foundInCache = true;
 		}
@@ -95,14 +95,30 @@ var isCached = function isCached(work, callback){
 exports.isCached = isCached;
 
 function getCachedData(work, callback){
-	fs.readFile(__dirname + "/cache/" + work.url.split("/")[2] + "/" + work.urlMd5 + ".data", "utf8", callback);
+	fs.readFile(getCachePath(work) + ".data", "utf8", function(err, data){
+		work.data = data;
+		work.dataJson = work.plugin.dataToJson(data);
+		work.dataMd5 = exports.md5(data);
+		fs.readFile(getCachePath(work) + ".meta", "utf8", function(err, data){
+			work.meta = data;
+			work.metaJson = work.plugin.metaToJson(data);
+			work.isFinished = true;
+			callback(err);
+		});
+
+	});
 }
 exports.getCachedData = getCachedData;
 
+function getCachePath(work){
+	return __dirname + work.options.dir + work.url.split("/")[2] +"/" + work.urlMd5; 
+
+}
+
 var memLock = {};
 var writeCache = function(work, callback){
-	var directory =  __dirname + "/cache/" + work.url.split("/")[2];
-	var filename = directory + "/" + work.urlMd5;
+
+	var filename = getCachePath(work);
 	var header = [];
 	for(var key in work.header){
 		header.push(key + " : " + work.header[key]);
@@ -160,4 +176,5 @@ Array.prototype.find = function(match){
 			return this[i];
 		}
 	}
+	return null;
 }

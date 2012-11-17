@@ -86,21 +86,11 @@ function run(){
 					work.tries += 1;
 					worksQueue.push(work);
 				} else{
-					if(!work.options.forceUpdate && work.options.includeData){
-						util.getCachedData(work, function(err, data){
-							work.data = data;
-							work.dataMd5 = util.md5(data);
-							work.isFinished = true;
-							exports.emit("finish", work);
-							logger.log("finish", work);
-							work.callback(work2result(work));
-						})
-					} else {
-						work.isFinished = true;
+					util.getCachedData(work, function(err){
 						exports.emit("finish", work);
 						logger.log("finish", work);
 						work.callback(work2result(work));
-					}
+					})
 				}
 				run();
 			}
@@ -117,8 +107,14 @@ function work2result(work){
 	// console.log(typeof work.options.includeData, work.options.includeData, work.options);
 	// console.log("###", work.options.includeData === "true")
 	for(var key in work){
-		if((work.options.includeData === "true" || key !== "data") && key!=="body" ){
+		if(key!== "data" && key !== "meta" && key!=="body" ){
 			ret[key] = work[key];
+		}
+		if(work.options.includeData === "true"){
+			ret["data"] = work["data"];
+		}
+		if(work.options.includeMeta === "true"){
+			ret["meta"] = work["meta"];
 		}
 	}
 	return ret;
@@ -127,8 +123,15 @@ function work2result(work){
 
 function newWork(url, options, callback){
 	// console.log(url, typeof url);
-	var plugin = plugins.find(function(d){ return d.match(url);}) 
+	var plugin;
+	if(options.plugin){
+		plugin = plugins.find(function(d){
+			return d.name === options.plugin;
+		}) || defaultPlugin;
+	} else {
+		plugin = plugins.find(function(d){ return d.match(url);}) 
 		|| defaultPlugin;
+	}
 	var work = {
 		id: util.getId(),
 		plugin : plugin,

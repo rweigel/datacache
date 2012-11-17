@@ -39,12 +39,15 @@ exports.extractData = function(data){
 
 exports.extractDataJson = function(body){
 	var data = exports.extractData(body);
-	return data.split(/\r?\n/)
-				.map(function(d){
-					return d.split(/\s+/);
-				});
-				
+	return exports.dataToJson(data);				
 };
+
+exports.dataToJson = function(data){
+	return data.split(/\r?\n/)
+			.map(function(d){
+				return d.split(/\s+/);
+			});
+}
 
 exports.extractMeta = function(body){
 	// console.log(body);
@@ -54,13 +57,20 @@ exports.extractMeta = function(body){
 }
 
 exports.extractMetaJson = function(body){
-	return body.toString().split(/\r?\n/)
-		.splice(57, 2)
-		.map(function(d){
-					return d.split(/\s+/);
-				});
+	var meta = body.toString()
+				.split(/\r?\n/)
+				.splice(57, 2)
+				.join("\n");
+	return exports.metaToJson(meta);
+
 }
 
+exports.metaToJson = function(meta){
+	return meta.split(/\r?\n/)
+			.map(function(d){
+					return d.split(/\s+/);
+				});;
+}
 
 exports.extractRem = function(body){
 	var re = /^#/;
