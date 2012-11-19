@@ -107,7 +107,8 @@ function work2result(work){
 	// console.log(typeof work.options.includeData, work.options.includeData, work.options);
 	// console.log("###", work.options.includeData === "true")
 	for(var key in work){
-		if(key!== "data" && key!=="dataJson" && key !== "meta" && key!== "metaJson" && key!=="body" ){
+	    console.log(key);
+		if(key!== "data" && key!== "datax" && key!=="dataJson" && key !== "meta" && key!== "metaJson" && key!=="body" ){
 			ret[key] = work[key];
 		}
 		if(work.options.includeData === "true"){
