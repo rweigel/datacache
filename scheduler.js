@@ -111,12 +111,16 @@ function work2result(work){
 			ret[key] = work[key];
 		}
 		if(work.options.includeData === "true"){
-			ret["data"] = work["data"];
 			ret["dataJson"] = work["dataJson"];
+			if (!ret["dataJson"]) {
+			    ret["data"] = work["data"];
+			}
 		}
 		if(work.options.includeMeta === "true"){
-			ret["meta"] = work["meta"];
 			ret["metaJson"] = work["metaJson"];
+			if (!ret["metaJson"]) {
+			    ret["meta"] = work["meta"];
+			}
 		}
 	}
 	return ret;
