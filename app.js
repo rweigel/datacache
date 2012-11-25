@@ -19,6 +19,9 @@ if(!fs.existsSync(__dirname+"/cache")){
 	fs.mkdirSync(__dirname+"/cache");
 }
 
+// get port number from command line option
+var port = process.argv[2] || 8000;
+
 // middleware
 app.use(express.bodyParser());
 
@@ -150,7 +153,7 @@ app.get("/api/presets", function(req,res){
 	
 })
 
-server.listen(8000);
+server.listen(port);
 var clients = [];
 
 sio.sockets.on("connection", function(socket){
