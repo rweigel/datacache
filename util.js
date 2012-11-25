@@ -95,18 +95,22 @@ var isCached = function isCached(work, callback){
 exports.isCached = isCached;
 
 function getCachedData(work, callback){
-	fs.readFile(getCachePath(work) + ".data", "utf8", function(err, data){
-		work.data = data;
-		work.dataJson = work.plugin.dataToJson(data);
-		work.dataMd5 = exports.md5(data);
-		fs.readFile(getCachePath(work) + ".meta", "utf8", function(err, data){
-			work.meta = data;
-			work.metaJson = work.plugin.metaToJson(data);
-			work.isFinished = true;
-			callback(err);
-		});
+	try{
+		fs.readFile(getCachePath(work) + ".data", "utf8", function(err, data){
+			work.data = data;
+			work.dataJson = work.plugin.dataToJson(data);
+			work.dataMd5 = exports.md5(data);
+			fs.readFile(getCachePath(work) + ".meta", "utf8", function(err, data){
+				work.meta = data;
+				work.metaJson = work.plugin.metaToJson(data);
+				work.isFinished = true;
+				callback(err);
+			});
 
-	});
+		});
+	} catch(err){
+		console.log(err);
+	}
 }
 exports.getCachedData = getCachedData;
 
@@ -134,12 +138,16 @@ var writeCache = function(work, callback){
 		memLock[work.id] = 5;
 
 		// create dir if not exist
-		fs.exists(directory, function(exist){
-			if(!exist){
-				fs.mkdirSync(directory);
-			}
-			writeCacheFiles();
-		});	
+		try {
+			fs.exists(directory, function(exist){
+				if(!exist){
+					fs.mkdirSync(directory);
+				}
+				writeCacheFiles();
+			});
+		} catch(err){
+			console.log(err);
+		}	
 	} else {
 		callback(work);
 	}
