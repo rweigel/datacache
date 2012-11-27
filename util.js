@@ -1,7 +1,8 @@
 var fs = require("fs"),
 	crypto = require("crypto"),
 	moment = require("moment"),
-	request = require("request");
+	request = require("request"),
+	mkdirp = require("mkdirp");
 
 var logger = require("./logger.js");
 
@@ -138,16 +139,18 @@ var writeCache = function(work, callback){
 		memLock[work.id] = 5;
 
 		// create dir if not exist
-		try {
-			fs.exists(directory, function(exist){
-				if(!exist){
-					fs.mkdirSync(directory);
-				}
-				writeCacheFiles();
-			});
-		} catch(err){
-			console.log(err);
-		}	
+		fs.exists(directory, function(exist){
+			if(!exist){
+				mkdirp(directory, funciton(err){
+					if(err){
+						console.log(err);
+					} else {
+						writeCacheFiles();
+					}
+				});
+			}
+			writeCacheFiles();
+		});
 	} else {
 		callback(work);
 	}
