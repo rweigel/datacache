@@ -141,7 +141,7 @@ var writeCache = function(work, callback){
 		// create dir if not exist
 		fs.exists(directory, function(exist){
 			if(!exist){
-				mkdirp(directory, funciton(err){
+				mkdirp(directory, function(err){
 					if(err){
 						console.log(err);
 					} else {
