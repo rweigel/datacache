@@ -98,7 +98,7 @@ exports.isCached = isCached;
 function getCachedData(work, callback){
 	try{
 		fs.readFile(getCachePath(work) + ".data", "utf8", function(err, data){
-			if(err) callback(err);
+			if(err) return callback(err);
 			work.data = data;
 			work.dataJson = work.plugin.dataToJson(data);
 			work.dataMd5 = exports.md5(data);
