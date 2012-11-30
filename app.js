@@ -84,6 +84,9 @@ app.post("/syncsubmit", function(req, res){
 })
 
 app.get("/tsds_fe", function(req, res){
+	if(!req.query.url){
+		return res.send(400, "Please specify url");
+	}
 	var options = parseOptions(req);
 	scheduler.addURL(req.query.url, options, function(work){
 		if(options.type==="json"){
