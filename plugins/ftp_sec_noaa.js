@@ -5,9 +5,9 @@ var FtpClient  = require("ftp"),
 exports.name = "noaa";
 
 exports.match = function(url){
-	console.log(url);
-	console.log(typeof url);
-	return url.split("/")[2].toLowerCase()==="ftp.sec.noaa.gov";
+    //console.log(url);
+    //console.log(typeof url);
+    return url.split("/")[2].toLowerCase()==="ftp.sec.noaa.gov";
 }
 
 exports.process = function(work, callback){
@@ -25,10 +25,11 @@ exports.process = function(work, callback){
 						}
 						buff+=data.toString();
 					})
+					    .on("error", function(e){work.error=e;callback(true, work);conn.end();})
 					.on("end", function(){
 						work.body = buff;
 						work.data = work.extractData(work.body);
-						work.md5 =  util.md5(work.data);
+						work.dataMd5 =  util.md5(work.data);
 						work.header = "";
 						util.writeCache(work, function(){
 							callback(false, work);
