@@ -28,7 +28,7 @@ exports.preprocess = function(work, callback){
 };
 
 exports.extractData = function(data){
-	var re = /^([\d-]+)\s+([\d:\.]+)\s+([\d\.]+)\s+([+-\.\d]+)\s+([+-\.\d]+)\s+([+-\.\d]+)$/;
+    	var re = /^([\d-]+)\s+([\d:\.]+)\s.*/;
 	return data.toString()
 			.split("\n")
 			.filter(function(line){
@@ -61,15 +61,20 @@ exports.extractMetaJson = function(body){
 				.split(/\r?\n/)
 				.splice(57, 2)
 				.join("\n");
+	console.log(meta);
 	return exports.metaToJson(meta);
 
 }
 
 exports.metaToJson = function(meta){
-	return meta.split(/\r?\n/)
+    var metaJson = meta.split(/\r?\n/)
 			.map(function(d){
 					return d.split(/\s+/);
-				});;
+				});
+    metaJson[0].unshift('Date');
+    metaJson[0][1] = "Time";
+    metaJson[1].unshift('');
+	return metaJson;
 }
 
 exports.extractRem = function(body){
