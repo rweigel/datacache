@@ -1,0 +1,17 @@
+body {
+    padding-top: 60px;
+    padding-bottom: 40px;
+}
+textarea {
+    width: 90%;
+}
+input {
+    width: 40px;
+    margin: 0 0 9px;
+}
+div.log {
+    padding-bottom: 0.5em;
+    margin-bottom: 0.5em;
+    border-bottom: dotted 1px #ccc;
+}
+
