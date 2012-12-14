@@ -1,5 +1,6 @@
-http://supermag.uib.no/cgi-bin/cgiwrap.cgi?command=../script/download.mag&cli=wei+19800101+00%3A00+24%3A00+-s+BRW+-ncol+ff333333+-smlcol+ff666666+-smucol+ff999999+-index+-imfgsm+-ymin+-800+-ymax+200...
+http://supermag.jhuapl.edu/script/download.mag?cli=weigel+19800101+00%3A00+24%3A00+-s+CMO+-delta%20none+-baseline+all+-imfgsm
 
-http://supermag.uib.no/cgi-bin/cgiwrap.cgi?command=../script/download.mag&cli=wei+19800102+00%3A00+24%3A00+-s+BRW+-ncol+ff333333+-smlcol+ff666666+-smucol+ff999999+-index+-imfgsm+-ymin+-800+-ymax+200...
+http://supermag.jhuapl.edu/script/download.mag?cli=weigel+19800102+00%3A00+24%3A00+-s+CMO+-delta%20none+-baseline+all+-imfgsm
 
-http://supermag.uib.no/cgi-bin/cgiwrap.cgi?command=../script/download.mag&cli=wei+19800103+00%3A00+24%3A00+-s+BRW+-ncol+ff333333+-smlcol+ff666666+-smucol+ff999999+-index+-imfgsm+-ymin+-800+-ymax+200...
+http://supermag.jhuapl.edu/script/download.mag?cli=weigel+19800103+00%3A00+24%3A00+-s+CMO+-delta%20none+-baseline+all+-imfgsm
+
