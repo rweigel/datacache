@@ -32,6 +32,7 @@ function log(type, work){
 				url: work.url,
 				urlMd5: work.urlMd5,
 				dataMd5: work.dataMd5,
+				dataLength: work.dataLength,
 				isFromCache: work.isFromCache
 			} 
 			: false
