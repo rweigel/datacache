@@ -107,8 +107,8 @@ function work2result(work){
 	// console.log(typeof work.options.includeData, work.options.includeData, work.options);
 	// console.log("###", work.options.includeData === "true")
 	for(var key in work){
-	    console.log(key);
-		if(key!== "data" && key!== "datax" && key!=="dataJson" && key !== "meta" && key!== "metaJson" && key!=="body" ){
+	    //console.log(key);
+		if(key!== "data" && key!== "datax" && key!=="dataJson" && key !== "meta" && key!== "metaJson" && key!=="body" && key!=="md5" ){
 			ret[key] = work[key];
 		}
 		if(work.options.includeData === "true"){
@@ -145,6 +145,7 @@ function newWork(url, options, callback){
 		url : url,
 		options : options ? options : {},
 		dataMd5 : "",
+		dataLength : -1,
 		urlMd5 : util.md5(url),
 		data : "",
 		header : "",
