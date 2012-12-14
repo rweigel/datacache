@@ -102,6 +102,7 @@ function getCachedData(work, callback){
 			work.data = data;
 			work.dataJson = work.plugin.dataToJson(data);
 			work.dataMd5 = exports.md5(data);
+			work.dataLength = data.length;
 			fs.readFile(getCachePath(work) + ".meta", "utf8", function(err, data){
 				work.meta = data;
 				work.metaJson = work.plugin.metaToJson(data);
@@ -164,7 +165,7 @@ var writeCache = function(work, callback){
 		fs.writeFile(filename+".out", work.body, finish);
 		fs.writeFile(filename+".md5", work.md5, finish);
 		fs.appendFile(filename+".log", 
-			formatTime(work.createTime) + "\t"+work.time+"\t"+work.md5+"\n",
+			formatTime(work.createTime) + "\t" + work.body.length + "\t" + work.data.length + "\n",
 			finish
 		);
 	}
