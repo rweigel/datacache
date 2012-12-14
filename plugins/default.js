@@ -22,8 +22,8 @@ exports.process = function(work, callback){
 			work.dataJson = work.extractDataJson(work.body);
 			work.datax = work.extractRem(work.body);
 			work.meta = work.extractMeta(work.body);
+			work.dataMd5 = util.md5(work.data);
 			work.metaJson = work.extractMetaJson(work.body);
-			work.md5 =  util.md5(work.data);
 			work.header = response.headers;
 			util.writeCache(work, function(){
 				callback(false, work);
