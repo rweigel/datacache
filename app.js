@@ -4,11 +4,13 @@ var request = require("request"),
 	express = require('express'),
 	app = express(),
 	server = require("http").createServer(app),
-	sio = require("socket.io").listen(server),
+	io = require("socket.io"),
+	sio = io.listen(server),
 	crypto = require("crypto"),
 	fs = require("fs"),
 	hogan = require("hogan.js"),
 	moment = require("moment");
+
 
 var scheduler = require("./scheduler.js");
 var util = require("./util.js");
@@ -54,19 +56,19 @@ app.get("/live", function(req,res){
 	})
 })
 
+
+app.post("/submit", function(req, res){
+	var options = parseOptions(req);
+	var source = parseSource(req);
+	scheduler.addURLs(source, options);
+	res.send(200);
+})
+
 app.get("/wait", function(req,res){
 	res.contentType("html");
 	fs.readFile(__dirname+"/wait.htm", "utf8", function(err, data){
 		res.send(data);
 	    })
-})
-
-
-app.get("/syncsubmit", function(req,res){
-	res.contentType("html");
-	fs.readFile(__dirname+"/syncsubmit.html", "utf8", function(err, data){
-		res.send(data);
-	})
 })
 
 app.post("/syncsubmit", function(req, res){
@@ -83,39 +85,21 @@ app.post("/syncsubmit", function(req, res){
 	});
 })
 
-app.get("/tsds_fe", function(req, res){
-	if(!req.query.url){
-		return res.send(400, "Please specify url");
-	}
+app.get("/syncsubmit", function(req, res){
+
 	var options = parseOptions(req);
-	scheduler.addURL(req.query.url, options, function(work){
-		if(options.type==="json"){
-			return res.send(work);
-		}
-		// res.redirect("/cache/"+work.url.split("/")[2]+"/"+work.urlMd5+".out");
-		var filePath = __dirname+"/cache/"+work.url.split("/")[2]+"/"+work.urlMd5;
-		if(options.type==="data"){
-			filePath+=".data";
-		} else { // default to options.type = "repsonse"
-			filePath+=".out";
-		}
-		fs.readFile(filePath, function(err, data){
-			if(err){
-				return res.send(404);
-			} else{
-				return res.send(data);
-			}
-		})
+	// console.log(options);
+	var source = parseSource(req);
+	// console.log(source, source===[]);
+	if(source.length===0){
+		return res.send(400, "One URL must be provided.");
+	}
+	var results = [];
+	scheduler.addURLs(source, options, function(results){
+		res.send(results);
 	});
 })
 
-
-app.post("/submit", function(req, res){
-	var options = parseOptions(req);
-	var source = parseSource(req);
-	scheduler.addURLs(source, options);
-	res.send(200);
-})
 
 app.get("/api/plugins", function(req, res){
 	res.send(scheduler.plugins.map(function(p){
@@ -166,7 +150,13 @@ sio.sockets.on("connection", function(socket){
 	})
 })
 sio.set("log level", 1);
+
+// Need if running app behind apache server that does not support
+// websockets.
+sio.set('transports', ['xhr-polling']);
+
 logger.bindClientList(clients);
+
 
 function parseOptions(req){
 	var options = {};
@@ -186,17 +176,23 @@ function parseOptions(req){
 			options.dir = options.dir+'/';
 		}
 	}
-	console.log("###", options);
+	//console.log("###", options);
 	return options;
 }
 
 function parseSource(req){
-	var source = req.body.source
-			.trim()
-			.replace("\r", "")
-			.split(/[\r\n]+/)
-			.filter(function(line){
-				return line.trim()!="";
-			});
+    var source = req.body.source || req.query.source;
+
+    if (!source) 
+	return "";
+
+    source = source
+	.trim()
+	.replace("\r", "")
+	.split(/[\r\n]+/)
+	.filter(function(line){
+		return line.trim()!="";
+	    });
+
 	return source;
 }
