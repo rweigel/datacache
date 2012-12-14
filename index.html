@@ -21,7 +21,7 @@
           <li class="active"><a href="live">Live</a></li>
           <li><a href="wait">Wait</a></li>
           <li><a href="/cache">Cache</a></li>
-          <li><a href="https://github.com/weiribao/tsds_fe">Source</a></li>
+          <li><a href="https://github.com/rweigel/datacache">Source</a></li>
           <li><a href="log">Log</a></li>
         </ul>
       </div><!--/.nav-collapse -->
@@ -31,65 +31,61 @@
 <div class="container">
   <!-- Main hero unit for a primary marketing message or call to action -->
 	<div class="row">
-		<div class="span6">
-<!-- 			<div class="row">
-				<h2>System parameters</h2>
-				<form id="paramsForm" action="/api/setParams" method="post">
-					<p>
-						Concurrency(1-1000): <input type="text" name="concurrency" size="3" value="1000"/> &nbsp; &nbsp; &nbsp;
-						Max # of tries: <input type="text" name="tries" size="3" value="3"/> &nbsp; &nbsp; &nbsp;
-						Timeout: <input type="text" name="timeout" size="3" value="50000"/> &nbsp; &nbsp; &nbsp;
-						<input type='submit' value="Set"/> 
-					</p>
-				</form>
-			</div> -->
-			<h2>Submit URLs</h2>
-			<form id="urlForm" action="submit" method="post">
-				<p>Presets: <span id="presets"></span>
-				</p>
-				<p>
-					<input type='checkbox' name='forceUpdate' value='true' > Update <a href='cache/'>cache</a> &nbsp; 
-					<input type='checkbox' name='acceptGzip' value='true' > accept-encoding: gzip, compress</input> 
-				</p>
-				<p>
-					<textarea id='urls' rows='30' cols='100' name='source'></textarea>
-				</p>
-				<p>
-					<input type='submit'/>
-				</p>
-			</form>	
-		</div>
 
-		<div class="span6">	
-			<div class="row">
-				<h2>Log:</h2>
-				<div id="result" ng-controller="LogCtrl">
-					<a href="" ng-click="clear()"> Clear </a>
-					<input type="checkbox" ng-model="pendingOnly"> Show pending tasks only	
-					<div class="log" ng-repeat="log in showLogs()">
-						{{log.type}} : {{log.work.url}}<br>
+    <div class="span6">
+      <h2>Submit URLs</h2>
+      <form id="urlForm" action="syncsubmit" method="post">
+	<p>
+	  Presets: | <span id="presets"></span>
+	</p>
+	<p>
+	  <input type='checkbox' name='forceUpdate' value='true' > Update <a href='cache'>cache</a> &nbsp; 
+	  <input type='checkbox' name='acceptGzip' value='true' > accept-encoding: gzip, compress</input> 
+	  <input type='checkbox' name='keepDiffs' value='true' > keep diffs</input> 
+	  <br/>
+	  <input type='checkbox' name='includeData' value='true' > include data in reponse</input>
+	  <input type='checkbox' name='includeMeta' value='true' > include metadata in reponse</input>
+	  <input type='checkbox' name='max' value='true' > max # of requests to submit</input>
+	</p>
+	<p>
+	  <div>Cache subdir:</div>
+	  <input type='text' name='dir' style="width: 30em;"/>
+	  <textarea id='urls' rows='30' cols='100' name='source'></textarea>
+	</p>
+	<p>
+	  <input type='submit'/> &nbsp; &nbsp; &nbsp;
+	</p>
+      </form>	
+    </div>
 
-						<div ng-show="log.work.isFromCache"><font color="orange">Found in cache.</font></div>
-						<div ng-show="log.type=='finish'"> 
-							<div ng-show="!log.work.isFromCache">
-								Time: <font color="green">{{log.work.time}}ms</font>
-							</div>
-							data md5: {{log.work.dataMd5}}<br>
-							url md5: {{log.work.urlMd5}}<br>
-							File: <a target="_blank" href="{{cacheUrl(log)+'.data'}}">data</a> 
-							| <a target="_blank" href="{{cacheUrl(log)+'.out'}}"> response </a>  
-							| <a target="_blank" href="{{cacheUrl(log)+'.header'}}"> header </a> 
-							| <a target="_blank" href="{{cacheUrl(log)+'.log'}}"> log </a>
-						</div>
-	
-					</div>
-				</div>
-			</div>
-			
-		</div>
-	
+    <div class="span6">	
+      <div class="row">
+	<h2>Log:</h2>
+	<div id="result" ng-controller="LogCtrl">
+	  <a href="" ng-click="clear()"> Clear </a>
+	  <input type="checkbox" ng-model="pendingOnly"> Show pending tasks only	
+	  <div class="log" ng-repeat="log in showLogs()">
+	    {{log.type}} : {{log.work.url}}<br>
+	    
+	    <div ng-show="log.work.isFromCache"><font color="orange">Found in cache.</font></div>
+	    <div ng-show="log.type=='finish'"> 
+	      <div ng-show="!log.work.isFromCache">
+		Time: <font color="green">{{log.work.time}}ms</font>
+	      </div>
+	      data length: {{log.work.dataLength}}<br>
+	      data md5: {{log.work.dataMd5}}<br>
+	      url md5: {{log.work.urlMd5}}<br>
+	      File: <a target="_blank" href="{{cacheUrl(log)+'.data'}}">data</a> 
+	      | <a target="_blank" href="{{cacheUrl(log)+'.out'}}"> response </a>  
+	      | <a target="_blank" href="{{cacheUrl(log)+'.header'}}"> header </a> 
+	      | <a target="_blank" href="{{cacheUrl(log)+'.log'}}"> log </a>
+	    </div>
+	    
+	  </div>
 	</div>
-
+      </div>
+      
+    </div>
 
     <hr>
 
@@ -114,12 +110,17 @@ $(document).ready(function(){
 				})
 				.html(d.name);
 			$("#presets").append(a);
-			$("#presets").append("&nbsp;");
+			$("#presets").append("&nbsp;|&nbsp;");
 		})
 	})
 })
 
-var socket = io.connect();
+// TODO: Determine which one to use based on URL
+//var socket = io.connect('http://aurora.gmu.edu:8000/');
+
+var socket = io.connect('http://datacache.org/',{resource: "dc/socket.io"});
+//var socket = io.connect('',{resource: "dc/socket.io"});
+
 // socket.on("log", function(data){
 // 	var entry = $("<div/>", {class: "log"});
 // 	entry.append(data.msg);
