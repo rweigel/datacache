@@ -4,7 +4,7 @@
 #
 
 PORT=8000
-APP=/home/weigel/git/datacache/app.js
+APP=/usr/local/datacache/app.js
 NODE=/usr/bin/nodejs
 LOG=/var/log/datacache
 
@@ -15,13 +15,13 @@ case $1 in
 	        sudo -u www-data $NODE $APP $PORT -id 1 >> $LOG/datacache.log 2>&1 &
 	;;
 	stop)
-	        pid=`pgrep -f "$APP -id 1"`
+	        pid=`pgrep -f "$NODE $APP $PORT -id 1"`
 	        sudo kill -9 $pid
 	;;
 	restart)
-	        pid=`pgrep -f "$APP $PORT -id 1"`
+	        pid=`pgrep -f "$NODE $APP $PORT -id 1"`
 	        sudo kill -9 $pid
-	        /etc/inid.d/datacache
+	        /etc/init.d/datacache
 	;;
 	*)
 		echo "Usage: /etc/init.d/datacache start|stop|restart"
