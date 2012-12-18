@@ -137,7 +137,7 @@ var writeCache = function(work, callback){
 		header.push(key + " : " + work.header[key]);
 	}
 	if(!memLock[work.id]) {
-		// if memLock[result.url] is undefine or 0, no writting is on-going
+		// if memLock[result.url] is undefine or 0, no writing is on-going
 		memLock[work.id] = 5;
 
 		// create dir if not exist
@@ -158,16 +158,27 @@ var writeCache = function(work, callback){
 	}
 
 	function writeCacheFiles(){
-		fs.writeFile(filename+".data", work.data, finish);
-		fs.writeFile(filename+".meta", work.meta, finish);
-		fs.writeFile(filename+".datax", work.datax, finish);
-		fs.writeFile(filename+".header", header.join("\n"), finish);
-		fs.writeFile(filename+".out", work.body, finish);
-		fs.writeFile(filename+".md5", work.md5, finish);
-		fs.appendFile(filename+".log", 
-			formatTime(work.createTime) + "\t" + work.body.length + "\t" + work.data.length + "\n",
-			finish
-		);
+
+	    fs.exists(filename+".data",
+		      function(exists) {
+			  if (exists) {
+			      dataMd5old = md5(fs.readFileSync(filename+".data"));
+			      if (work.dataMd5 != dataMd5old) {
+				  // If data file changed, rename all files to be urlMd5.dataMd5.*
+				  fs.renameSync(filename+".data"  ,filename+"."+dataMd5old+".data");
+				  fs.renameSync(filename+".meta"  ,filename+"."+dataMd5old+".meta");
+				  fs.renameSync(filename+".datax" ,filename+"."+dataMd5old+".datax");
+				  fs.renameSync(filename+".header",filename+"."+dataMd5old+".header");
+				  fs.renameSync(filename+".out"   ,filename+"."+dataMd5old+".out");
+			      }
+			  }
+			  fs.writeFile(filename+".data", work.data, finish);
+			  fs.writeFile(filename+".meta", work.meta, finish);
+			  fs.writeFile(filename+".datax", work.datax, finish);
+			  fs.writeFile(filename+".header", header.join("\n"), finish);
+			  fs.writeFile(filename+".out", work.body, finish);
+			  fs.appendFile(filename+".log", formatTime(work.createTime) + "\t" + work.body.length + "\t" + work.data.length + "\n", finish );
+		      })
 	}
 
 	function finish(err){
