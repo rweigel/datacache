@@ -159,6 +159,9 @@ var writeCache = function(work, callback){
 
 	function writeCacheFiles(){
 
+	    // If .data does not exist, create it.
+	    // If .data file exists and differs from new data, rename .data file.
+	    // If .data file exists and is same as new data, do nothing.
 	    fs.exists(filename+".data",
 		      function(exists) {
 			  if (exists) {
@@ -170,14 +173,24 @@ var writeCache = function(work, callback){
 				  fs.renameSync(filename+".datax" ,filename+"."+dataMd5old+".datax");
 				  fs.renameSync(filename+".header",filename+"."+dataMd5old+".header");
 				  fs.renameSync(filename+".out"   ,filename+"."+dataMd5old+".out");
+				  // Now write file
+				  fs.writeFile(filename+".data", work.data, finish);
+				  fs.writeFile(filename+".meta", work.meta, finish);
+				  fs.writeFile(filename+".datax", work.datax, finish);
+				  fs.writeFile(filename+".header", header.join("\n"), finish);
+				  fs.writeFile(filename+".out", work.body, finish);
+				  fs.appendFile(filename+".log", formatTime(work.createTime) + "\t" + work.body.length + "\t" + work.data.length + "\n", finish );
+			      } else {
+				  finish();finish();finish();finish();finish();
 			      }
+			  } else {
+			      fs.writeFile(filename+".data", work.data, finish);
+			      fs.writeFile(filename+".meta", work.meta, finish);
+			      fs.writeFile(filename+".datax", work.datax, finish);
+			      fs.writeFile(filename+".header", header.join("\n"), finish);
+			      fs.writeFile(filename+".out", work.body, finish);
+			      fs.appendFile(filename+".log", formatTime(work.createTime) + "\t" + work.body.length + "\t" + work.data.length + "\n", finish );
 			  }
-			  fs.writeFile(filename+".data", work.data, finish);
-			  fs.writeFile(filename+".meta", work.meta, finish);
-			  fs.writeFile(filename+".datax", work.datax, finish);
-			  fs.writeFile(filename+".header", header.join("\n"), finish);
-			  fs.writeFile(filename+".out", work.body, finish);
-			  fs.appendFile(filename+".log", formatTime(work.createTime) + "\t" + work.body.length + "\t" + work.data.length + "\n", finish );
 		      })
 	}
 
