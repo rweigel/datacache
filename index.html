@@ -41,11 +41,9 @@
 	<p>
 	  <input type='checkbox' name='forceUpdate' value='true' > Update <a href='cache'>cache</a> &nbsp; 
 	  <input type='checkbox' name='acceptGzip' value='true' > accept-encoding: gzip, compress</input> 
-	  <input type='checkbox' name='keepDiffs' value='true' > keep diffs</input> 
 	  <br/>
 	  <input type='checkbox' name='includeData' value='true' > include data in reponse</input>
 	  <input type='checkbox' name='includeMeta' value='true' > include metadata in reponse</input>
-	  <input type='checkbox' name='max' value='true' > max # of requests to submit</input>
 	</p>
 	<p>
 	  <div>Cache subdir:</div>
@@ -62,15 +60,17 @@
       <div class="row">
 	<h2>Log:</h2>
 	<div id="result" ng-controller="LogCtrl">
-	  <a href="" ng-click="clear()"> Clear </a>
-	  <input type="checkbox" ng-model="pendingOnly"> Show pending tasks only	
+	  |<a href="" ng-click="clear()"> Clear </a>|&nbsp;
+	  Show: <input type="checkbox" ng-model="pendingOnly"> unfinished 	
+	  <input type="checkbox" ng-model="finishedOnly"> finished |
+	  <hr/>
 	  <div class="log" ng-repeat="log in showLogs()">
 	    {{log.type}} : {{log.work.url}}<br>
 	    
 	    <div ng-show="log.work.isFromCache"><font color="orange">Found in cache.</font></div>
 	    <div ng-show="log.type=='finish'"> 
 	      <div ng-show="!log.work.isFromCache">
-		Time: <font color="green">{{log.work.time}}ms</font>
+		Time: <font color="green">{{log.work.time}} ms</font>
 	      </div>
 	      data length: {{log.work.dataLength}}<br>
 	      data md5: {{log.work.dataMd5}}<br>
@@ -146,8 +146,8 @@ function LogCtrl($scope){
 	$scope.logs = [];
 	$scope.pendingLogs = [];
 	$scope.clear = function(){
-		$scope.pendingLogs = [];
 		$scope.logs = [];
+		$scope.pendingLogs = [];
 	}
 	$scope.cacheUrl = function(log){
 		return "/cache/"+log.work.url.split("/")[2]+"/"+log.work.urlMd5;

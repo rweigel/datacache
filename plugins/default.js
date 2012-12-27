@@ -19,10 +19,10 @@ exports.process = function(work, callback){
 		} else {
 			work.body = body || "";
 			work.data = work.extractData(work.body);
+			work.dataMd5 = util.md5(work.data);
 			work.dataJson = work.extractDataJson(work.body);
 			work.datax = work.extractRem(work.body);
 			work.meta = work.extractMeta(work.body);
-			work.dataMd5 = util.md5(work.data);
 			work.metaJson = work.extractMetaJson(work.body);
 			work.header = response.headers;
 			util.writeCache(work, function(){
@@ -30,11 +30,17 @@ exports.process = function(work, callback){
 			});
 		}
 	})
-	.on("data", function(data){
-		if(!work.responseTime) {
-			work.responseTime = new Date();
+	.on("end", function(data){
+		if(!work.getEndTime) {
+		    work.getEndTime = new Date();
 		}
-	});
+	})
+	.on("data", function(data){
+		if(!work.getFirstChunkTime) {
+		    work.getFirstChunkTime = new Date();
+		}
+	})
+
 };
 
 exports.extractData = function(body){
@@ -60,7 +66,6 @@ exports.extractMetaJson = function(body){
 exports.metaToJson = function(meta){
 	return {};
 }
-
 
 exports.extractRem = function(body){
 	return "";

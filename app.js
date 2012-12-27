@@ -36,6 +36,8 @@ app.use(function(req, res, next){
 })
 app.use("/cache", express.static(__dirname + "/cache"));
 app.use("/cache", express.directory(__dirname+"/cache"));
+app.use("/demo", express.static(__dirname + "/demo"));
+app.use("/demo", express.directory(__dirname+"/demo"));
 // app.use(express.errorHandler({ showStack: true, dumpExceptions: true }));
 
 app.get('/', function(req, res){
@@ -101,7 +103,7 @@ app.get("/syncsubmit", function(req, res){
 })
 
 
-app.get("/api/plugins", function(req, res){
+app.get("/plugins", function(req, res){
 	res.send(scheduler.plugins.map(function(p){
 		return p.name;
 	}));
@@ -154,6 +156,7 @@ sio.set("log level", 1);
 // Need if running app behind apache server that does not support
 // websockets.
 sio.set('transports', ['xhr-polling']);
+sio.set('polling duration',10);
 
 logger.bindClientList(clients);
 

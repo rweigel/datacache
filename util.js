@@ -10,53 +10,53 @@ var TIMEOUT = 20000;
 var MAXCONNECTION = 1000;
 
 function get(url, callback){
-	return request.get({uri: url, timeout : TIMEOUT, encoding:null,  pool: {maxSockets : MAXCONNECTION}}, callback);
+    return request.get({uri: url, timeout : TIMEOUT, encoding:null,  pool: {maxSockets : MAXCONNECTION}}, callback);
 }
 exports.get = get;
 
 function formatTime(date){
-	if(!date){
-		return;
-	}
-	return [date.getFullYear(),
-		pad(date.getMonth()+1,2),
-		pad(date.getDate(), 2),
-		pad(date.getHours(), 2),
-		pad(date.getMinutes(), 2),
-		pad(date.getSeconds(), 2),
-		pad(date.getMilliseconds(), 3)
-	].join(" ");
+    if(!date){
+	return;
+    }
+    return [date.getFullYear(),
+	    pad(date.getMonth()+1,2),
+	    pad(date.getDate(), 2),
+	    pad(date.getHours(), 2),
+	    pad(date.getMinutes(), 2),
+	    pad(date.getSeconds(), 2),
+	    pad(date.getMilliseconds(), 3)
+	    ].join(" ");
 
-	function pad(str, num){
-		// convert to string
-		str = str+"";
-		while(str.length < num) {
-			str = "0"+str;
-		}
-		return str;
+    function pad(str, num){
+	// convert to string
+	str = str+"";
+	while(str.length < num) {
+	    str = "0"+str;
 	}
+	return str;
+    }
 }
 exports.formatTime = formatTime;
 
 function md5(str){
-	if(!str) return "";
-	return crypto.createHash("md5").update(str).digest("hex");
+    if(!str) return "";
+    return crypto.createHash("md5").update(str).digest("hex");
 }
 exports.md5 = md5;
 
 function escapeHTML(s) {
     return s
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+	.replace(/&/g, '&amp;')
+	.replace(/</g, '&lt;')
+	.replace(/>/g, '&gt;');
 }
 exports.escapeHTML = escapeHTML;
 
 function unescapeHTML(s) {
     return s
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>');
+	.replace(/&amp;/g, '&')
+	.replace(/&lt;/g, '<')
+	.replace(/&gt;/g, '>');
 }
 exports.unescapeHTML = unescapeHTML;
 
@@ -65,54 +65,54 @@ var getId = (function(){
 	var timeStamp = "";
 
 	function pad(str, num){
-		// convert to string
-		str = str+"";
-		while(str.length < num) {
-			str = "0"+str;
-		}
-		return str;
+	    // convert to string
+	    str = str+"";
+	    while(str.length < num) {
+		str = "0"+str;
+	    }
+	    return str;
 	}
 
 	return function(){
-		var now = new Date();
-		var ret = "" + now.getFullYear() + pad(now.getMonth() + 1, 2) + pad(now.getDate(), 2);
-		if(ret!==timeStamp){
-			timeStamp = ret;
-			jobId = 1;
-		}
-		return ret+"-"+(jobId++);
+	    var now = new Date();
+	    var ret = "" + now.getFullYear() + pad(now.getMonth() + 1, 2) + pad(now.getDate(), 2);
+	    if(ret!==timeStamp){
+		timeStamp = ret;
+		jobId = 1;
+	    }
+	    return ret+"-"+(jobId++);
 	}
-})();
+    })();
+
 exports.getId = getId;
 
 var isCached = function isCached(work, callback){
-	fs.exists(getCachePath(work) + ".log", function(exist){
-		if(exist) {
-			work.foundInCache = true;
-		}
-		callback(work);
+    fs.exists(getCachePath(work) + ".log", function(exist){
+	    if(exist) {
+		work.foundInCache = true;
+	    }
+	    callback(work);
 	});
 }
 exports.isCached = isCached;
 
 function getCachedData(work, callback){
 	try{
-		fs.readFile(getCachePath(work) + ".data", "utf8", function(err, data){
-			if(err) return callback(err);
-			work.data = data;
-			work.dataJson = work.plugin.dataToJson(data);
-			work.dataMd5 = exports.md5(data);
-			work.dataLength = data.length;
-			fs.readFile(getCachePath(work) + ".meta", "utf8", function(err, data){
-				work.meta = data;
-				work.metaJson = work.plugin.metaToJson(data);
-				work.isFinished = true;
-				callback(err);
+	    fs.readFile(getCachePath(work) + ".data", "utf8", function(err, data){
+		    if(err) return callback(err);
+		    work.data = data;
+		    work.dataJson = work.plugin.dataToJson(data);
+		    work.dataMd5 = exports.md5(data);
+		    work.dataLength = data.length;
+		    fs.readFile(getCachePath(work) + ".meta", "utf8", function(err, data){
+			    work.meta = data;
+			    work.metaJson = work.plugin.metaToJson(data);
+			    work.isFinished = true;
+			    callback(err);
 			});
-
 		});
 	} catch(err){
-		console.log(err);
+	    console.log(err);
 	}
 }
 exports.getCachedData = getCachedData;
@@ -137,24 +137,25 @@ var writeCache = function(work, callback){
 		header.push(key + " : " + work.header[key]);
 	}
 	if(!memLock[work.id]) {
-		// if memLock[result.url] is undefine or 0, no writing is on-going
-		memLock[work.id] = 5;
-
-		// create dir if not exist
-		fs.exists(directory, function(exist){
-			if(!exist){
-				mkdirp(directory, function(err){
-					if(err){
-						console.log(err);
-					} else {
-						writeCacheFiles();
-					}
-				});
-			}
-			writeCacheFiles();
+	    // if memLock[result.url] is undefined or 0, no writing is on-going
+	    memLock[work.id] = 5;
+	    work.writeStartTime = new Date();
+	    //logger.log("writestart", work);
+	    // create dir if it does not exist
+	    fs.exists(directory, function(exist){
+		    if(!exist){
+			mkdirp(directory, function(err){
+				if(err){
+				    console.log(err);
+				} else {
+				    writeCacheFiles();
+				}
+			    });
+		    }
+		    writeCacheFiles();
 		});
 	} else {
-		callback(work);
+	    callback(work);
 	}
 
 	function writeCacheFiles(){
@@ -162,6 +163,16 @@ var writeCache = function(work, callback){
 	    // If .data does not exist, create it.
 	    // If .data file exists and differs from new data, rename .data file.
 	    // If .data file exists and is same as new data, do nothing.
+
+	    function writeFiles(){
+		fs.writeFile(filename+".data", work.data, finish);
+		fs.writeFile(filename+".meta", work.meta, finish);
+		fs.writeFile(filename+".datax", work.datax, finish);
+		fs.writeFile(filename+".header", header.join("\n"), finish);
+		fs.writeFile(filename+".out", work.body, finish);
+		fs.appendFile(filename+".log", formatTime(work.jobStartTime) + "\t" + work.body.length + "\t" + work.data.length + "\n", finish );
+	    }
+
 	    fs.exists(filename+".data",
 		      function(exists) {
 			  if (exists) {
@@ -173,51 +184,40 @@ var writeCache = function(work, callback){
 				  fs.renameSync(filename+".datax" ,filename+"."+dataMd5old+".datax");
 				  fs.renameSync(filename+".header",filename+"."+dataMd5old+".header");
 				  fs.renameSync(filename+".out"   ,filename+"."+dataMd5old+".out");
-				  // Now write file
-				  fs.writeFile(filename+".data", work.data, finish);
-				  fs.writeFile(filename+".meta", work.meta, finish);
-				  fs.writeFile(filename+".datax", work.datax, finish);
-				  fs.writeFile(filename+".header", header.join("\n"), finish);
-				  fs.writeFile(filename+".out", work.body, finish);
-				  fs.appendFile(filename+".log", formatTime(work.createTime) + "\t" + work.body.length + "\t" + work.data.length + "\n", finish );
+				  writeFiles();
 			      } else {
 				  finish();finish();finish();finish();finish();
 			      }
 			  } else {
-			      fs.writeFile(filename+".data", work.data, finish);
-			      fs.writeFile(filename+".meta", work.meta, finish);
-			      fs.writeFile(filename+".datax", work.datax, finish);
-			      fs.writeFile(filename+".header", header.join("\n"), finish);
-			      fs.writeFile(filename+".out", work.body, finish);
-			      fs.appendFile(filename+".log", formatTime(work.createTime) + "\t" + work.body.length + "\t" + work.data.length + "\n", finish );
+			      writeFiles();
 			  }
-		      })
+		      });
+
 	}
 
 	function finish(err){
-		if(err){
-			logger.log("error", work);
-			console.trace(err);
-		}
-		memLock[work.id]--;
-		if(memLock[work.id]==0){
-			work.writeFinishedTime = new Date();
-			logger.log("updated", work);
-			callback(work);
-		}
+	    if(err){
+		logger.log("error", work);
+		console.trace(err);
+	    }
+	    memLock[work.id]--;
+	    work.writeFinishedTime = new Date();
+	    if(memLock[work.id]==0){
+		callback(work);
+	    }
 	}
 }
 exports.writeCache = writeCache;
 
 Array.prototype.remove = function(el){
-	this.splice(this.indexOf(el), 1);
+    this.splice(this.indexOf(el), 1);
 }
 
 Array.prototype.find = function(match){
-	for(var i=0;i<this.length;i++){
-		if(match(this[i])){
-			return this[i];
-		}
+    for(var i=0;i<this.length;i++){
+	if(match(this[i])){
+	    return this[i];
 	}
-	return null;
+    }
+    return null;
 }

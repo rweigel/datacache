@@ -5,14 +5,15 @@ var util = require("./util.js");
 var clients = [];
 
 function bindClientList(list){
-	clients = list;
+    clients = list;
 }
 exports.bindClientList = bindClientList;
 
 function log(type, work){
-	//write to application.log
+
+	// write to application.log
 	var file = __dirname + "/application.log";
-	var entry = util.formatTime(new Date()) + "\t" + type + "\t" +work.url+"\n";
+	var entry = util.formatTime(new Date()) + "\t" + type + "\t" +work.url+"";
 	fs.appendFile(file, entry, function(err){
 		// console.log(err);
 	});
@@ -27,7 +28,7 @@ function log(type, work){
 			work: work ? {
 				id: work.id,
 				error: work.error,
-				time: work.time,
+				time: new Date() - work.jobStartTime,
 				tries: work.tries,
 				url: work.url,
 				urlMd5: work.urlMd5,

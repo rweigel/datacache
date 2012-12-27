@@ -1,0 +1,2 @@
+http://datacache.org/dc/demo/file1.txt
+http://datacache.org/dc/demo/file2.txt

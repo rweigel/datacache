@@ -62,22 +62,21 @@ exports.plugins = plugins;
 function run(){
 	while(runningWorks.length < params.concurrency && worksQueue.length>0) {
 		var work = worksQueue.shift();
-		work.requestSentTime = new Date();
 		runningWorks.push(work);
 		util.isCached(work, function(work){
 			if(!work.foundInCache || work.options.forceUpdate){
-				work.preprocess(function(err, work){
-					work.process(function(err, work){
-						work.responseFinshedTime = new Date();
-						work.time = (work.responseFinshedTime - work.requestSentTime);
-						work.postprocess(function(err, work){
-							workFinsih();
+			    work.preprocess(function(err, work){
+				    work.processStartTime = new Date();
+				    work.process(function(err, work){
+					    work.postprocess(function(err, work){
+						    work.processFinishedTime = new Date();
+						    workFinsih();
 						});
 					});
 				})
 			} else {
-				work.isFromCache = true;
-				workFinsih();
+			    work.isFromCache = true;
+			    workFinsih();
 			}
 
 			function workFinsih(){
@@ -98,7 +97,7 @@ function run(){
 		})		
 	}
 	if(worksQueue.length > 0) {
-		process.nextTick(run);
+	    process.nextTick(run);
 	}
 }
 
@@ -108,22 +107,31 @@ function work2result(work){
 	// console.log("###", work.options.includeData === "true")
 	for(var key in work){
 	    //console.log(key);
-		if(key!== "data" && key!== "datax" && key!=="dataJson" && key !== "meta" && key!== "metaJson" && key!=="body" && key!=="md5" ){
+		if(key!== "data" && key!=="dataJson" && key!== "datax" && key !== "meta" && key!== "metaJson" && key!=="body"){
 			ret[key] = work[key];
 		}
+
 		if(work.options.includeData === "true"){
+		    if (Object.keys(work["dataJson"]).length == 0) {
+			ret["data"] = work["data"];
+		    } else {
 			ret["dataJson"] = work["dataJson"];
-			if (!ret["dataJson"]) {
-			    ret["data"] = work["data"];
-			}
+		    }
 		}
+		
 		if(work.options.includeMeta === "true"){
-			ret["metaJson"] = work["metaJson"];
-			if (!ret["metaJson"]) {
+		    if (Object.keys(work["metaJson"]).length == 0) {
+			if (work["meta"].length == 0) {
+				ret["meta"] = work["datax"];
+			} else {
 			    ret["meta"] = work["meta"];
 			}
+		    } else {
+			ret["metaJson"] = work["metaJson"];
+		    }
 		}
 	}
+	ret.jobFinishedTime = new Date();
 	return ret;
 
 }
@@ -147,18 +155,21 @@ function newWork(url, options, callback){
 		dataMd5 : "",
 		dataLength : -1,
 		urlMd5 : util.md5(url),
+		time: 0,
 		data : "",
 		header : "",
-		createTime : new Date(),
-		time : 0,
 		isFromCache : false,
-		isCached : false,
 		isFinished : false,
+		foundInCache: false,
 		error : false,
-		requestSentTime : 0,
-		responseTime : 0,
-		responseFinshedTime : 0,
+		jobStartTime : new Date(),
+		processStartTime : 0,
+		getFirstChunkTime: 0,
+		getEndTime: 0,
+		writeStartTime : 0,
 		writeFinishedTime : 0,
+		processFinishedTime : 0,
+		jobFinishedTime : 0,
 		retries : 0,
 		callback : callback || function(){},
 		process : function(callback){

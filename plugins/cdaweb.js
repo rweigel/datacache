@@ -13,18 +13,29 @@ exports.match = function(url){
 exports.preprocess = function(work, callback){
 	util.get(work.url, function(error, response, body) {
 		if(error || response.statusCode!==200) {
-			callback(true, work);
+		    callback(true, work);
 		} else {
 			parser.parseString(body, function(err, res){
 				if(err || !res.FileDescription || !res.FileDescription.Name){
-					callback(true, work);
+				    callback(true, work);
 				} else{
-					work.url = res.FileDescription.Name;
-					callback(false, work);
+				    work.url = res.FileDescription.Name;
+				    callback(false, work);
 				}
 			});
 		}
 	})
+	.on("data", function(data){
+		if(!work.getFirstChunkTime) {
+		    work.getFirstChunkTime = new Date();
+		}
+	})
+	.on("end", function(data){
+		if(!work.getConnectTime) {
+		    work.getConnectTime = new Date();
+		}
+	});
+
 };
 
 exports.extractData = function(data){
@@ -61,7 +72,7 @@ exports.extractMetaJson = function(body){
 				.split(/\r?\n/)
 				.splice(57, 2)
 				.join("\n");
-	console.log(meta);
+	//console.log(meta);
 	return exports.metaToJson(meta);
 
 }

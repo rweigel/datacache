@@ -39,16 +39,20 @@
 	<p>
 	  <input type='checkbox' name='forceUpdate' value='true' > Update <a href='cache'>cache</a> &nbsp; 
 	  <input type='checkbox' name='acceptGzip' value='true' > accept-encoding: gzip, compress</input> 
-	  <input type='checkbox' name='keepDiffs' value='true' > keep diffs</input> 
 	  <br/>
-	  <input type='checkbox' name='includeData' value='true' > include data in reponse</input>
-	  <input type='checkbox' name='includeMeta' value='true' > include metadata in reponse</input>
-	  <input type='checkbox' name='max' value='true' > max # of requests to submit</input>
+	  <input type='checkbox' name='includeData' value='true' > include data in repsonse</input>
+	  <input type='checkbox' name='includeMeta' value='true' > include metadata in response</input>
 	</p>
 	<p>
 	  <div>Cache subdir:</div>
 	  <input type='text' name='dir' style="width: 30em;"/>
-	  <textarea id='urls' rows='30' cols='100' name='source'></textarea>
+	  <div>Plug-in:</div>
+	  <input type='text' name='plugin' style="width: 30em;"/>
+	  <br/>
+	  <input type='submit'/> 
+	</p>
+	<p>
+	  <textarea id='urls' rows='10' cols='100' name='source'></textarea>
 	</p>
 	<p>
 	  <input type='submit'/> &nbsp; &nbsp; &nbsp;
@@ -64,8 +68,8 @@
 </div>
 
 <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.2/angular.min.js"></script>
-<script type="text/javascript" src="asset/bootstrap.min.js"></script>
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+<script type="text/javascript" src="asset/bootstrap.min.js"></script>
 <script type="text/javascript" src="asset/jquery.form.js"></script>
 <script type="text/javascript">
 $(document).ready(function(){

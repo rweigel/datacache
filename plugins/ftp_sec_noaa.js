@@ -21,7 +21,7 @@ exports.process = function(work, callback){
 					var buff = "";
 					stream.on("data", function(data){
 						if(!work.responseTime) {
-							work.responseTime = new Date();
+						    //work.responseTime = new Date();
 						}
 						buff+=data.toString();
 					})
