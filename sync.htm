@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html ng-app>
+<head>
+  <title>Data Cache</title>
+  <link rel="stylesheet" type="text/css" href="asset/bootstrap.css">
+  <link rel="stylesheet" type="text/css" href="asset/main.css">
+  <link rel="stylesheet" type="text/css" href="asset/bootstrap-responsive.css">
+</head>
+<body>
+  <div class="navbar navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container">
+      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </a>
+      <a class="brand" href="http://datacache.org/">DataCache</a>
+      <div class="nav-collapse">
+        <ul class="nav">
+          <li><a href="async">Async</a></li>
+          <li class="active"><a href="sync">Sync</a></li>
+          <li><a href="/cache">Cache</a></li>
+          <li><a href="https://github.com/rweigel/datacache">Source</a></li>
+          <li><a href="log">Log</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="container">
+  <div class="row">
+    <div class="span6">
+      <h2>Submit URLs</h2>
+      <form id="urlForm" action="sync" method="post">
+	<p>
+	  Presets: | <span id="presets"></span>
+	</p>
+	<p>
+	  <input type='checkbox' name='forceUpdate' value='true' /> Update <a href='cache'>cache</a>
+	  <input type='checkbox' style='display:none;' name='return' value='json' ></input>&nbsp;
+	  <input type='checkbox' name='return' value='data' > return data</input>&nbsp;
+	  <input type='checkbox' name='acceptGzip' value='true' > accept-encoding: gzip</input> 
+	  <br/>
+	  <input type='checkbox' name='includeData' value='true' > include data in repsonse</input>
+	  <input type='checkbox' name='includeMeta' value='true' > include metadata in response</input>
+
+	</p>
+	<p>
+	  <div>Cache subdir:</div>
+	  <input type='text' name='dir' style="width: 30em;"/>
+	  <div>Plug-in:</div>
+	  <input type='text' name='plugin' style="width: 30em;"/>
+	  <br/>
+	  <input type='submit'/> 
+	</p>
+	<p>
+	  <textarea id='urls' rows='10' cols='100' name='source'></textarea>
+	</p>
+	<p>
+	  <input type='submit'/> &nbsp; &nbsp; &nbsp;
+	</p>
+      </form>	
+    </div>
+  </div>
+  
+    <hr>
+
+   <footer>
+   </footer>
+</div>
+
+<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.2/angular.min.js"></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+<script type="text/javascript" src="asset/bootstrap.min.js"></script>
+<script type="text/javascript" src="asset/jquery.form.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+	// $('#urlForm').ajaxForm();
+
+	$.getJSON("api/presets", function(data){
+		data.forEach(function(d){
+			var a = $("<a>")
+				.attr("style", "cursor:pointer")
+				.click(function(){
+					$("#urls").val(d.urls);
+				})
+				.html(d.name);
+			$("#presets").append(a);
+			$("#presets").append("&nbsp;|&nbsp;");
+		})
+	})
+})
+</script>
+</body>
+</html>
