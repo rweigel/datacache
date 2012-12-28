@@ -1,9 +1,9 @@
-var	xml2js = require('xml2js'),
-	parser = new xml2js.Parser();
+var	xml2js = require('xml2js');
+var parser = new xml2js.Parser();
 
 var util = require("../util.js");
 
-exports.name = "_httpdemo";
+exports.name = "demo";
 
 exports.match = function(url){
 	return url.split("/")[2].toLowerCase()==="datacache.org";
