@@ -45,5 +45,5 @@ exports.extractData = function(data){
 			.filter(function(line){
 				return line.search(re1)!=-1;
 			})
-			.join("\n");
+			.join("\n") + "\n";
 };

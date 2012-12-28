@@ -42,7 +42,7 @@ app.use("/demo", express.directory(__dirname+"/demo"));
 
 app.get('/', function(req, res){
 	res.contentType("html");
-	fs.readFile(__dirname+"/index.html", "utf8", function(err, data){
+	fs.readFile(__dirname+"/async.htm", "utf8", function(err, data){
 		res.send(data);
 	})
 })
@@ -51,56 +51,74 @@ app.get('/log', function(req, res){
 	res.send(fs.readFileSync(__dirname+"/application.log", "utf8"));
 })
 
-app.get("/live", function(req,res){
+app.get("/async", function(req,res){
 	res.contentType("html");
-	fs.readFile(__dirname+"/index.html", "utf8", function(err, data){
+	fs.readFile(__dirname+"/async.htm", "utf8", function(err, data){
 		res.send(data);
 	})
 })
-
-
-app.post("/submit", function(req, res){
+app.post("/async", function(req, res){
 	var options = parseOptions(req);
 	var source = parseSource(req);
 	scheduler.addURLs(source, options);
 	res.send(200);
 })
 
-app.get("/wait", function(req,res){
-	res.contentType("html");
-	fs.readFile(__dirname+"/wait.htm", "utf8", function(err, data){
-		res.send(data);
-	    })
-})
+app.get("/sync", function(req,res){
 
-app.post("/syncsubmit", function(req, res){
 	var options = parseOptions(req);
-	// console.log(options);
 	var source = parseSource(req);
-	// console.log(source, source===[]);
 	if(source.length===0){
-		return res.send(400, "At least one url must be provided.");
+	    res.contentType("html");
+	    fs
+		.readFile(__dirname+"/sync.htm", "utf8",
+			  function(err, data){res.send(data);});
+	    return;
 	}
+
 	var results = [];
 	scheduler.addURLs(source, options, function(results){
 		res.send(results);
 	});
+
 })
-
-app.get("/syncsubmit", function(req, res){
-
+app.post("/sync", function(req, res){
 	var options = parseOptions(req);
-	// console.log(options);
 	var source = parseSource(req);
-	// console.log(source, source===[]);
+	//console.log(source);
+	//console.log(options);
 	if(source.length===0){
-		return res.send(400, "One URL must be provided.");
+	    return res.send(400, "At least one URL must be provided.");
 	}
 	var results = [];
-	scheduler.addURLs(source, options, function(results){
-		res.send(results);
-	});
-})
+	scheduler.addURLs(source, options,function(results){
+		if (options.return === "json") {
+		    res.send(results);
+		}
+		if (options.return === "data") {
+		    function pushfile(j) {
+			//console.log(j);
+			fname = __dirname + results[j].dir + results[j]["urlMd5"] + ".data";		    
+			console.log(fname);
+			var fstream = fs.createReadStream(fname);
+			fstream.on('error',function(err){res.end(err);});
+			fstream.on('end',function(){
+				if (j < results.length-1) {
+				    console.log("Finished piping file #" + j + ": " + fname);
+				    j = j+1;
+				    pushfile(j);
+				} else {
+				    console.log("Finished piping file #" + j + ": " + fname);
+				    res.end();
+				}
+			    });
+			fstream.on('open', function() {fstream.pipe(res,{end:false});});
+		    }
+		    var j=0;
+		    pushfile(j);
+		}
+	    });
+    });
 
 
 app.get("/plugins", function(req, res){
@@ -163,23 +181,26 @@ logger.bindClientList(clients);
 
 function parseOptions(req){
 	var options = {};
-	
-	options.forceUpdate = req.body.forceUpdate || req.query.update==="true";
-	options.acceptGzip = req.body.acceptGzip || req.acceptGzip;
-	options.type = req.query.type || "response"; // valid values: "data", "response", "json"
-	options.includeData = req.query.includeData || req.body.includeData || "false";
-	options.includeMeta = req.query.includeMeta || req.body.includeMeta || "false";
+
+	options.forceUpdate = req.query.forceUpdate || req.body.forceUpdate || false
+	options.acceptGzip = req.query.acceptGzip || req.body.acceptGzip || false;
+	options.includeData = req.query.includeData || req.body.includeData || false;
+	options.includeMeta = req.query.includeMeta || req.body.includeMeta || false;
 	options.plugin = req.query.plugin || req.body.plugin || false;
+
 	options.dir = req.query.dir || req.body.dir || "/cache/";
-	if(options.dir){
-		if(options.dir[0]!=='/'){
-			options.dir = '/'+options.dir;
-		}
-		if(options.dir[options.dir.length-1]!=='/'){
-			options.dir = options.dir+'/';
-		}
+	if (options.dir){
+	    if (options.dir[0]!=='/'){
+		options.dir = '/'+options.dir;
+	    }
+	    if (options.dir[options.dir.length-1]!=='/'){
+		options.dir = options.dir+'/';
+	    }
 	}
-	//console.log("###", options);
+
+	// TODO: If response=data, stream concatentated data files.
+	options.return = req.body.return || req.query.return || "json";
+
 	return options;
 }
 

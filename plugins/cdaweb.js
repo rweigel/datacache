@@ -40,12 +40,16 @@ exports.preprocess = function(work, callback){
 
 exports.extractData = function(data){
     	var re = /^([\d-]+)\s+([\d:\.]+)\s.*/;
+	// Note the addition of a newline at the end of data. 
+	// If it is not added, streaming of multiple files will result
+	// in last line of first appearing on same line as first
+	// line of second file.
 	return data.toString()
 			.split("\n")
 			.filter(function(line){
 				return line.search(re)!=-1;
 			})
-			.join("\n");
+	.join("\n") + "\n";
 };
 
 exports.extractDataJson = function(body){
@@ -64,7 +68,7 @@ exports.extractMeta = function(body){
 	// console.log(body);
 	return body.toString().split(/\r?\n/)
 			.splice(56, 3)
-			.join("\n");
+	                .join("\n");
 }
 
 exports.extractMetaJson = function(body){

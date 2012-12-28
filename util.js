@@ -88,8 +88,9 @@ exports.getId = getId;
 
 var isCached = function isCached(work, callback){
     fs.exists(getCachePath(work) + ".log", function(exist){
-	    if(exist) {
+	    if (exist) {
 		work.foundInCache = true;
+		work.dir = getCacheDir(work,true);
 	    }
 	    callback(work);
 	});
@@ -97,7 +98,7 @@ var isCached = function isCached(work, callback){
 exports.isCached = isCached;
 
 function getCachedData(work, callback){
-	try{
+	try {
 	    fs.readFile(getCachePath(work) + ".data", "utf8", function(err, data){
 		    if(err) return callback(err);
 		    work.data = data;
@@ -120,12 +121,16 @@ exports.getCachedData = getCachedData;
 function getCachePath(work){
 	return getCacheDir(work) + work.urlMd5; 
 }
-function getCacheDir(work){
-	if(work.options.dir==="/cache/"){
-		return __dirname + work.options.dir + work.url.split("/")[2]+"/";
-	} else {
-		return __dirname + "/cache"+work.options.dir;
-	}
+function getCacheDir(work,relative){
+    prefix = __dirname;
+    if (arguments.length > 1 && relative) {
+	prefix = "";
+    }
+    if (work.options.dir==="/cache/"){
+	return prefix + work.options.dir + work.url.split("/")[2]+"/";
+    } else {
+	return prefix + "/cache"+work.options.dir;
+    }
 }
 
 var memLock = {};

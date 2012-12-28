@@ -11,7 +11,7 @@ exports.extractData = function(data){
 			.filter(function(line){
 				return line.search(re)!=-1;
 			})
-			.join("\n");;
+	.join("\n") + "\n";
 };
 
 exports.extractRem = function(data){

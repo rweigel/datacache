@@ -12,11 +12,15 @@ exports.match = function(url){
 exports.extractData = function(data){
     // Match lines that begin with this pattern
     var re = /^([\d-]+)\s+([\d:\.]+)\s.*/;
+    // Note the addition of a newline at the end of data. 
+    // If it is not added, streaming of multiple files will result
+    // in last line of first appearing on same line as first
+    // line of second file.
     return data
                .toString()
                .split("\n")
                .filter(function(line){return line.search(re)!=-1;})
-               .join("\n");
+               .join("\n") + "\n";
 };
 
 exports.extractDataJson = function(body){
