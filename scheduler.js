@@ -60,11 +60,13 @@ fs.readdir(__dirname+"/plugins", function(err, files){
 exports.plugins = plugins;
 
 function run(){
-	while(runningWorks.length < params.concurrency && worksQueue.length>0) {
+	while (runningWorks.length < params.concurrency && worksQueue.length>0) {
 		var work = worksQueue.shift();
 		runningWorks.push(work);
+		work.cacheCheckStartTime = new Date();
 		util.isCached(work, function(work){
-			if(!work.foundInCache || work.options.forceUpdate){
+			work.cacheCheckFinishedTime = new Date();
+			if (!work.foundInCache || work.options.forceUpdate){
 			    work.preprocess(function(err, work){
 				    work.processStartTime = new Date();
 				    work.process(function(err, work){
@@ -81,10 +83,10 @@ function run(){
 
 			function workFinsih(){
 				runningWorks.remove(work);
-				if(work.error && work.retries < params.maxTries){
+				if (work.error && work.retries < params.maxTries){
 					work.retries += 1;
 					worksQueue.push(work);
-				} else{
+				} else {
 					util.getCachedData(work, function(err){
 						exports.emit("finish", work);
 						logger.log("finish", work);
@@ -96,7 +98,7 @@ function run(){
 	
 		})		
 	}
-	if(worksQueue.length > 0) {
+	if (worksQueue.length > 0) {
 	    process.nextTick(run);
 	}
 }
@@ -153,7 +155,7 @@ function newWork(url, options, callback){
 		url : url,
 		options : options ? options : {},
 		dataMd5 : "",
-		dataLength : -1,
+		dataLength : -1, 
 		urlMd5 : util.md5(url),
 		time: 0,
 		data: "",
@@ -165,6 +167,8 @@ function newWork(url, options, callback){
 		error : false,
 		jobStartTime : new Date(),
 		processStartTime : 0,
+		cacheCheckStartTime : 0,
+		cacheFinishedStartTime : 0,
 		getFirstChunkTime: 0,
 		getEndTime: 0,
 		writeStartTime : 0,
