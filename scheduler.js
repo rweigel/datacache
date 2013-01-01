@@ -82,6 +82,7 @@ function run(){
 			}
 
 			function workFinsih(){
+				console.log(work.id);
 				work.finishStartTime = new Date();
 				runningWorks.remove(work);
 				if (work.error && work.retries < params.maxTries){
@@ -94,8 +95,7 @@ function run(){
 						work.callback(work2result(work));
 					})
 				}
-				work.finishFinishedTime = new Date();
-				
+				work.finishFinishedTime = new Date();				
 				run();
 			}
 	
