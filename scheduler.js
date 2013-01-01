@@ -135,7 +135,7 @@ function work2result(work){
 		    }
 		}
 	}
-	work.work2ResultFinishedTime = new Date();
+	ret.work2ResultFinishedTime = new Date();
 	ret.jobFinishedTime = new Date();
 	return ret;
 
