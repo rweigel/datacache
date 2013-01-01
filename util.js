@@ -99,21 +99,46 @@ exports.isCached = isCached;
 
 function getCachedData(work, callback){
 	try {
-		if (work.options.includeData || work.options.includeMeta) {
-		    fs.readFile(getCachePath(work) + ".data", "utf8", function(err, data){
-			    if(err) return callback(err);
+			var ext1 = ".meta";
+			var ext2 = ".data";
+			if (!work.options.includeData && !work.options.includeMeta) {
+				callback();
+				return;
+			}
+			if (work.options.includeData && !work.options.includeMeta) {
+				var ext1 = ".data";
+				var ext2 = "";
+			if (!work.options.includeData && work.options.includeMeta) {
+				var ext1 = ".meta";
+				var ext2 = "";
+			}
+			
+			function getData(data) {
 			    work.data = data;
 			    work.dataJson = work.plugin.dataToJson(data);
 			    work.dataMd5 = exports.md5(data);
-			    work.dataLength = data.length;
-			    fs.readFile(getCachePath(work) + ".meta", "utf8", function(err, data){
-				    work.meta = data;
-				    work.metaJson = work.plugin.metaToJson(data);
-				    work.isFinished = true;
-				    callback(err);
-				});
+			    work.dataLength = data.length;		
+			}
+			function getMeta(data) {
+				work.meta = data;
+				work.metaJson = work.plugin.metaToJson(data);
+			}
+			
+			fs.readFile(getCachePath(work) + ext1, "utf8", function (err, data) {
+			    if (err) return callback(err);
+			    if (ext1 === ".data") getData(data);
+			    if (ext1 === ".meta") getMeta(data);
+			    if (ext2 === "") {
+					work.isFinished = true;
+			    		callback(err);
+			    		return;
+			    	} else {
+			    		fs.readFile(getCachePath(work) + ext2, "utf8", function (err, data) {
+					    work.isFinished = true;
+					    callback(err);
+					});
+				}
 			});
-		}
 	} catch(err){
 	    console.log(err);
 	}
