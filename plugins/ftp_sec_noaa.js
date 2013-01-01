@@ -11,7 +11,6 @@ exports.match = function(url){
 }
 
 exports.process = function(work, callback){
-
 	var conn = new FtpClient({host: work.url.split("/")[2]});
 	conn.on("connect", function(){
 		conn.auth(function(err){
