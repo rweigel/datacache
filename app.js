@@ -11,6 +11,8 @@ var request = require("request"),
 	hogan = require("hogan.js"),
 	moment = require("moment");
 
+// Compress responses if accept-encoding allows it.
+app.use(express.compress());
 
 var scheduler = require("./scheduler.js");
 var util = require("./util.js");
@@ -183,7 +185,7 @@ function parseOptions(req){
 	var options = {};
 
 	options.forceUpdate = req.query.forceUpdate || req.body.forceUpdate || false
-	options.acceptGzip = req.query.acceptGzip || req.body.acceptGzip || false;
+	options.acceptGzip = req.query.acceptGzip || req.body.acceptGzip || true;
 	options.includeData = req.query.includeData || req.body.includeData || false;
 	options.includeMeta = req.query.includeMeta || req.body.includeMeta || false;
 	options.plugin = req.query.plugin || req.body.plugin || false;
