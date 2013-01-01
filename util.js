@@ -126,8 +126,8 @@ function getCachedData(work, callback){
 			
 			fs.readFile(getCachePath(work) + ext1, "utf8", function (err, data) {
 			    if (err) return callback(err);
-			    if (ext1 === ".data") getData(data);
-			    if (ext1 === ".meta") getMeta(data);
+			    if (ext1 === ".data") {getData(data);}
+			    if (ext1 === ".meta") {getMeta(data);}
 			    if (ext2 === "") {
 					work.isFinished = true;
 			    		callback(err);
@@ -140,7 +140,7 @@ function getCachedData(work, callback){
 				}
 			});
 	} catch(err){
-	    console.log(err);
+		console.log(err);
 	}
 }
 exports.getCachedData = getCachedData;
