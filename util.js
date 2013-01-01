@@ -97,7 +97,7 @@ var isCached = function isCached(work, callback){
 }
 exports.isCached = isCached;
 
-function getCachedData(work, callback){
+function getCachedData(work, callback) {
 	try {
 			var ext1 = ".meta";
 			var ext2 = ".data";
@@ -108,6 +108,7 @@ function getCachedData(work, callback){
 			if (work.options.includeData && !work.options.includeMeta) {
 				var ext1 = ".data";
 				var ext2 = "";
+			}
 			if (!work.options.includeData && work.options.includeMeta) {
 				var ext1 = ".meta";
 				var ext2 = "";
@@ -125,13 +126,12 @@ function getCachedData(work, callback){
 			}
 			
 			fs.readFile(getCachePath(work) + ext1, "utf8", function (err, data) {
-			    if (err) return callback(err);
+			    if (err) {return callback(err);}
 			    if (ext1 === ".data") {getData(data);}
 			    if (ext1 === ".meta") {getMeta(data);}
 			    if (ext2 === "") {
 					work.isFinished = true;
 			    		callback(err);
-			    		return;
 			    	} else {
 			    		fs.readFile(getCachePath(work) + ext2, "utf8", function (err, data) {
 					    work.isFinished = true;
@@ -139,7 +139,7 @@ function getCachedData(work, callback){
 					});
 				}
 			});
-	} catch(err){
+	} catch(err) {
 		console.log(err);
 	}
 }
