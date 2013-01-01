@@ -155,7 +155,7 @@ function newWork(url, options, callback){
 		url : url,
 		options : options ? options : {},
 		dataMd5 : "",
-		dataLength : -1, 
+		dataLength : -1,
 		urlMd5 : util.md5(url),
 		time: 0,
 		data: "",
