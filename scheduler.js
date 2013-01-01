@@ -104,6 +104,8 @@ function run(){
 }
 
 function work2result(work){
+	work.work2ResultStartTime = new Date();
+
 	var ret = {};
 	// console.log(typeof work.options.includeData, work.options.includeData, work.options);
 	// console.log("###", work.options.includeData === "true")
@@ -133,6 +135,7 @@ function work2result(work){
 		    }
 		}
 	}
+	work.work2ResultFinishedTime = new Date();
 	ret.jobFinishedTime = new Date();
 	return ret;
 
@@ -169,6 +172,8 @@ function newWork(url, options, callback){
 		processStartTime : 0,
 		cacheCheckStartTime : 0,
 		cacheCheckFinishedTime : 0,
+		work2ResultStartTime: 0,
+		work2ResultFinishedTime: 0,
 		getFirstChunkTime: 0,
 		getEndTime: 0,
 		writeStartTime : 0,
