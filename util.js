@@ -99,19 +99,21 @@ exports.isCached = isCached;
 
 function getCachedData(work, callback){
 	try {
-	    fs.readFile(getCachePath(work) + ".data", "utf8", function(err, data){
-		    if(err) return callback(err);
-		    work.data = data;
-		    work.dataJson = work.plugin.dataToJson(data);
-		    work.dataMd5 = exports.md5(data);
-		    work.dataLength = data.length;
-		    fs.readFile(getCachePath(work) + ".meta", "utf8", function(err, data){
-			    work.meta = data;
-			    work.metaJson = work.plugin.metaToJson(data);
-			    work.isFinished = true;
-			    callback(err);
+		if (work.options.includeData || work.options.includeMeta) {
+		    fs.readFile(getCachePath(work) + ".data", "utf8", function(err, data){
+			    if(err) return callback(err);
+			    work.data = data;
+			    work.dataJson = work.plugin.dataToJson(data);
+			    work.dataMd5 = exports.md5(data);
+			    work.dataLength = data.length;
+			    fs.readFile(getCachePath(work) + ".meta", "utf8", function(err, data){
+				    work.meta = data;
+				    work.metaJson = work.plugin.metaToJson(data);
+				    work.isFinished = true;
+				    callback(err);
+				});
 			});
-		});
+		}
 	} catch(err){
 	    console.log(err);
 	}

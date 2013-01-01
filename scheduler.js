@@ -82,7 +82,6 @@ function run(){
 			}
 
 			function workFinsih(){
-				console.log(work.id);
 				work.finishStartTime = new Date();
 				runningWorks.remove(work);
 				if (work.error && work.retries < params.maxTries){
@@ -120,9 +119,9 @@ function work2result(work){
 
 		if(work.options.includeData === "true"){
 		    if (Object.keys(work["dataJson"]).length == 0) {
-			ret["data"] = work["data"];
+				ret["data"] = work["data"];
 		    } else {
-			ret["dataJson"] = work["dataJson"];
+				ret["dataJson"] = work["dataJson"];
 		    }
 		}
 		
@@ -134,7 +133,7 @@ function work2result(work){
 			    ret["meta"] = work["meta"];
 			}
 		    } else {
-			ret["metaJson"] = work["metaJson"];
+				ret["metaJson"] = work["metaJson"];
 		    }
 		}
 	}
