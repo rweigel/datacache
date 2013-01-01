@@ -168,7 +168,7 @@ function newWork(url, options, callback){
 		jobStartTime : new Date(),
 		processStartTime : 0,
 		cacheCheckStartTime : 0,
-		cacheFinishedStartTime : 0,
+		cacheCheckFinishedTime : 0,
 		getFirstChunkTime: 0,
 		getEndTime: 0,
 		writeStartTime : 0,
