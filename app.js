@@ -116,8 +116,7 @@ app.post("/sync", function(req, res){
 			    });
 			fstream.on('open', function() {fstream.pipe(res,{end:false});});
 		    }
-		    var j=0;
-		    pushfile(j);
+		    pushfile(0);
 		}
 	    });
     });
