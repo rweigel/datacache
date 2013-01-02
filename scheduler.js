@@ -7,11 +7,9 @@ exports.setMaxListeners(1000);
 
 var logger = require("./logger.js");
 
-var MAXTRIES = 3;
 var CONCURRENCY = 20;
 
 var params = {
-	maxTries : MAXTRIES,
 	concurrency : CONCURRENCY
 }
 
@@ -60,7 +58,7 @@ fs.readdir(__dirname+"/plugins", function(err, files){
 exports.plugins = plugins;
 
 function run(){
-	while (runningWorks.length < params.concurrency && worksQueue.length>0) {
+	while (runningWorks.length < params.concurrency && worksQueue.length > 0) {
 		var work = worksQueue.shift();
 		runningWorks.push(work);
 		work.cacheCheckStartTime = new Date();
@@ -81,14 +79,14 @@ function run(){
 			    workFinsih();
 			}
 
-			function workFinsih(){
+			function workFinsih() {
 				work.finishStartTime = new Date();
 				runningWorks.remove(work);
-				if (work.error && work.retries < params.maxTries){
+				if (work.error && work.retries < work.options.maxTries){
 					work.retries += 1;
 					worksQueue.push(work);
 				} else {
-					util.getCachedData(work, function(err){
+					util.getCachedData(work, function (err) {
 						exports.emit("finish", work);
 						logger.log("finish", work);
 						work.callback(work2result(work));
@@ -166,6 +164,7 @@ function newWork(url, options, callback){
 		data: "",
 		header: "",
 		dir: "",
+		stats: {},
 		isFromCache : false,
 		isFinished : false,
 		foundInCache: false,
