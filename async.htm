@@ -5,88 +5,92 @@
   <link rel="stylesheet" type="text/css" href="asset/bootstrap.css">
   <link rel="stylesheet" type="text/css" href="asset/bootstrap-responsive.css">
   <link rel="stylesheet" type="text/css" href="asset/main.css">
+  <link rel="icon" type="image/ico" href="asset/favicon.ico"/>
 </head>
 <body>
   <div class="navbar navbar-fixed-top">
-  <div class="navbar-inner">
-    <div class="container">
-      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </a>
-      <a class="brand" href="http://datacache.org/">DataCache</a>
-      <div class="nav-collapse">
-	<ul class="nav">
-          <li class="active"><a href="async">Async</a></li>
-          <li><a href="sync">Sync</a></li>
-          <li><a href="/cache">Cache</a></li>
-          <li><a href="https://github.com/rweigel/datacache">Source</a></li>
-          <li><a href="log">Log</a></li>
-        </ul>
-      </div><!--/.nav-collapse -->
-    </div>
-  </div>
-</div>
-<div class="container">
-  <!-- Main hero unit for a primary marketing message or call to action -->
-	<div class="row">
-
-    <div class="span6">
-      <h2>Submit URLs</h2>
-      <form id="urlForm" action="async" method="post">
-	<p>
-	  Presets: | <span id="presets"></span>
-	</p>
-	<p>
-	  <input type='checkbox' name='forceUpdate' value='true' > Update <a href='cache'>cache</a> &nbsp; 
-	  <input type='checkbox' name='acceptGzip' checked='checked' value='true' > accept-encoding: gzip, compress</input> 
-	  <br/>
-	  <input type='checkbox' name='includeData' value='true' > include data in response</input>
-	  <input type='checkbox' name='includeMeta' value='true' > include metadata in response</input>
-	</p>
-	<p>
-	  <div>Cache subdir:</div>
-	  <input type='text' name='dir' style="width: 30em;"/>
-	  <textarea id='urls' rows='30' cols='100' name='source'></textarea>
-	</p>
-	<p>
-	  <input type='submit'/> &nbsp; &nbsp; &nbsp;
-	</p>
-      </form>	
-    </div>
-
-    <div class="span6">	
-      <div class="row">
-	<h2>Log:</h2>
-	<div id="result" ng-controller="LogCtrl">
-	  |<a href="" ng-click="clear()"> Clear </a>|&nbsp;
-	  Show: <input type="checkbox" ng-model="pendingOnly"> unfinished 	
-	  <input type="checkbox" ng-model="finishedOnly"> finished |
-	  <hr/>
-	  <div class="log" ng-repeat="log in showLogs()">
-	    {{log.type}} : {{log.work.url}}<br>
-	    
-	    <div ng-show="log.work.isFromCache"><font color="orange">Found in cache.</font></div>
-	    <div ng-show="log.type=='finish'"> 
-	      <div ng-show="!log.work.isFromCache">
-		Time: <font color="green">{{log.work.time}} ms</font>
-	      </div>
-	      data length: {{log.work.dataLength}}<br>
-	      data md5: {{log.work.dataMd5}}<br>
-	      url md5: {{log.work.urlMd5}}<br>
-	      File: <a target="_blank" href="{{cacheUrl(log)+'.data'}}">data</a> 
-	      | <a target="_blank" href="{{cacheUrl(log)+'.out'}}"> response </a>  
-	      | <a target="_blank" href="{{cacheUrl(log)+'.header'}}"> header </a> 
-	      | <a target="_blank" href="{{cacheUrl(log)+'.log'}}"> log </a>
+	  <div class="navbar-inner">
+	    <div class="container">
+	      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+	        <span class="icon-bar"></span>
+	        <span class="icon-bar"></span>
+	        <span class="icon-bar"></span>
+	      </a>
+	      <a class="brand" href="http://datacache.org/">DataCache</a>
+	      <div class="nav-collapse">
+		<ul class="nav">
+	          <li class="active"><a href="async">Async</a></li>
+	          <li><a href="sync">Sync</a></li>
+	          <li><a href="/cache">Cache</a></li>
+	          <li><a href="https://github.com/rweigel/datacache">Source</a></li>
+	          <li><a href="log">Log</a></li>
+	        </ul>
+	      </div><!--/.nav-collapse -->
 	    </div>
-	    
 	  </div>
 	</div>
-      </div>
-      
-    </div>
-
+<div class="container">
+	<div class="row">
+	
+	    <div class="span6">
+	      <h2>Submit URLs</h2>
+	      <form id="urlForm" action="async" method="post">
+			<p>
+			  Presets: | <span id="presets"></span>
+			</p>
+			<p>
+			  <input type='checkbox' name='forceUpdate' value='true' > Update <a href='cache'>cache</a> &nbsp; 
+			  <input type='checkbox' name='acceptGzip' checked='checked' value='true' > accept-encoding: gzip, compress</input> 
+			  <br/>
+			  <input type='checkbox' name='includeData' value='true' > include data in response</input>&nbsp;
+			  <input type='checkbox' name='includeMeta' value='true' > include metadata in response</input>
+			</p>
+			<p>
+			  <span style="vertical-align:middle">Max tries: <input type='text' name='maxTries' style="width: 1em;" value="2" /></span>
+			  <span style="vertical-align:middle">Cache subdir: <input type='text' name='dir' style="width: 10em;"/></span>
+			  <span style="vertical-align:middle">Plug-in: <input type='text' name='plugin' style="width: 10em;"/></span>		  
+			<p>
+			  <input type='submit'/>
+			</p>
+			<p>
+			  <textarea id='urls' rows='10' cols='100' name='source'></textarea>
+			</p>
+			<p>
+			  <input type='submit'/>
+			</p>	
+	      </form>	
+	    </div>
+	
+	    <div class="span6">	
+	      <div class="row">
+			<h2>Log:</h2>
+			<div id="result" ng-controller="LogCtrl">
+				  |<a href="" ng-click="clear()"> Clear </a>|&nbsp;
+				Show: <input type="checkbox" ng-model="pendingOnly"> unfinished 	
+				<input type="checkbox" ng-model="finishedOnly"> finished |
+				<hr/>
+				<div class="log" ng-repeat="log in showLogs()">
+				    {{log.type}} : {{log.work.url}}<br>
+				    
+				    <div ng-show="log.work.isFromCache"><font color="orange">Found in cache.</font></div>
+				    <div ng-show="log.type=='finish'"> 
+				      <div ng-show="!log.work.isFromCache">
+					Time: <font color="green">{{log.work.time}} ms</font>
+				      </div>
+				      data length: {{log.work.dataLength}}<br>
+				      data md5: {{log.work.dataMd5}}<br>
+				      url md5: {{log.work.urlMd5}}<br>
+				      File: <a target="_blank" href="{{cacheUrl(log)+'.data'}}">data</a> 
+				      | <a target="_blank" href="{{cacheUrl(log)+'.out'}}"> response </a>  
+				      | <a target="_blank" href="{{cacheUrl(log)+'.header'}}"> header </a> 
+				      | <a target="_blank" href="{{cacheUrl(log)+'.log'}}"> log </a>
+				    </div>		    
+				</div>
+			</div>
+	      </div>            
+		</div>
+		
+	</div>
     <hr>
 
    <footer>
@@ -110,7 +114,7 @@ $(document).ready(function(){
 				})
 				.html(d.name);
 			$("#presets").append(a);
-			$("#presets").append("&nbsp;|&nbsp;");
+			$("#presets").append("&nbsp;| ");
 		})
 	})
 })

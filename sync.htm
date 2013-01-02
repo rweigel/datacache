@@ -30,42 +30,36 @@
 </div>
 <div class="container">
   <div class="row">
-    <div class="span6">
-      <h2>Submit URLs</h2>
-      <form id="urlForm" action="sync" method="post">
-	<p>
-	  Presets: | <span id="presets"></span>
-	</p>
-	<p>
-	  <input type='checkbox' name='forceUpdate' value='true' /> Update <a href='cache'>cache</a>
-	  <input type='checkbox' style='display:none;' name='return' value='json' ></input>&nbsp;
-	  <input type='checkbox' name='return' value='data' > return data</input>&nbsp;
-	  <input type='checkbox' name='acceptGzip' checked='checked' value='true' > accept-encoding: gzip</input> 
-	  <br/>
-	  <input type='checkbox' name='includeData' value='true' > include data in response</input>
-	  <input type='checkbox' name='includeMeta' value='true' > include metadata in response</input>
-
-	</p>
-	<p>
-	  <div>Cache subdir:</div>
-	  <input type='text' name='dir' style="width: 30em;"/>
-	  <div>Plug-in:</div>
-	  <input type='text' name='plugin' style="width: 30em;"/>
-	  <br/>
-	  <input type='submit'/> 
-	</p>
-	<p>
-	  <textarea id='urls' rows='10' cols='100' name='source'></textarea>
-	</p>
-	<p>
-	  <input type='submit'/> &nbsp; &nbsp; &nbsp;
-	</p>
-      </form>	
-    </div>
-  </div>
-  
+	    <div class="span6">
+	      <h2>Submit URLs</h2>
+	      <form id="urlForm" action="sync" method="post">
+			<p>
+			  Presets: | <span id="presets"></span>
+			</p>
+			<p>
+			  <input type='checkbox' name='forceUpdate' value='true' > Update <a href='cache'>cache</a> &nbsp; 
+			  <input type='checkbox' name='acceptGzip' checked='checked' value='true' > accept-encoding: gzip, compress</input> 
+			  <br/>
+			  <input type='checkbox' name='includeData' value='true' > include data in response</input>&nbsp;
+			  <input type='checkbox' name='includeMeta' value='true' > include metadata in response</input>
+			</p>
+			<p>
+			  <span style="vertical-align:middle">Max tries: <input type='text' name='maxTries' style="width: 1em;" value="2" /></span>
+			  <span style="vertical-align:middle">Cache subdir: <input type='text' name='dir' style="width: 10em;"/></span>
+			  <span style="vertical-align:middle">Plug-in: <input type='text' name='plugin' style="width: 10em;"/></span>		  
+			<p>
+			  <input type='submit'/>
+			</p>
+			<p>
+			  <textarea id='urls' rows='10' cols='100' name='source'></textarea>
+			</p>
+			<p>
+			  <input type='submit'/>
+			</p>	
+	      </form>	
+	    </div>
+	</div>
     <hr>
-
    <footer>
    </footer>
 </div>
