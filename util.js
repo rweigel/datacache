@@ -87,7 +87,7 @@ var getId = (function(){
 exports.getId = getId;
 
 var isCached = function isCached(work, callback){
-    fs.exists(getCachePath(work) + ".log", function(exist){
+    fs.exists(getCachePath(work) + ".data", function(exist){
 	    if (exist) {
 			work.foundInCache = true;
 			work.dir = getCacheDir(work,true);
@@ -101,9 +101,19 @@ function getCachedData(work, callback) {
 	try {
 			var ext1 = ".meta";
 			var ext2 = ".data";
-			if (!work.options.includeData && !work.options.includeMeta) {
-				callback();
-				return;
+			
+			if (!work.options.includeData) {
+				fs.lstat(getCachePath(work) + ".data",
+					function (err,stats) {
+						if (stats) {
+							work.dataLength = stats.size;
+							work.stats = stats;
+						}
+						callback(err);
+					});
+				if (!work.options.includeMeta) {
+					return;
+				}
 			}
 			if (work.options.includeData && !work.options.includeMeta) {
 				var ext1 = ".data";
@@ -151,12 +161,12 @@ function getCachePath(work){
 function getCacheDir(work,relative){
     prefix = __dirname;
     if (arguments.length > 1 && relative) {
-	prefix = "";
+		prefix = "";
     }
     if (work.options.dir==="/cache/"){
-	return prefix + work.options.dir + work.url.split("/")[2]+"/";
+		return prefix + work.options.dir + work.url.split("/")[2]+"/";
     } else {
-	return prefix + "/cache"+work.options.dir;
+		return prefix + "/cache"+work.options.dir;
     }
 }
 
