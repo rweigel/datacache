@@ -184,6 +184,7 @@ function parseOptions(req){
 	var options = {};
 
 	options.forceUpdate = req.query.forceUpdate || req.body.forceUpdate || false
+	options.maxTries = req.query.maxTries || req.body.maxTries || 2;
 	options.acceptGzip = req.query.acceptGzip || req.body.acceptGzip || true;
 	options.includeData = req.query.includeData || req.body.includeData || false;
 	options.includeMeta = req.query.includeMeta || req.body.includeMeta || false;
