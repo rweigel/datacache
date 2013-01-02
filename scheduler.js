@@ -17,10 +17,10 @@ var runningWorks = [];
 var worksQueue = [];
 
 function addURLs(source, options, callback){
-	callback = callback || function(){};
+	callback = callback || function () {};
 	var finished = [];
 	source.forEach(function(url){
-		addURL(url, options, function(work){
+		addURL(url, options, function (work) {
 			finished.push(work);
 			if(finished.length==source.length){
 				finished.sort(function(a,b){
@@ -33,7 +33,7 @@ function addURLs(source, options, callback){
 }
 exports.addURLs = addURLs;
 
-function addURL(url, options, callback){
+function addURL(url, options, callback) {
 	options = options || {};
 	var work = newWork(url, options, callback);
 	exports.emit("submit", work);
@@ -44,10 +44,10 @@ exports.addURL = addURL;
 
 var plugins = [];
 var defaultPlugin = require("./plugins/default.js");
-fs.readdir(__dirname+"/plugins", function(err, files){
-	if(!err){
-		files.forEach(function(file){
-			if(file!=="default.js"){
+fs.readdir(__dirname+"/plugins", function (err, files) {
+	if (!err) {
+		files.forEach(function (file) {
+			if (file!=="default.js") {
 				var p = require("./plugins/"+file);
 				p.__proto__ = defaultPlugin;
 				plugins.push(p);
@@ -57,7 +57,8 @@ fs.readdir(__dirname+"/plugins", function(err, files){
 })
 exports.plugins = plugins;
 
-function run(){
+function run() {
+
 	while (runningWorks.length < params.concurrency && worksQueue.length > 0) {
 		var work = worksQueue.shift();
 		runningWorks.push(work);
@@ -103,14 +104,12 @@ function run(){
 	}
 }
 
-function work2result(work){
-	work.work2ResultStartTime = new Date();
+function work2result(work) {
 
+	work.work2ResultStartTime = new Date();
 	var ret = {};
-	// console.log(typeof work.options.includeData, work.options.includeData, work.options);
-	// console.log("###", work.options.includeData === "true")
-	for(var key in work){
-	    //console.log(key);
+	for (var key in work) {
+
 		if(key!== "data" && key!=="dataJson" && key!== "datax" && key !== "meta" && key!== "metaJson" && key!=="body"){
 			ret[key] = work[key];
 		}
@@ -142,7 +141,7 @@ function work2result(work){
 }
 
 function newWork(url, options, callback){
-	// console.log(url, typeof url);
+
 	var plugin;
 	if(options.plugin){
 		plugin = plugins.find(function(d){

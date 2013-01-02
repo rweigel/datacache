@@ -1,9 +1,8 @@
-var fs = require("fs"),
-	crypto = require("crypto"),
-	moment = require("moment"),
-	request = require("request"),
-	mkdirp = require("mkdirp");
-
+var fs = require("fs");
+var crypto = require("crypto");
+var moment = require("moment");
+var request = require("request");
+var mkdirp = require("mkdirp");
 var logger = require("./logger.js");
 
 var TIMEOUT = 20000;
@@ -15,30 +14,26 @@ function get(url, callback){
 exports.get = get;
 
 function formatTime(date){
-    if(!date){
-	return;
-    }
-    return [date.getFullYear(),
-	    pad(date.getMonth()+1,2),
-	    pad(date.getDate(), 2),
-	    pad(date.getHours(), 2),
-	    pad(date.getMinutes(), 2),
-	    pad(date.getSeconds(), 2),
-	    pad(date.getMilliseconds(), 3)
-	    ].join(" ");
 
-    function pad(str, num){
-	// convert to string
-	str = str+"";
-	while(str.length < num) {
-	    str = "0"+str;
-	}
-	return str;
+    if (!date) {return;}
+    return [date.getFullYear(), pad(date.getMonth()+1,2), pad(date.getDate(), 2),
+			pad(date.getHours(), 2), pad(date.getMinutes(), 2), pad(date.getSeconds(), 2),
+			pad(date.getMilliseconds(), 3)
+		   ].join(" ");
+
+    function pad(str, num) {
+		// convert to string
+		str = str+"";
+		while(str.length < num) {
+		    str = "0"+str;
+		}
+		return str;
     }
+    
 }
 exports.formatTime = formatTime;
 
-function md5(str){
+function md5(str) {
     if(!str) return "";
     return crypto.createHash("md5").update(str).digest("hex");
 }
@@ -60,7 +55,8 @@ function unescapeHTML(s) {
 }
 exports.unescapeHTML = unescapeHTML;
 
-var getId = (function(){
+var getId = (function () {
+
 	var Id = 1;
 	var timeStamp = "";
 
@@ -73,20 +69,19 @@ var getId = (function(){
 	    return str;
 	}
 
-	return function(){
+	return function () {
 	    var now = new Date();
 	    var ret = "" + now.getFullYear() + pad(now.getMonth() + 1, 2) + pad(now.getDate(), 2);
-	    if(ret!==timeStamp){
-		timeStamp = ret;
-		jobId = 1;
+	    if (ret!==timeStamp) {
+			timeStamp = ret;
+			jobId = 1;
 	    }
 	    return ret+"-"+(jobId++);
 	}
-    })();
-
+})();
 exports.getId = getId;
 
-var isCached = function isCached(work, callback){
+var isCached = function isCached(work, callback) {
     fs.exists(getCachePath(work) + ".data", function(exist){
 	    if (exist) {
 			work.foundInCache = true;
@@ -98,57 +93,58 @@ var isCached = function isCached(work, callback){
 exports.isCached = isCached;
 
 function getCachedData(work, callback) {
+
 	try {
+		var ext1 = ".meta";
+		var ext2 = ".data";
+		
+		if (!work.options.includeData) {
+			fs.lstat(getCachePath(work) + ".data",
+				function (err,stats) {
+					if (stats) {
+						work.dataLength = stats.size;
+						work.stats = stats;
+					}
+					callback(err);
+				});
+			if (!work.options.includeMeta) {
+				return;
+			}
+		}
+		if (work.options.includeData && !work.options.includeMeta) {
+			var ext1 = ".data";
+			var ext2 = "";
+		}
+		if (!work.options.includeData && work.options.includeMeta) {
 			var ext1 = ".meta";
-			var ext2 = ".data";
-			
-			if (!work.options.includeData) {
-				fs.lstat(getCachePath(work) + ".data",
-					function (err,stats) {
-						if (stats) {
-							work.dataLength = stats.size;
-							work.stats = stats;
-						}
-						callback(err);
-					});
-				if (!work.options.includeMeta) {
-					return;
-				}
-			}
-			if (work.options.includeData && !work.options.includeMeta) {
-				var ext1 = ".data";
-				var ext2 = "";
-			}
-			if (!work.options.includeData && work.options.includeMeta) {
-				var ext1 = ".meta";
-				var ext2 = "";
-			}
-			
-			function getData(data) {
-			    work.data = data;
-			    work.dataJson = work.plugin.dataToJson(data);
-			    work.dataMd5 = exports.md5(data);
-			    work.dataLength = data.length;		
-			}
-			function getMeta(data) {
-				work.meta = data;
-				work.metaJson = work.plugin.metaToJson(data);
-			}
-			
-			fs.readFile(getCachePath(work) + ext1, "utf8", function (err, data) {
-			    if (err) {return callback(err);}
-			    if (ext1 === ".data") {getData(data);}
-			    if (ext1 === ".meta") {getMeta(data);}
-			    if (ext2 === "") {
+			var ext2 = "";
+		}
+		
+		function getData(data) {
+			work.data = data;
+			work.dataJson = work.plugin.dataToJson(data);
+			work.dataMd5 = exports.md5(data);
+			work.dataLength = data.length;		
+		}
+		function getMeta(data) {
+			work.meta = data;
+			work.metaJson = work.plugin.metaToJson(data);
+		}
+		
+		fs.readFile(getCachePath(work) + ext1, "utf8", function (err, data) {
+			if (err) {return callback(err);}
+			if (ext1 === ".data") {getData(data);}
+			if (ext1 === ".meta") {getMeta(data);}
+			if (ext2 === "") {
+				work.isFinished = true;
+					callback(err);
+				} else {
+					fs.readFile(getCachePath(work) + ext2, "utf8", function (err, data) {
 					work.isFinished = true;
-			    		callback(err);
-			    	} else {
-			    		fs.readFile(getCachePath(work) + ext2, "utf8", function (err, data) {
-					    work.isFinished = true;
-					    callback(err);
-					});
-				}
-			});
+					callback(err);
+				});
+			}
+		});
 	} catch(err) {
 		console.log(err);
 	}
@@ -158,6 +154,7 @@ exports.getCachedData = getCachedData;
 function getCachePath(work){
 	return getCacheDir(work) + work.urlMd5; 
 }
+
 function getCacheDir(work,relative){
     prefix = __dirname;
     if (arguments.length > 1 && relative) {
@@ -175,19 +172,19 @@ var writeCache = function(work, callback){
 	var directory = getCacheDir(work);
 	var filename = getCachePath(work);
 	var header = [];
-	for(var key in work.header){
+	for (var key in work.header) {
 		header.push(key + " : " + work.header[key]);
 	}
-	if(!memLock[work.id]) {
+	if (!memLock[work.id]) {
 	    // if memLock[result.url] is undefined or 0, no writing is on-going
 	    memLock[work.id] = 5;
 	    work.writeStartTime = new Date();
 	    //logger.log("writestart", work);
 	    // create dir if it does not exist
-	    fs.exists(directory, function(exist){
-		    if(!exist){
-			mkdirp(directory, function(err){
-				if(err){
+	    fs.exists(directory, function (exist) {
+		    if (!exist){
+			mkdirp(directory, function (err) {
+				if (err) {
 				    console.log(err);
 				} else {
 				    writeCacheFiles();
@@ -207,45 +204,45 @@ var writeCache = function(work, callback){
 	    // If .data file exists and is same as new data, do nothing.
 
 	    function writeFiles(){
-		fs.writeFile(filename+".data", work.data, finish);
-		fs.writeFile(filename+".meta", work.meta, finish);
-		fs.writeFile(filename+".datax", work.datax, finish);
-		fs.writeFile(filename+".header", header.join("\n"), finish);
-		fs.writeFile(filename+".out", work.body, finish);
-		fs.appendFile(filename+".log", formatTime(work.jobStartTime) + "\t" + work.body.length + "\t" + work.data.length + "\n", finish );
+			fs.writeFile(filename+".data", work.data, finish);
+			fs.writeFile(filename+".meta", work.meta, finish);
+			fs.writeFile(filename+".datax", work.datax, finish);
+			fs.writeFile(filename+".header", header.join("\n"), finish);
+			fs.writeFile(filename+".out", work.body, finish);
+			fs.appendFile(filename+".log", formatTime(work.jobStartTime) + "\t" + work.body.length + "\t" + work.data.length + "\n", finish );
 	    }
 
 	    fs.exists(filename+".data",
 		      function(exists) {
-			  if (exists) {
-			      dataMd5old = md5(fs.readFileSync(filename+".data"));
-			      if (work.dataMd5 != dataMd5old) {
-				  // If data file changed, rename all files to be urlMd5.dataMd5.*
-				  fs.renameSync(filename+".data"  ,filename+"."+dataMd5old+".data");
-				  fs.renameSync(filename+".meta"  ,filename+"."+dataMd5old+".meta");
-				  fs.renameSync(filename+".datax" ,filename+"."+dataMd5old+".datax");
-				  fs.renameSync(filename+".header",filename+"."+dataMd5old+".header");
-				  fs.renameSync(filename+".out"   ,filename+"."+dataMd5old+".out");
-				  writeFiles();
-			      } else {
-				  finish();finish();finish();finish();finish();
-			      }
-			  } else {
-			      writeFiles();
-			  }
+				  if (exists) {
+				      dataMd5old = md5(fs.readFileSync(filename+".data"));
+				      if (work.dataMd5 != dataMd5old) {
+					  // If data file changed, rename all files to be urlMd5.dataMd5.*
+					  fs.renameSync(filename+".data"  ,filename+"."+dataMd5old+".data");
+					  fs.renameSync(filename+".meta"  ,filename+"."+dataMd5old+".meta");
+					  fs.renameSync(filename+".datax" ,filename+"."+dataMd5old+".datax");
+					  fs.renameSync(filename+".header",filename+"."+dataMd5old+".header");
+					  fs.renameSync(filename+".out"   ,filename+"."+dataMd5old+".out");
+					  writeFiles();
+				      } else {
+					  	finish();finish();finish();finish();finish();
+				      }
+				  } else {
+				      writeFiles();
+				  }
 		      });
 
 	}
 
-	function finish(err){
-	    if(err){
-		logger.log("error", work);
-		console.trace(err);
+	function finish(err) {
+	    if (err) {
+			logger.log("error", work);
+			console.trace(err);
 	    }
 	    memLock[work.id]--;
 	    work.writeFinishedTime = new Date();
-	    if(memLock[work.id]==0){
-		callback(work);
+	    if (memLock[work.id]==0) {
+			callback(work);
 	    }
 	}
 }
@@ -256,10 +253,10 @@ Array.prototype.remove = function(el){
 }
 
 Array.prototype.find = function(match){
-    for(var i=0;i<this.length;i++){
-	if(match(this[i])){
-	    return this[i];
+    for (var i=0;i<this.length;i++) {
+		if (match(this[i])) {
+		    return this[i];
+		}
 	}
-    }
     return null;
 }
