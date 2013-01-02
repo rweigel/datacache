@@ -70,16 +70,16 @@ function run(){
 				    work.process(function(err, work){
 					    work.postprocess(function(err, work){
 						    work.processFinishedTime = new Date();
-						    workFinsih();
+						    workFinish();
 						});
 					});
 				})
 			} else {
 			    work.isFromCache = true;
-			    workFinsih();
+			    workFinish();
 			}
 
-			function workFinsih() {
+			function workFinish() {
 				work.finishStartTime = new Date();
 				runningWorks.remove(work);
 				if (work.error && work.retries < work.options.maxTries){
