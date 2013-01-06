@@ -27,14 +27,14 @@ var port = process.argv[2] || 8000;
 // Middleware
 app.use(express.bodyParser());
 
-// Set default content-type to "text".
-app.use(function (req, res, next) {res.contentType("text");next();});
-
 app.use("/cache", express.directory(__dirname+"/cache"));
 app.use("/demo",  express.directory(__dirname+"/demo"));
 app.use("/cache", express.static(__dirname + "/cache"));
 app.use("/demo",  express.static(__dirname + "/demo"));
 app.use("/asset", express.static(__dirname + "/asset"));
+
+// Set default content-type to "text".  Not needed?
+//app.use(function (req, res, next) {res.contentType("text");next();});
 
 // app.use(express.errorHandler({ showStack: true, dumpExceptions: true }));
 
