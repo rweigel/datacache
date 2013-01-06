@@ -48,6 +48,11 @@ app.get('/log', function (req, res) {
 	res.send(fs.readFileSync(__dirname+"/application.log", "utf8"));
 })
 
+app.get("/report.htm", function (req,res) {
+	res.contentType("html");
+	fs.readFile(__dirname+"/report.htm", "utf8", 
+		function (err, data) {res.send(data);});
+})
 app.get("/async", function (req,res) {
 	res.contentType("html");
 	fs.readFile(__dirname+"/async.htm", "utf8", 
