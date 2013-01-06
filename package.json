@@ -1,6 +1,6 @@
 {
-	"name": "tsds_fe",
-  	"version": "0.1.0",
+	"name": "datacache",
+  	"version": "0.5.0",
 	"dependencies": {
 		"xml2js" : "0.1.14",
 		"request" : "2.9.203",
