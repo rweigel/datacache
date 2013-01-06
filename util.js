@@ -1,15 +1,21 @@
-var fs = require("fs");
-var crypto = require("crypto");
-var moment = require("moment");
+var fs      = require("fs");
+var crypto  = require("crypto");
+var moment  = require("moment");
 var request = require("request");
-var mkdirp = require("mkdirp");
-var logger = require("./logger.js");
+var mkdirp  = require("mkdirp");
+var logger  = require("./logger.js");
 
 var TIMEOUT = 20000;
 var MAXCONNECTION = 1000;
 
 function get(url, callback){
-    return request.get({uri: url, timeout : TIMEOUT, encoding:null,  pool: {maxSockets : MAXCONNECTION}}, callback);
+	var options = {	
+					uri: url,
+    					timeout: TIMEOUT,
+    					encoding: null,
+    					pool: {maxSockets : MAXCONNECTION}
+				  };
+    return request.get(options, callback);
 }
 exports.get = get;
 
@@ -18,14 +24,13 @@ function formatTime(date){
     if (!date) {return;}
     return [date.getFullYear(), pad(date.getMonth()+1,2), pad(date.getDate(), 2),
 			pad(date.getHours(), 2), pad(date.getMinutes(), 2), pad(date.getSeconds(), 2),
-			pad(date.getMilliseconds(), 3)
-		   ].join(" ");
+			pad(date.getMilliseconds(), 3)].join(" ");
 
     function pad(str, num) {
-		// convert to string
-		str = str+"";
-		while(str.length < num) {
-		    str = "0"+str;
+		// Convert to string
+		str = str + "";
+		while (str.length < num) {
+		    str = "0" + str;
 		}
 		return str;
     }
@@ -34,24 +39,18 @@ function formatTime(date){
 exports.formatTime = formatTime;
 
 function md5(str) {
-    if(!str) return "";
+    if (!str) return "";
     return crypto.createHash("md5").update(str).digest("hex");
 }
 exports.md5 = md5;
 
 function escapeHTML(s) {
-    return s
-	.replace(/&/g, '&amp;')
-	.replace(/</g, '&lt;')
-	.replace(/>/g, '&gt;');
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 exports.escapeHTML = escapeHTML;
 
 function unescapeHTML(s) {
-    return s
-	.replace(/&amp;/g, '&')
-	.replace(/&lt;/g, '<')
-	.replace(/&gt;/g, '>');
+    return s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 }
 exports.unescapeHTML = unescapeHTML;
 
@@ -63,8 +62,8 @@ var getId = (function () {
 	function pad(str, num){
 	    // convert to string
 	    str = str+"";
-	    while(str.length < num) {
-		str = "0"+str;
+	    while (str.length < num) {
+			str = "0" + str;
 	    }
 	    return str;
 	}
@@ -72,17 +71,17 @@ var getId = (function () {
 	return function () {
 	    var now = new Date();
 	    var ret = "" + now.getFullYear() + pad(now.getMonth() + 1, 2) + pad(now.getDate(), 2);
-	    if (ret!==timeStamp) {
+	    if (ret !== timeStamp) {
 			timeStamp = ret;
 			jobId = 1;
 	    }
-	    return ret+"-"+(jobId++);
+	    return ret + "-" + (jobId++);
 	}
 })();
 exports.getId = getId;
 
 var isCached = function isCached(work, callback) {
-    fs.exists(getCachePath(work) + ".data", function(exist){
+    fs.exists(getCachePath(work) + ".data", function (exist){
 	    if (exist) {
 			work.foundInCache = true;
 			work.dir = getCacheDir(work,true);
@@ -169,26 +168,27 @@ function getCacheDir(work,relative){
 
 var memLock = {};
 var writeCache = function(work, callback){
+
 	var directory = getCacheDir(work);
-	var filename = getCachePath(work);
-	var header = [];
+	var filename  = getCachePath(work);
+	var header    = [];
+
 	for (var key in work.header) {
 		header.push(key + " : " + work.header[key]);
 	}
+
 	if (!memLock[work.id]) {
-	    // if memLock[result.url] is undefined or 0, no writing is on-going
+
+	    // If memLock[result.url] is undefined or 0, no writing is on-going.
 	    memLock[work.id] = 5;
 	    work.writeStartTime = new Date();
-	    //logger.log("writestart", work);
-	    // create dir if it does not exist
+
+	    //Create dir if it does not exist
 	    fs.exists(directory, function (exist) {
-		    if (!exist){
-			mkdirp(directory, function (err) {
-				if (err) {
-				    console.log(err);
-				} else {
-				    writeCacheFiles();
-				}
+		    if (!exist) {
+				mkdirp(directory, function (err) {
+					if (err) {console.log(err);}
+					else {writeCacheFiles();}
 			    });
 		    }
 		    writeCacheFiles();
@@ -197,7 +197,7 @@ var writeCache = function(work, callback){
 	    callback(work);
 	}
 
-	function writeCacheFiles(){
+	function writeCacheFiles() {
 
 	    // If .data does not exist, create it.
 	    // If .data file exists and differs from new data, rename .data file.
@@ -209,7 +209,10 @@ var writeCache = function(work, callback){
 			fs.writeFile(filename+".datax", work.datax, finish);
 			fs.writeFile(filename+".header", header.join("\n"), finish);
 			fs.writeFile(filename+".out", work.body, finish);
-			fs.appendFile(filename+".log", formatTime(work.jobStartTime) + "\t" + work.body.length + "\t" + work.data.length + "\n", finish );
+			fs.appendFile(filename+".log", 
+				formatTime(work.jobStartTime) + 
+				"\t" + work.body.length + "\t" + 
+				work.data.length + "\n", finish);
 	    }
 
 	    fs.exists(filename+".data",
@@ -217,13 +220,13 @@ var writeCache = function(work, callback){
 				  if (exists) {
 				      dataMd5old = md5(fs.readFileSync(filename+".data"));
 				      if (work.dataMd5 != dataMd5old) {
-					  // If data file changed, rename all files to be urlMd5.dataMd5.*
-					  fs.renameSync(filename+".data"  ,filename+"."+dataMd5old+".data");
-					  fs.renameSync(filename+".meta"  ,filename+"."+dataMd5old+".meta");
-					  fs.renameSync(filename+".datax" ,filename+"."+dataMd5old+".datax");
-					  fs.renameSync(filename+".header",filename+"."+dataMd5old+".header");
-					  fs.renameSync(filename+".out"   ,filename+"."+dataMd5old+".out");
-					  writeFiles();
+						  // If data file changed, rename all files to be urlMd5.dataMd5.*
+						  fs.renameSync(filename+".data"  ,filename+"."+dataMd5old+".data");
+						  fs.renameSync(filename+".meta"  ,filename+"."+dataMd5old+".meta");
+						  fs.renameSync(filename+".datax" ,filename+"."+dataMd5old+".datax");
+						  fs.renameSync(filename+".header",filename+"."+dataMd5old+".header");
+						  fs.renameSync(filename+".out"   ,filename+"."+dataMd5old+".out");
+						  writeFiles();
 				      } else {
 					  	finish();finish();finish();finish();finish();
 				      }
@@ -235,22 +238,15 @@ var writeCache = function(work, callback){
 	}
 
 	function finish(err) {
-	    if (err) {
-			logger.log("error", work);
-			console.trace(err);
-	    }
+	    if (err) {logger.log("error", work); console.trace(err);}
 	    memLock[work.id]--;
 	    work.writeFinishedTime = new Date();
-	    if (memLock[work.id]==0) {
-			callback(work);
-	    }
+	    if (memLock[work.id]==0) {callback(work);}
 	}
 }
 exports.writeCache = writeCache;
 
-Array.prototype.remove = function(el){
-    this.splice(this.indexOf(el), 1);
-}
+Array.prototype.remove = function (el) {this.splice(this.indexOf(el), 1);}
 
 Array.prototype.find = function(match){
     for (var i=0;i<this.length;i++) {
