@@ -153,6 +153,7 @@ exports.getCachedData = getCachedData;
 function getCachePath(work){
 	return getCacheDir(work) + work.urlMd5; 
 }
+exports.getCachePath = getCachePath;
 
 function getCacheDir(work,relative){
     prefix = __dirname;
