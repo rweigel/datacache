@@ -148,8 +148,7 @@ function newWork(url, options, callback){
 			return d.name === options.plugin;
 		}) || defaultPlugin;
 	} else {
-		plugin = plugins.find(function(d){ return d.match(url);}) 
-		|| defaultPlugin;
+		plugin = plugins.find(function(d){ return d.match(url);}) || defaultPlugin;
 	}
 	var work = {
 		id: util.getId(),

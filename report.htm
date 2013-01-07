@@ -13,26 +13,25 @@
     </div>
 
     <script id="reportTemplate" type="text/x-jQuery-tmpl">
-        <div style="position: relative;">
-            <a href="${url}">${url}</a>
-			<span title="Error">${formatboolean(error)}&nbsp;</span>
-			<span title="File download error">${dataLength}&nbsp;</span>
-			<span title="File will be served from cache">${formatboolean(isFromCache)}&nbsp;</span>
-			<span title="File found in cache">${formatboolean(foundInCache)}&nbsp;</span>
-			<span title="Job time (ms)">${computetime(jobStartTime,jobFinishedTime)}&nbsp;</span>
-			<span title="Cache check time (ms)">${computetime(cacheCheckStartTime,cacheCheckFinishedTime)}&nbsp;</span>
-			<span title="Time to get first chunk of data (ms)">${computetime(jobStartTime,getFirstChunkTime)}&nbsp;</span>
-			<span title="File processing time">${computetime(work2ResultStartTime,work2ResultFinishedTime)}&nbsp;</span>
-			<span title="Write time (ms)">${computetime(writeStartTime,writeFinishedTime)}&nbsp;</span>
+        <div style="font-family: monospace;position: relative;">
+            <span title="${url}"><a href="${url}">${id}</a></span>
+			<span title="Error">${formatboolean(error)}</span>
+			<span title="File size (bytes)">${dataLength}</span>
+			<span title="File served from cache">${formatboolean(isFromCache)}</span>
+			<span title="File found in cache">${formatboolean(foundInCache)}</span>
+			<span title="Job time (ms)">${computetime(jobStartTime,jobFinishedTime)}</span>
+			<span title="Cache check time (ms)">${computetime(cacheCheckStartTime,cacheCheckFinishedTime)}</span>
+			<span title="Time to get first chunk of data (ms)">${computetime(jobStartTime,getFirstChunkTime)}</span>
+			<span title="File processing time">${computetime(work2ResultStartTime,work2ResultFinishedTime)}</span>
+			<span title="Write time (ms)">${computetime(writeStartTime,writeFinishedTime)}</span>
         </div>
     </script>
  
  	<style>
 	 	.tooltip {
 	 	   position: absolute;
-		   top: -1em;
-		   left: 0;
 		   z-index: 3;
+		   padding: 2px;
 		   border:1px solid;
 		   background-color:yellow;
 		}        
@@ -51,29 +50,44 @@
     		}
     		function computetime(start,stop) {
     			if (start == 0 || stop == 0) {
-    				return "-";
+    				return "&nbsp;&nbsp;	-";
     			}
     			start = new Date(start);
     			stop = new Date(stop);
     			time = stop-start;
     			time = sprintf("%4s",time.toString());
-    			return time;
+    			return time.replace(/ /g,'&nbsp;');
     		}
 		var dc = "http://localhost:8000/sync";
-		var dc = "http://datacache.org/dc/sync";
-		var url = dc + "?forceUpdate=true&source=http://datacache.org/dc/demo/file1.txt%0Ahttp://datacache.org/dc/demo/file2.txt";
-    		report = [];
+		//var dc = "http://datacache.org/dc/sync";
+		//var url = dc + "?forceUpdate=true&source=http://datacache.org/dc/demo/file1.txt%0Ahttp://datacache.org/dc/demo/file2.txt";
+		source = "ftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121218_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121219_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121220_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121219_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121220_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121221_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121221_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121222_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121223_Gp_xr_5m.txt%0D%0A";;
+		var url = dc + "?forceUpdate=false&source="+source	;
+		//var url = dc + window.location.hash;
+		//console.log(window.location.hash)
+		$('#status').html("Fetching results from DataCache using <a href='" + url + "''>Request</a>.");
+		report = [];
+		tic = new Date();
     		$.ajax({
     			type: 'GET',
     			async: true,
     			url: url, 
     			success: function (data) {
-    						$('#status').html("Fetching results from DataCache using <a href='" + url + "''>Request</a>.");
-    			        		$("#reportTemplate").tmpl(data).appendTo("#reportContainer");
-						$('#status').append(" Done.");
+						toc = new Date();
+		    				$('#status').append("  Done. "+(toc-tic)+" ms");
+    						$("#reportTemplate").tmpl(data).appendTo("#reportContainer");
 						$('span').hover(
-								function () {$(this).children(".tooltip").remove();$(this).append("<span class='tooltip'>"+$(this).attr("title")+($(this).attr("tooltip")||"")+"</span>")},
-								function () {$(this).attr('tooltip',$(this).attr('title')+($(this).attr('tooltip')||""));$(this).children(".tooltip").css('display','none');$(this).attr('title','')});
+								function () {
+												$(this).children(".tooltip").remove();
+												$(this).attr('tooltip',$(this).attr('title') + ($(this).attr('tooltip')||""));
+												$(this).attr('title','');
+												var str = $(this).attr("title") + ($(this).attr("tooltip")||"");
+												$(this).append("<span class='tooltip'>"+str+"</span>");
+												var offset = $(this).offset();
+												$(this).children(".tooltip").offset({ top: offset.top-25, left: offset.left});
+											},
+								function () {												
+												$(this).children(".tooltip").css('display','none');});
     			},
     			error: function () {    						
 						$('#status').html("AJAX GET request to DataCache failed <a href='" + url + "''>Request</a>");

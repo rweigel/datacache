@@ -3,3 +3,15 @@ ftp://ftp.sec.noaa.gov/pub/lists/xray/20121218_Gp_xr_5m.txt
 ftp://ftp.sec.noaa.gov/pub/lists/xray/20121219_Gp_xr_5m.txt
 
 ftp://ftp.sec.noaa.gov/pub/lists/xray/20121220_Gp_xr_5m.txt
+
+ftp://ftp.sec.noaa.gov/pub/lists/xray/20121219_Gp_xr_5m.txt
+
+ftp://ftp.sec.noaa.gov/pub/lists/xray/20121220_Gp_xr_5m.txt
+
+ftp://ftp.sec.noaa.gov/pub/lists/xray/20121221_Gp_xr_5m.txt
+
+ftp://ftp.sec.noaa.gov/pub/lists/xray/20121221_Gp_xr_5m.txt
+
+ftp://ftp.sec.noaa.gov/pub/lists/xray/20121222_Gp_xr_5m.txt
+
+ftp://ftp.sec.noaa.gov/pub/lists/xray/20121223_Gp_xr_5m.txt

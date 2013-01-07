@@ -48,6 +48,10 @@ app.get('/log', function (req, res) {
 	res.send(fs.readFileSync(__dirname+"/application.log", "utf8"));
 })
 
+app.get("/report", function (req,res) {
+  	 res.redirect('report.htm#url='+req.query);
+}) 
+
 app.get("/report.htm", function (req,res) {
 	res.contentType("html");
 	fs.readFile(__dirname+"/report.htm", "utf8", 
@@ -99,7 +103,7 @@ app.post("/sync", function (req, res) {
 			if (options.return === "data") {
 			    function pushfile(j) {
 				fname = __dirname + results[j].dir + results[j]["urlMd5"] + ".data";		    
-				console.log(fname);
+				//console.log(fname);
 				var fstream = fs.createReadStream(fname);
 				fstream.on('error',function (err) {res.end(err);});
 				fstream.on('end',function () {
