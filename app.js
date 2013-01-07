@@ -75,16 +75,12 @@ app.get("/sync", function (req,res) {
 	var source = parseSource(req);
 	if (source.length === 0) {
 	    res.contentType("html");
-	    fs
-		.readFile(__dirname+"/sync.htm", "utf8",
-			  function (err, data) {res.send(data);});
+	    fs.readFile(__dirname+"/sync.htm", "utf8", function (err, data) {res.send(data);});
 	    return;
 	}
 
-	var results = [];
-	scheduler.addURLs(source, options, function(results){
-		res.send(results);
-	});
+	stream(source,options,res);
+	
 });
 
 app.post("/sync", function (req, res) {
@@ -94,33 +90,7 @@ app.post("/sync", function (req, res) {
 	if (source.length === 0) {
 	    return res.send(400, "At least one URL must be provided.");
 	}
-
-	var results = [];
-	scheduler.addURLs(source, options, function (results) {
-			if (options.return === "json") {
-			    res.send(results);
-			}
-			if (options.return === "data") {
-			    function pushfile(j) {
-				fname = __dirname + results[j].dir + results[j]["urlMd5"] + ".data";		    
-				//console.log(fname);
-				var fstream = fs.createReadStream(fname);
-				fstream.on('error',function (err) {res.end(err);});
-				fstream.on('end',function () {
-					if (j < results.length-1) {
-					    console.log("Finished piping file #" + j + ": " + fname);
-					    j = j+1;
-					    pushfile(j);
-					} else {
-					    console.log("Finished piping file #" + j + ": " + fname);
-					    res.end();
-					}
-				    });
-				fstream.on('open', function () {fstream.pipe(res,{end:false});});
-			    }
-			    pushfile(0);
-			}
-	    });
+	stream(source,options,res);
 });
 
 
@@ -170,6 +140,33 @@ sio.set('polling duration',10);
 
 logger.bindClientList(clients);
 
+function stream(source, options, res) {
+	scheduler.addURLs(source, options, function (results) {
+			if (options.return === "json") {
+			    res.send(results);
+			}
+			if (options.return === "data") {
+			    function pushfile(j) {
+				fname = __dirname + results[j].dir + results[j]["urlMd5"] + ".data";		    
+				//console.log(fname);
+				var fstream = fs.createReadStream(fname);
+				fstream.on('error',function (err) {res.end(err);});
+				fstream.on('end',function () {
+					if (j < results.length-1) {
+					    console.log("Finished piping file #" + j + ": " + fname);
+					    j = j+1;
+					    pushfile(j);
+					} else {
+					    console.log("Finished piping file #" + j + ": " + fname);
+					    res.end();
+					}
+				    });
+				fstream.on('open', function () {fstream.pipe(res,{end:false});});
+			    }
+			    pushfile(0);
+			}
+	    });
+}
 function parseOptions(req) {
 
 	var options = {};

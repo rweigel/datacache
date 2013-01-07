@@ -88,7 +88,7 @@
 	    			success: function (data) {
 							toc = new Date();
 							
-			    				$('#status-'+i).append("  Done: "+(toc-tic)+" ms.");
+			    				$('#status-'+i).append(".  Done: "+(toc-tic)+" ms.");
 							var template = $("#reportTemplate").html();
 			    				var report = $.tmpl(template,data);
 			    				$('#status-'+i).append(report);
