@@ -6,14 +6,10 @@
 </head>
 <body>
  
-	<div id="status"></div> 
-    <div id="pageContent">
-        <h4>Report</h4>
-        <div id="reportContainer"></div>
-    </div>
 
     <script id="reportTemplate" type="text/x-jQuery-tmpl">
-        <div style="font-family: monospace;position: relative;">
+			<div id="status"></div> 
+	        <div style="font-family: monospace;position: relative;">
             <span title="${url}"><a href="${url}">${id}</a></span>
 			<span title="Error">${formatboolean(error)}</span>
 			<span title="File size (bytes)">${dataLength}</span>
@@ -36,6 +32,7 @@
 		   background-color:yellow;
 		}        
  	</style>
+ 	
  	<script type="text/javascript" src="asset/sprintf-0.7-beta1.js"></script>	
 	<script type="text/javascript" src="http://code.jquery.com/jquery-1.8.3.js"></script>
 	<script type="text/javascript" src="http://jquery-simpletip.googlecode.com/files/jquery.simpletip-1.3.1.min.js"></script>
@@ -44,6 +41,7 @@
     <script type="text/javascript">
 		$(function() {
 			//$('span').simpletip();
+			//console.log($("#reportTemplate").text());
 		})
     		function formatboolean(b) {
     			return b.toString().replace('false','f').replace('true','t')
@@ -58,41 +56,60 @@
     			time = sprintf("%4s",time.toString());
     			return time.replace(/ /g,'&nbsp;');
     		}
+
+    		var urls = new Array();
+    		
 		var dc = "http://localhost:8000/sync";
-		//var dc = "http://datacache.org/dc/sync";
-		//var url = dc + "?forceUpdate=true&source=http://datacache.org/dc/demo/file1.txt%0Ahttp://datacache.org/dc/demo/file2.txt";
-		source = "ftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121218_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121219_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121220_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121219_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121220_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121221_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121221_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121222_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121223_Gp_xr_5m.txt%0D%0A";;
-		var url = dc + "?forceUpdate=false&source="+source	;
-		//var url = dc + window.location.hash;
-		//console.log(window.location.hash)
-		$('#status').html("Fetching results from DataCache using <a href='" + url + "''>Request</a>.");
+		source = "ftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121218_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121219_Gp_xr_5m.txt%0A	";
+		var url = dc + "?forceUpdate=false&source="+source+source+source+source+source+source+source;
+		urls[0] = url;
+
+		var dc = "http://datacache.org/dc/sync";
+		source = "ftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121218_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121219_Gp_xr_5m.txt%0A	";
+		var url = dc + "?forceUpdate=false&source="+source+source+source+source+source+source+source;
+		urls[1] = url;
+
 		report = [];
+		
 		tic = new Date();
-    		$.ajax({
-    			type: 'GET',
-    			async: true,
-    			url: url, 
-    			success: function (data) {
-						toc = new Date();
-		    				$('#status').append("  Done: "+(toc-tic)+" ms.");
-    						$("#reportTemplate").tmpl(data).appendTo("#reportContainer");
-						$('span').hover(
-								function () {
-												$(this).children(".tooltip").remove();
-												$(this).attr('tooltip',$(this).attr('title') + ($(this).attr('tooltip')||""));
-												$(this).attr('title','');
-												var str = $(this).attr("title") + ($(this).attr("tooltip")||"");
-												$(this).append("<span class='tooltip'>"+str+"</span>");
-												var offset = $(this).offset();
-												$(this).children(".tooltip").offset({ top: offset.top-25, left: offset.left});
-											},
-								function () {												
-												$(this).children(".tooltip").css('display','none');});
-    			},
-    			error: function () {    						
-						$('#status').html("AJAX GET request to DataCache failed <a href='" + url + "''>Request</a>");
-    					}
-    		});
+		getreport(urls[0],0);
+		getreport(urls[1],1);
+		
+		function getreport(url,i) {
+			var template = $("#reportTemplate").html();
+			status = template.replace('status','status-'+i);
+			//console.log(template);
+			$('body').append("<div id='status'></div>".replace('status','status-'+i));
+			$('#status-'+i).html("Sending request to " + url.replace(/\?.*/,''));
+			$.ajax({
+	    			type: 'GET',
+	    			async: true,
+	    			url: url, 
+	    			success: function (data) {
+							toc = new Date();
+							
+			    				$('#status-'+i).append("  Done: "+(toc-tic)+" ms.");
+							var template = $("#reportTemplate").html();
+			    				var report = $.tmpl(template,data);
+			    				$('#status-'+i).append(report);
+							$('span').hover(
+									function () {
+													$(this).children(".tooltip").remove();
+													$(this).attr('tooltip',$(this).attr('title') + ($(this).attr('tooltip')||""));
+													$(this).attr('title','');
+													var str = $(this).attr("title") + ($(this).attr("tooltip")||"");
+													$(this).append("<span class='tooltip'>"+str+"</span>");
+													var offset = $(this).offset();
+													$(this).children(".tooltip").offset({ top: offset.top-25, left: offset.left});
+												},
+									function () {												
+													$(this).children(".tooltip").css('display','none');});
+	    			},
+	    			error: function () {    						
+							$('#status'+i).html("AJAX GET request to DataCache failed <a href='" + url + "''>Request</a>");
+	    					}
+	    		});
+		}
 
   
     </script>
