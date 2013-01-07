@@ -11,6 +11,16 @@ var request = require("request"),
 	hogan = require("hogan.js"),
 	moment = require("moment");
 
+// TODO: Check if cache directory is writeable and readable.
+// If not, send 500 error.
+
+// TODO: Allow input of extractData regular expression.
+
+// TODO: Allow input of timestamp2integer + startdate + integerunit.
+
+// TODO: Create .bin files with extension .binN, where N is 1+(# of data columns).
+// (or create field which is numberOfColumns).
+
 // Compress responses if accept-encoding allows it.
 app.use(express.compress());
 
@@ -57,6 +67,7 @@ app.get("/report.htm", function (req,res) {
 	fs.readFile(__dirname+"/report.htm", "utf8", 
 		function (err, data) {res.send(data);});
 })
+
 app.get("/async", function (req,res) {
 	res.contentType("html");
 	fs.readFile(__dirname+"/async.htm", "utf8", 
@@ -136,7 +147,7 @@ sio.set("log level", 1);
 
 // Need if running app behind apache server that does not support websockets.
 sio.set('transports', ['xhr-polling']);
-sio.set('polling duration',10);
+sio.set('polling duration',20);
 
 logger.bindClientList(clients);
 
@@ -144,29 +155,32 @@ function stream(source, options, res) {
 	scheduler.addURLs(source, options, function (results) {
 			if (options.return === "json") {
 			    res.send(results);
-			}
-			if (options.return === "data") {
+			} else if (options.return === "data") {
 			    function pushfile(j) {
-				fname = __dirname + results[j].dir + results[j]["urlMd5"] + ".data";		    
-				//console.log(fname);
-				var fstream = fs.createReadStream(fname);
-				fstream.on('error',function (err) {res.end(err);});
-				fstream.on('end',function () {
-					if (j < results.length-1) {
-					    console.log("Finished piping file #" + j + ": " + fname);
-					    j = j+1;
-					    pushfile(j);
-					} else {
-					    console.log("Finished piping file #" + j + ": " + fname);
-					    res.end();
-					}
+			    		console.log(results[j]);
+					fname = util.getCachePath(results[j]) + ".data";		    
+					var fstream = fs.createReadStream(fname);
+					fstream.on('error',function (err) {res.end(err);});
+					fstream.on('end',function () {
+						if (j < results.length-1) {
+						    console.log("Finished piping file #" + j + ": " + fname);
+						    j = j+1;
+						    pushfile(j);
+						} else {
+						    console.log("Finished piping file #" + j + ": " + fname);
+						    res.end();
+						}
 				    });
+				// TODO: Check if file exists.  If it does not, send error.
 				fstream.on('open', function () {fstream.pipe(res,{end:false});});
 			    }
 			    pushfile(0);
+			} else {
+				return res.send(400, "return=json or return=data");
 			}
 	    });
 }
+
 function parseOptions(req) {
 
 	var options = {};
