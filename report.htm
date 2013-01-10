@@ -3,13 +3,16 @@
 <head>
     <title>DataCache Report</title>
 	<style>
+		//body {background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHklEQVQIW2NkQID/QCYjiAsmoABFEMRBAThVYmgHAAhoBQWHhfyYAAAAAElFTkSuQmCC) repeat;}
+ 		//body {background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAGUlEQVQIW2NkwAIYCQnWAxU0ghQRVAk3CQAyoAEG7ES45QAAAABJRU5ErkJggg==) repeat;}
  		body {
- 			background-color:yellow;
- 		}
- 	 	#wrapper {
- 	 		position: absolute;
- 	 		top:0;
- 	 	}
+ 					//background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAG0lEQVQIW2NkgIILp27/NzBTZQRxwQQIUFEQABDwFAb+vyWtAAAAAElFTkSuQmCC) repeat;
+ 					//background-position: 200px 100px; 					
+ 				}
+ 		body {background-color:yellow;}
+ 	 	#wrapper {}
+ 	 	#summary {}
+
 	 	.tooltip {
 	 	   position: absolute;
 		   padding: 2px;
@@ -28,8 +31,8 @@
 
 </head>
 <body>
+		<div id="summary">|</div>
 	    <div id="wrapper"></div>
-
 	    <script id="reportTemplate" type="text/x-jQuery-tmpl">
 		<div id="report" style="font-family: monospace;">
             <span title="${url}"><a href="${url}">File</a></span>
