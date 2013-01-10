@@ -1,0 +1,131 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+	    <title>Grid</title>
+		<style>
+	 		body {
+	 			background-color: yellow;
+	 			margin: 0 0 0 0;
+	 		}
+
+	 	 	#wrapper {
+	 	 		background-color: white;
+	 	 		margin-top: 10;
+	 	 	}
+			#wrapper-content {
+				position:relative;
+				z-index: 4;	
+	 	 		background-color: transparent;
+			}
+			#wrapper-grid {
+				position: absolute;
+				background-color: rgba(255,255,255,0.5);
+				z-index: 3;
+				border: 1px solid black;
+			}
+	 	 	#wrapper-vertical {
+	 	 		z-index:2;
+	 	 		position: absolute;
+	 	 		background-color: transparent;
+	 	 	}
+	 	 	#wrapper-horizontal {
+	 	 		z-index:2;
+	 	 		position: absolute;
+	 	 		background-color: transparent;
+	 	 	}
+			.grid.horizontal {
+				background-color: transparent;
+	    			border-top: 1px solid lightgrey;
+	    			float: left;
+			}  
+			.grid.vertical {
+				background-color: transparent;
+	    			border-left: 1px solid lightgrey;
+	    			float: left;
+			}  
+	 	</style>
+	 	
+		<script type="text/javascript" src="http://code.jquery.com/jquery-1.8.3.js"></script>
+	 	
+	    <script type="text/javascript">
+	    	// See also https://gist.github.com/1991620 for pure CSS solution
+	    function drawLines(N, gclass) {
+	        	var grid = ''; 
+	        for (var j = 0 ; j < N; j++) {grid += '<div class="'+gclass+'"></div>';}
+	        return grid;
+	    }
+	    
+		$(function() {
+			Nv = 20;
+			Nh = 10;
+			
+			//$('#wrapper-content').width($('#wrapper').width());
+			//$('#wrapper-content').height($('#wrapper').height());
+
+			fw = 1.0;
+			fh = 1.0;
+			if ($('#wrapper-content')[0].style.width.match('%'))
+				fw = parseFloat("." + $('#wrapper-content')[0].style.width.replace('%',''));
+			if ($('#wrapper-content')[0].style.height.match('%'))
+				fh = parseFloat("." + $('#wrapper-content')[0].style.height.replace('%',''));
+
+			console.log(fw)
+			console.log($('#wrapper-content').width())
+			console.log(fh)
+			console.log($('#wrapper-content').height())
+			$('#wrapper').width($('#wrapper-content').width());
+			$('#wrapper').height($('#wrapper-content').height());
+			Nvpx = $('#wrapper-content').width()/(fh*Nv)-parseInt($('#wrapper-grid').css('border-width').replace('px',''));
+			Nhpx = $('#wrapper-content').height()/(fw*Nh)-parseInt($('#wrapper-grid').css('border-width').replace('px',''));
+			console.log(Nvpx)
+			console.log(Nhpx)
+			
+		 	$('#wrapper-grid').width($('#wrapper-content').width()/fw);
+		 	$('#wrapper-grid').height($('#wrapper-content').height()/fh);
+			//return;
+
+		 	grid = drawLines(Nv, "grid vertical");
+		 	$('#wrapper-vertical').append(grid);
+			$('.grid.vertical').css('padding-left',Nvpx/fw);
+		 	$('#wrapper-vertical').width($('#wrapper-grid').width());
+		 	$('#wrapper-vertical').height($('#wrapper-grid').height()+2*parseInt($('#wrapper-grid').css('border-width').replace('px','')));
+		 	$('.grid.vertical').css('padding-top',$('#wrapper-vertical').height());
+
+		 	grid = drawLines(Nh, "grid horizontal");
+		 	$('#wrapper-horizontal').append(grid);
+			$('.grid.horizontal').css('padding-top',Nhpx*fw);
+		 	$('#wrapper-horizontal').width($('#wrapper-grid').width()+2*parseInt($('#wrapper-grid').css('border-width').replace('px','')));
+		 	$('#wrapper-horizontal').height($('#wrapper-grid').height());
+		 	$('.grid.horizontal').css('padding-left',$('#wrapper-horizontal').width());
+	
+			// Shim is there to height of wrapper can be set in %.
+			$('#shim').css('display','none');
+
+		 	return;
+		 	//$(".grid.vertical").css('padding-top',h);
+		 	//$(".grid.vertical").css('padding-bottom',h);
+		    //$('#wrapper').css('width',$(document).width());
+		 	//
+		 	//h = $(document).height();
+		 	//console.log(h);
+		    //grid = drawLines(Nh, "grid horizontal");
+		    //$('#wrapper').before(grid);
+		    //$(".grid.vertical").css('padding-top',Nh*parseInt($(".grid.vertical").css('padding-top').replace('px','')));
+		    //$(".grid.horizontal").css('width',Nv*parseInt($(".grid.vertical").css('padding-left').replace('px','')));
+		});
+		</script>
+	</head>
+	<body>
+	<div id="wrapper">
+		<div id="shim">&nbsp;</div>
+		<div id="wrapper-grid"></div>
+		<div id="wrapper-vertical"></div>
+		<div id="wrapper-horizontal"></div>			
+		<div id="wrapper-content" style="height:400px; width:50%; padding: 10px">
+			Hello
+			<br/>
+			Hello
+		</div>
+	</div>
+	</body>
+</html>

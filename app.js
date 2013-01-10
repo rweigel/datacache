@@ -21,7 +21,7 @@ var request = require("request"),
 // TODO: Create .bin files with extension .binN, where N is 1+(# of data columns).
 // (or create field which is numberOfColumns).
 
-// Compress responses if accept-encoding allows it.
+// Compress responses if accept-encoding allows it.  
 app.use(express.compress());
 
 var scheduler = require("./scheduler.js");
@@ -59,7 +59,25 @@ app.get('/log', function (req, res) {
 })
 
 app.get("/report", function (req,res) {
-  	 res.redirect('report.htm#url='+req.query);
+  	 fs.readFile(__dirname+"/report.htm", "utf8", 
+  	 	function (err,data) {
+  	 		var source = (req.query.source || "").replace(/\n/g,'%0A');
+  	 		res.send(data.replace("__SOURCE__",source));
+  	 	});
+}) 
+app.post("/report", function (req,res) {
+  	 fs.readFile(__dirname+"/report.htm", "utf8", 
+  	 	function (err,data) {
+  	 		var source = (req.body.source || "").replace(/\n/g,'%0A');
+  	 		res.send(data.replace("__SOURCE__",source));
+  	 	});
+}) 
+
+app.get("/servers", function (req,res) {
+	 // TODO: Create servers.json, a JSON array of possible DC servers
+	 // Reduce list by doing HEAD request to each server.
+  	 fs.readFile(__dirname+"/servers.json", "utf8", 
+			function (err, data) {res.send(data);});
 }) 
 
 app.get("/report.htm", function (req,res) {
@@ -75,29 +93,24 @@ app.get("/async", function (req,res) {
 })
 app.post("/async", function (req, res) {
 	var options = parseOptions(req);
-	var source = parseSource(req);
+	var source  = parseSource(req);
 	scheduler.addURLs(source, options);
 	res.send(200);
 })
 
 app.get("/sync", function (req,res) {
-
 	var options = parseOptions(req);
-	var source = parseSource(req);
+	var source  = parseSource(req);
 	if (source.length === 0) {
 	    res.contentType("html");
 	    fs.readFile(__dirname+"/sync.htm", "utf8", function (err, data) {res.send(data);});
 	    return;
 	}
-
 	stream(source,options,res);
-	
 });
-
 app.post("/sync", function (req, res) {
-
 	var options = parseOptions(req);
-	var source = parseSource(req);
+	var source  = parseSource(req);
 	if (source.length === 0) {
 	    return res.send(400, "At least one URL must be provided.");
 	}

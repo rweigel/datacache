@@ -36,6 +36,7 @@ function report() {
 	//source = "ftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121218_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121219_Gp_xr_5m.txt%0A";
 	Nruns  = 3;
 	testservers = false;
+
 	// TODO: Get this from http://datacache.org/dc/servers
 	if ((DC.length == 1) & (testservers)) {
 		$.ajax({
