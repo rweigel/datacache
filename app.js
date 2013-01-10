@@ -74,10 +74,17 @@ app.post("/report", function (req,res) {
 }) 
 
 app.get("/servers", function (req,res) {
-	 // TODO: Create servers.json, a JSON array of possible DC servers
-	 // Reduce list by doing HEAD request to each server.
-  	 fs.readFile(__dirname+"/servers.json", "utf8", 
-			function (err, data) {res.send(data);});
+	 // servers.txt is a list of other known DC servers
+	 // Reduce list by doing HEAD request to each server?
+	 var servers = __dirname+"/servers.txt";
+	 fs.exists(servers, function (exists) {
+		if (exists) {
+	  	 	fs.readFile(servers, "utf8", 
+				function (err, data) {res.send(data.split('\n'))});
+		} else {
+			res.send("[]");
+		}
+	});
 }) 
 
 app.get("/report.htm", function (req,res) {
@@ -196,16 +203,19 @@ function stream(source, options, res) {
 
 function parseOptions(req) {
 
-	var options = {};
+ 	var options = {};
+        
+	function s2b(str) {if (str === "true") {return true} else {return false}}
+	function s2i(str) {return parseInt(str)}
 
-	options.forceUpdate = req.query.forceUpdate || req.body.forceUpdate || false
-	options.maxTries    = req.query.maxTries    || req.body.maxTries    || 2;
-	options.acceptGzip  = req.query.acceptGzip  || req.body.acceptGzip  || true;
-	options.includeData = req.query.includeData || req.body.includeData || false;
-	options.includeMeta = req.query.includeMeta || req.body.includeMeta || false;
-	options.plugin      = req.query.plugin      || req.body.plugin      || false;
-	options.return      = req.body.return       || req.query.return     || "json";
-	options.dir         = req.query.dir         || req.body.dir         || "/cache/";
+	options.forceUpdate = s2b(req.query.forceUpdate) || s2b(req.body.forceUpdate) || false
+	options.maxTries    = s2i(req.query.maxTries)    || s2i(req.body.maxTries)    || 2;
+	options.acceptGzip  = s2b(req.query.acceptGzip)  || s2b(req.body.acceptGzip)  || true;
+	options.includeData = s2b(req.query.includeData) || s2b(req.body.includeData) || false;
+	options.includeMeta = s2b(req.query.includeMeta) || s2b(req.body.includeMeta) || false;
+	options.plugin      = s2b(req.query.plugin)      || s2b(req.body.plugin)      || false;
+	options.return      = req.body.return            || req.query.return          || "json";
+	options.dir         = req.query.dir              || req.body.dir              || "/cache/";
 
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
