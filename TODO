@@ -1,0 +1,24 @@
+# Create option for return=bin.  By default it replaces "-" and ":" with spaces
+and writes IEEE 64-bit LE Floating Point numbers.  Add recordsPerLine in JSON
+output and numberOfRecords.
+
+# Allow input of time2info(line) that returns [timeInteger,timeUnit,ISO 8601
+Time] when time integer is computed from timeZero. Use this to compute
+startTime, stopTime, timeUnit for each granule.
+
+# Create option for return=binmeta.  Return startTime, stopTime, timeUnit
+(smallest in all files), recordsPerLine, numberOfRecords, responseSize, and
+meta, and metaJSON if it exists.
+
+# Allow option of input of timeFormat %Y %m %d, etc..  Use this to add startTime
+and stopTime to JSON.
+
+# If time stamps are not fractional (%Y [%m %d %h %m %s]), compute required
+timeUnit to preserve timestamps when converted to integers.
+
+# If return=bin and timeFormat is given time to ms.  If timeUnit is given,
+convert time to time since start.  When streaming, will need to correct times by
+finding smallest time unit.
+
+# If return=binmeta return startTime, stopTime, timeUnit, recordsPerLine,
+numberOfRecords, responseSize, and meta, and metaJSON if it exists.
