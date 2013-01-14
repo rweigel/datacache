@@ -11,6 +11,7 @@ var request = require("request"),
 	hogan = require("hogan.js"),
 	moment = require("moment");
 
+var qs = require('querystring');
 // TODO: Check if cache directory is writeable and readable.
 // If not, send 500 error.
 
@@ -61,15 +62,17 @@ app.get('/log', function (req, res) {
 app.get("/report", function (req,res) {
   	 fs.readFile(__dirname+"/report.htm", "utf8", 
   	 	function (err,data) {
-  	 		var source = (req.query.source || "").replace(/\n/g,'%0A');
-  	 		res.send(data.replace("__SOURCE__",source));
+  	 		var querystr = qs.stringify(req.query);
+  	 		console.log(querystr);
+  	 		res.send(data.replace("__QUERYSTR__", querystr));
   	 	});
 }) 
 app.post("/report", function (req,res) {
   	 fs.readFile(__dirname+"/report.htm", "utf8", 
   	 	function (err,data) {
   	 		var source = (req.body.source || "").replace(/\n/g,'%0A');
-  	 		res.send(data.replace("__SOURCE__",source));
+  	 		var querystr = qs.stringify(req.query);
+  	 		res.send(data.replace("__QUERYSTR__",querystr+"&source="+source));
   	 	});
 }) 
 
@@ -87,6 +90,13 @@ app.get("/servers", function (req,res) {
 	});
 }) 
 
+app.get("/demo/changingfile.txt", function (req,res) {
+	var date = new Date();
+    var str = date.getFullYear() + " " + date.getMonth()   +  " " + date.getDate() +  " " + 
+			  date.getHours()    + " " + date.getMinutes() +  " " + date.getSeconds();
+	//console.log(str);
+	res.send(str);
+})
 app.get("/report.htm", function (req,res) {
 	res.contentType("html");
 	fs.readFile(__dirname+"/report.htm", "utf8", 
@@ -171,13 +181,25 @@ sio.set('polling duration',20);
 
 logger.bindClientList(clients);
 
+function streaminfo(results) {
+	var l = 0;
+	for (var i = 0; i < results.length; i++) {
+			l = l + results[i]["dataLength"]
+	}
+	sresults = new Object();
+	sresults["dataLength"] = l;
+	return sresults;
+}
+
 function stream(source, options, res) {
 	scheduler.addURLs(source, options, function (results) {
-			if (options.return === "json") {
+			if (options.return === "jsong") {
 			    res.send(results);
-			} else if (options.return === "data") {
+			} else if ((options.return === "jsons")) {
+				res.send(streaminfo(results));
+			} else if ((options.return === "stream")) {
 			    function pushfile(j) {
-			    		console.log(results[j]);
+			    		//console.log(results[j]);
 					fname = util.getCachePath(results[j]) + ".data";		    
 					var fstream = fs.createReadStream(fname);
 					fstream.on('error',function (err) {res.end(err);});
@@ -190,13 +212,15 @@ function stream(source, options, res) {
 						    console.log("Finished piping file #" + j + ": " + fname);
 						    res.end();
 						}
-				    });
-				// TODO: Check if file exists.  If it does not, send error.
-				fstream.on('open', function () {fstream.pipe(res,{end:false});});
+					});
+					// TODO: Check if file exists.  If it does not, send error.
+					fstream.on('open', function () {fstream.pipe(res,{end:false});});
 			    }
+			    var lsi = streaminfo(results)["dataLength"].toString();
+			    res.writeHeader(200, {'Content-Length': lsi});
 			    pushfile(0);
 			} else {
-				return res.send(400, "return=json or return=data");
+				return res.send(400, "return= jsong, jsonp, data, bin, or resport.");
 			}
 	    });
 }
@@ -213,8 +237,9 @@ function parseOptions(req) {
 	options.acceptGzip  = s2b(req.query.acceptGzip)  || s2b(req.body.acceptGzip)  || true;
 	options.includeData = s2b(req.query.includeData) || s2b(req.body.includeData) || false;
 	options.includeMeta = s2b(req.query.includeMeta) || s2b(req.body.includeMeta) || false;
+	options.includeVers = s2b(req.query.includeVers) || s2b(req.body.includeVers) || false;
 	options.plugin      = s2b(req.query.plugin)      || s2b(req.body.plugin)      || false;
-	options.return      = req.body.return            || req.query.return          || "json";
+	options.return      = req.body.return            || req.query.return          || "jsong";
 	options.dir         = req.query.dir              || req.body.dir              || "/cache/";
 
 	if (options.dir) {
