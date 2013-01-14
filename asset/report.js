@@ -1,35 +1,64 @@
 function formatboolean(b) {
 	return b.toString().replace('false','f').replace('true','t')
 }
+function formatlength(l,w) {
+
+	ls = l.toString().replace("-1","x")
+	lsl = ls.length;
+	while (lsl < w) {
+		ls = "x" + ls;
+		lsl = ls.length;
+	}
+	return ls
+}
+
+function formaterror(e) {
+	if (arguments.length > 1) {
+		e = e.toString().replace('false','false.');
+		return e;
+	}
+
+	e = e.toString().replace('false','f').replace('true','t');
+	if (e.length > 1) { 
+		e = "t";
+	}
+	return e
+}
+
+function computewidth(start,stop,type) {
+	return (computetime(start,stop,1))/10.0;
+}
+
 
 function computetime(start,stop,type) {
 	if (start == 0 || stop == 0) {
-		return "&nbsp;&nbsp;	-";
+		return "&nbsp;&nbsp;-";
 	}
 	start = new Date(start);
 	stop = new Date(stop);
 	time = stop-start;
 	if (type == 1) return time;
-	time = sprintf("%4s",time.toString());
+	time = sprintf("%3s",time.toString());
 	return time.replace(/ /g,'&nbsp;');
 }
 
 function report() {
-	source = "__SOURCE__";
-	source = "ftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121218_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121219_Gp_xr_5m.txt%0A";
-	source = "http://datacache.org/dc/demo/file1.txt%0Ahttp://datacache.org/dc/demo/file2.txt";
-	source = source + "%0A" + source;
-	//source = "ftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121218_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121219_Gp_xr_5m.txt%0A";
 
-	Nruns   = 3;
-	servers = true; // Get additional servers from /servers
+	var DOMLoadedTime = new Date();
+
+	Nruns   = 1;
+	servers = false; // Get additional servers from /servers
 	TIMEOUT = 1000;
-	DC      = [location.href.replace(/report.*/,'sync'),"http://datacache.org/dc/sync"];
+	ASYNC   = false;
+	//DC      = [location.href.replace(/report.*/,'sync'),"http://datacache.org/dc/sync"];
+	DC      = [location.href.replace(/report.*/,'sync')];
 
 	// TODO: Create color array if not defined.
 	colors  = ['red','blue','red','green','white']; // Need one color per server.
 	
-	if (source.length == 0) {
+	console.log("report.js: querystring length = " + querystr.length);
+	if (querystr.length == 0) {
+		$('#error').show();
 		$('#error').html('Append ?source=URLlist to URL to generate report. ');
 		$('#error').append('<a>Example</a>');
 		$('#error a').attr('href',location.href + "?source=http://datacache.org/dc/demo/file1.txt%0Ahttp://datacache.org/dc/demo/file2.txt%0A");
@@ -50,76 +79,113 @@ function report() {
 		});
 	}
 
-	var urls = new Array();
+	var urls  = new Array();
 	var times = new Array();
 	
 	function tryurls(Nrun) {
 		tic = new Date();
 		z = 0;
 		times[Nrun] = new Array();
-		N = source.split("%0A").length;
-		for (i=0;i<DC.length;i++) {
-		
-			urls[i]  = DC[i] + "?forceUpdate=false&source="+source;
-			$('#wrapper').append("<div id='status'></div>".replace('status','status-'+i+""+Nrun));
-			//$('#status-'+i+""+Nrun).css('background-color',colors[i]);
-			$('#status-'+i+""+Nrun).append("Sending " + N + " URLs to " + urls[i].replace(/\?.*/,''));
-			//console.log($('#status-'+i+""+Nrun).text());
-			getreport(urls[i],i,Nrun,tic);
+		N = querystr.split("%0A").length;
+		urls    = querystr.replace(/.*source=(.*)/,'$1').split("%0A").filter(function(element){return element.length});
 
-			//console.log(DC[0]);
+		options = querystr.replace(/source=.*/,'').replace(/\&/g,'');
+		//console.log(options);
+		//console.log(querystr);
+		for (i = 0;i < DC.length;i++) {
+			$('#wrapper').append("<div id='status'></div>".replace('status','status-'+i+""+Nrun));
+			$('#status-'+i+""+Nrun).append("<div class='note'>Sending " + N + " URLs to " + DC[i] + (options ? " with options " + options : "") + "</div>");
+			if (ASYNC) {
+				for (var j = 0;j < urls.length;j++) {
+					getreport(DC[i] + "?"+options+"&source="+urls[j],i,Nrun,tic);
+					console.log(urls[j]);	
+					//summary(times);
+				}						
+			} else {
+				getreport(DC[i] + "?"+querystr,i,Nrun,tic);
+				summary(times);									
+			}
 		}
 	}
-	
-	// Submit requests to each server in list.  When both are done,
-	// repeat.
+	// Submit requests to each server in list.  When done, repeat.
 	tryurls(0);
 	
-	function getreport(url,i,Nrun,tic) {
-		var template = $("#reportTemplate").html();
-		status = template.replace('status','status-'+i+""+Nrun);
-		//console.log(template);
-		
-		// Histogram:
-		// http://jsfiddle.net/jlbriggs/9LGVA/3/
-		function summary(times) {
-			$('#summary').text("Times: " + times.toString() + "\n");
-		}
+	// Histogram: http://jsfiddle.net/jlbriggs/9LGVA/3/
+	function summary(times,callback) {
+		//$('#summary').text("Times: " + times.toString() + "\n");
+	}
+	
+	function getreport(url,i,Nrun,tic,callback) {
+
 		
 		$.ajax({
 				type: 'GET',
-				async: true,
+				async: ASYNC,
 				timeout: TIMEOUT,
 				url: url, 
 				success: 
 					function (data) {
+
 						toc = new Date();
 						times[Nrun][i] = (toc-tic);
-
 						z = z+1;
-						$('#status-'+i+""+Nrun).append(".  Total turn-around: "+(toc-tic)+" ms.");							
-						var report = $.tmpl(template,data);							
-						$('#status-'+i+""+Nrun).append(report);
-						$('#status-'+i+""+Nrun+" img").css("background-color",colors[i]);
-						$('img').eq(0).position()['left']
+						//$('#status-'+i+""+Nrun).append(".  Total turn-around: "+(toc-tic)+" ms.");							
+
+						if (typeof data != "object") {
+							var template = $("#reportTemplate2").html();
+							status = template.replace('status','status-'+i+""+Nrun);
+							
+							tmp = data;
+							data = new Object();
+							
+							data.url = url;
+							data.requestStart    = tic;	
+							data.requestFinish   = toc;	
+							data.DOMLoadedTime   = DOMLoadedTime;
+							data.dataLength = tmp.length;
+
+							var report = $.tmpl(template,data);							
+							$('#status-'+i+""+Nrun).append(report);
+							//$('#status-'+i+""+Nrun+" img").css("background-color",colors[i]);
+
+						} else {	
+							
+							var template = $("#reportTemplate").html();
+							status = template.replace('status','status-'+i+""+Nrun);
+							console.log(data);
+							
+							//console.log(data.length);
+							for (var k = 0; k < data.length; k++) {
+								data[k]["DOMLoadedTime"] = DOMLoadedTime;
+								data[k]["requestStart"]  = tic;
+								data[k]["requestFinish"] = toc;
+								
+							}
+							var report = $.tmpl(template,data);							
+							$('#status-'+i+""+Nrun).append(report);
+						}
+
 						tooltip('span');
 						
-						if ((z == urls.length) & (Nrun == Nruns))
-							summary(times);					
-						if ((z == urls.length) & (Nrun < Nruns))
+						
+						//if ((z == urls.length) & (Nrun == Nruns-1))
+											
+						if ((z == urls.length) & (Nrun < Nruns-1))
 							tryurls(Nrun+1);
 				},
 				error: 
 					function (request,status,errorThrown) {
-					
+											
 						times[Nrun][i] = -1;
 						z = z+1;
-						    						
+						console.log('here');
 						if ((z == urls.length) & (Nrun == Nruns))
 							summary(times);
+
 						if ((z == urls.length) & (Nrun < Nruns))
 							tryurls(Nrun+1);
-						$('#status-'+i+""+Nrun).html("AJAX GET request to DataCache failed <a href='" + url + "''>Request</a>.  Error: " + errorThrown);
+						
+						//$('#status-'+i+""+Nrun).html("AJAX GET request to DataCache failed <a href='" + url + "''>Request</a>.  Error: " + errorThrown);
 					}
 			});
 	}
