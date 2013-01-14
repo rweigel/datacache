@@ -1,3 +1,16 @@
+
+# Add parameters CONCURRENCY = 20, TIMEOUT = 20000, and MAXCONNECTION = 1000 to
+datacache.sh.
+
+# Write keepversions() in util.js.  It reads keepversions.txt, which contains regular 
+expressions for urls that should be versioned.
+
+# Document servers.txt.  report.htm uses is.  Allow report? to take an input of servers to test.
+/report?servers=datacache.org/sync,localhost:8080/sync, localhost:8081/sync&source=...
+
+# Add example of changing file to documentation
+curl "http://localhost:8000/sync?forceUpdate=true&source=http://localhost:8000/demo/changingfile.txt"
+
 # Create option for return=bin.  By default it replaces "-" and ":" with spaces
 and writes IEEE 64-bit LE Floating Point numbers.  Add recordsPerLine in JSON
 output and numberOfRecords.
