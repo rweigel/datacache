@@ -1,46 +1,39 @@
 var request = require("request");
-var util = require("../util.js");
+var util    = require("../util.js");
 
-exports.match = function(url){
-	return false;
-}
+exports.name  = "_httpdemo";
+exports.match = function (url) {return false;}
 
-exports.name = "_httpdemo";
+exports.preprocess = function (work, callback) {callback(false, work)};
 
-exports.preprocess = function(work, callback){
-	var err = false;
-	callback(err, work);
-};
-
-exports.process = function(work, callback){
+exports.process = function (work, callback) {
 	
 	if (work.url.match(/^http/)) {
 		var headers = work.options.acceptGzip ? {"accept-encoding" : "gzip, deflate"} : {};
-		util.get(work.url, function(error, response, body){
-			if(error || response.statusCode!==200){
+		util.get(work.url, function (error, response, body) {
+			if (error || response.statusCode!==200){
 				work.error = "Can't fetch data";
 				callback(true, work);
 			} else {
-				work.body = body || "";
-				work.data = work.extractData(work.body);
-				work.dataMd5 = util.md5(work.data);
-				work.dataJson = work.extractDataJson(work.body);
-				work.datax = work.extractRem(work.body);
-				work.meta = work.extractMeta(work.body);
-				work.metaJson = work.extractMetaJson(work.body);
-				work.header = response.headers;
-				util.writeCache(work, function(){
-					callback(false, work);
-				});
+				work.body       = body || "";
+				work.dataBinary = work.extractDataBinary(work.body, "bin");
+				work.data       = work.extractData(work.body, "ascii");
+				work.dataMd5    = util.md5(work.data);
+				work.dataJson   = work.extractDataJson(work.body);
+				work.datax      = work.extractRem(work.body);
+				work.meta       = work.extractMeta(work.body);
+				work.metaJson   = work.extractMetaJson(work.body);
+				work.header     = response.headers;
+				util.writeCache(work, function () {callback(false, work);});
 			}
 		})
 		.on("end", function(data){
-			if(!work.getEndTime) {
+			if (!work.getEndTime) {
 			    work.getEndTime = new Date();
 			}
 		})
 		.on("data", function(data){
-			if(!work.getFirstChunkTime) {
+			if (!work.getFirstChunkTime) {
 			    work.getFirstChunkTime = new Date();
 			}
 		});
@@ -80,35 +73,26 @@ exports.process = function(work, callback){
 	}
 };
 
-exports.extractData = function(body){
-	return body;
+exports.extractDataBinary = function (body) {return "";};
+
+exports.extractData = function (body) {
+    return body
+               .toString()
+               .split("\n")
+               .filter(function(line){return line.search(/^[0-9]/)!=-1;})
+               .join("\n") + "\n";
 };
 
-exports.extractDataJson = function(body){
-	return {};
-};
+exports.extractDataJson = function(body) {return {};};
 
-exports.dataToJson = function(data){
-	return {};
-}
+exports.dataToJson = function(data) {return {};}
 
-exports.extractMeta = function(body){
-	return "";
-}
+exports.extractMeta = function(body) {return "";}
 
-exports.extractMetaJson = function(body){
-	return {};
-}
+exports.extractMetaJson = function (body) {return {};}
 
-exports.metaToJson = function(meta){
-	return {};
-}
+exports.metaToJson = function (meta){return {};}
 
-exports.extractRem = function(body){
-	return "";
-}
+exports.extractRem = function(body){return "";}
 
-exports.postprocess = function(work, callback){
-	var err = false;
-	callback(err, work);
-};
+exports.postprocess = function(work, callback){callback(false, work);};
