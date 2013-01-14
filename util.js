@@ -81,10 +81,13 @@ var getId = (function () {
 exports.getId = getId;
 
 var isCached = function isCached(work, callback) {
-    fs.exists(getCachePath(work) + ".data", function (exist){
+    fs.exists(getCachePath(work) + ".data", function (exist) {
 	    if (exist) {
 			work.foundInCache = true;
 			work.dir = getCacheDir(work,true);
+	    }
+	    if (work.options.includeVers) {
+	    		// TODO: Get list of files named md5data./*.data.  In
 	    }
 	    callback(work);
 	});
@@ -181,10 +184,10 @@ var writeCache = function(work, callback){
 	if (!memLock[work.id]) {
 
 	    // If memLock[result.url] is undefined or 0, no writing is on-going.
-	    memLock[work.id] = 5;
+	    memLock[work.id] = 6;
 	    work.writeStartTime = new Date();
 
-	    //Create dir if it does not exist
+	    // Create dir if it does not exist
 	    fs.exists(directory, function (exist) {
 		    if (!exist) {
 				mkdirp(directory, function (err) {
@@ -204,8 +207,9 @@ var writeCache = function(work, callback){
 	    // If .data file exists and differs from new data, rename .data file.
 	    // If .data file exists and is same as new data, do nothing.
 
-	    function writeFiles(){
+	    function writeFiles() {
 			fs.writeFile(filename+".data", work.data, finish);
+			fs.writeFile(filename+".bin", work.dataBinary, finish);
 			fs.writeFile(filename+".meta", work.meta, finish);
 			fs.writeFile(filename+".datax", work.datax, finish);
 			fs.writeFile(filename+".header", header.join("\n"), finish);
@@ -216,23 +220,39 @@ var writeCache = function(work, callback){
 				work.data.length + "\n", finish);
 	    }
 
-	    fs.exists(filename+".data",
-		      function(exists) {
-				  if (exists) {
+		function renameFiles(callback) {
+			var newdir = filename + "/";
+			mkdirp(newdir, function (err) {
+					console.log(newdir);
+					console.log(newdir+filename+"/"+dataMd5old+".data");
+					if (err) {console.log(err);}
+					fs.renameSync(filename+".data"  , filename+"/"+dataMd5old+".data");
+					fs.renameSync(filename+".bin"   , filename+"/"+dataMd5old+".bin");
+					fs.renameSync(filename+".meta"  , filename+"/"+dataMd5old+".meta");
+					fs.renameSync(filename+".datax" , filename+"/"+dataMd5old+".datax");
+					fs.renameSync(filename+".header", filename+"/"+dataMd5old+".header");
+					fs.renameSync(filename+".out"   , filename+"/"+dataMd5old+".out");
+					callback();
+				});
+		}
+		
+		function keepversions() {
+			return true;
+		}
+		
+	    fs.exists(filename + ".data",
+		      function (exists) {
+				  if (!exists) {
+				      writeFiles();
+				  } else {
 				      dataMd5old = md5(fs.readFileSync(filename+".data"));
 				      if (work.dataMd5 != dataMd5old) {
-						  // If data file changed, rename all files to be urlMd5.dataMd5.*
-						  fs.renameSync(filename+".data"  ,filename+"."+dataMd5old+".data");
-						  fs.renameSync(filename+".meta"  ,filename+"."+dataMd5old+".meta");
-						  fs.renameSync(filename+".datax" ,filename+"."+dataMd5old+".datax");
-						  fs.renameSync(filename+".header",filename+"."+dataMd5old+".header");
-						  fs.renameSync(filename+".out"   ,filename+"."+dataMd5old+".out");
-						  writeFiles();
+						if (keepversions(work.url)) {
+				      		renameFiles(writeFiles);
+						}
 				      } else {
-					  	finish();finish();finish();finish();finish();
+					  	finish();finish();finish();finish();finish();finish();
 				      }
-				  } else {
-				      writeFiles();
 				  }
 		      });
 
@@ -249,7 +269,7 @@ exports.writeCache = writeCache;
 
 Array.prototype.remove = function (el) {this.splice(this.indexOf(el), 1);}
 
-Array.prototype.find = function(match){
+Array.prototype.find = function (match){
     for (var i=0;i<this.length;i++) {
 		if (match(this[i])) {
 		    return this[i];
