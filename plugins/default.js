@@ -24,6 +24,7 @@ exports.process = function (work, callback) {
 				work.meta       = work.extractMeta(work.body);
 				work.metaJson   = work.extractMetaJson(work.body);
 				work.header     = response.headers;
+				//console.log(work.header);
 				util.writeCache(work, function () {callback(false, work);});
 			}
 		})
