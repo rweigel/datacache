@@ -35,12 +35,10 @@
 		querystr = "forceUpdate=true&source=http://datacache.org/dc/demo/file1.txt%0Ahttp://datacache.org/dc/demo/file2.txt";
 		//source = "http%3A%2F%2Fsupermag.jhuapl.edu%2Fscript%2Fdownload.mag%3Fcli%3Dweigel%2B19800101%2B00%253A00%2B24%253A00%2B-s%2BCMO%2B-delta%2520none%2B-baseline%2Ball%2B-imfgsm";
 		querystr = "__QUERYSTR__";
+		querystr = querystr.replace(/%0A$/,"");
 		//source = source + "%0A" + source;
 		//source = "ftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121218_Gp_xr_5m.txt%0D%0A%0D%0Aftp%3A%2F%2Fftp.sec.noaa.gov%2Fpub%2Flists%2Fxray%2F20121219_Gp_xr_5m.txt%0A";
-
-    		$(function() {
-    			report();
-    		});
+    		$(function() {report()});
     </script>
 
 </head>

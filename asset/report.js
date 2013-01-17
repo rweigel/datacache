@@ -56,10 +56,13 @@ function report() {
 	// TODO: Create color array if not defined.
 	colors  = ['red','blue','red','green','white']; // Need one color per server.
 	
-	console.log("report.js: querystring length = " + querystr.length);
-	if (querystr.length == 0) {
+	var urls  = new Array();
+	urls    = querystr.replace(/.*source=(.*)/,'$1').split("%0A").filter(function(element){return element.length});
+	//console.log(urls.length);
+	//console.log("report.js: querystring length = " + querystr.length);
+	if (urls.length == 0) {
 		$('#error').show();
-		$('#error').html('Append ?source=URLlist to URL to generate report. ');
+		$('#error').html('At least one URL must be specified.');
 		$('#error').append('<a>Example</a>');
 		$('#error a').attr('href',location.href + "?source=http://datacache.org/dc/demo/file1.txt%0Ahttp://datacache.org/dc/demo/file2.txt%0A");
 		return;
@@ -79,7 +82,7 @@ function report() {
 		});
 	}
 
-	var urls  = new Array();
+	
 	var times = new Array();
 	
 	function tryurls(Nrun) {
@@ -87,7 +90,6 @@ function report() {
 		z = 0;
 		times[Nrun] = new Array();
 		N = querystr.split("%0A").length;
-		urls    = querystr.replace(/.*source=(.*)/,'$1').split("%0A").filter(function(element){return element.length});
 
 		options = querystr.replace(/source=.*/,'').replace(/\&/g,'');
 		//console.log(options);
@@ -116,7 +118,6 @@ function report() {
 	}
 	
 	function getreport(url,i,Nrun,tic,callback) {
-
 		
 		$.ajax({
 				type: 'GET',

@@ -2,6 +2,13 @@ body {
     padding-top: 60px;
     padding-bottom: 40px;
 }
+iframe {
+	font-size:100%;
+  	border: 1px solid black;
+ 	width: 100%;
+	margin: 5px 0;
+	padding: 3px;
+}
 textarea {
     width: 90%;
 }
