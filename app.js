@@ -263,7 +263,7 @@ function parseOptions(req) {
 	options.includeVers    = s2b(req.query.includeVers)    || s2b(req.body.includeVers)    || false;
 	options.respectHeaders = s2b(req.query.respectHeaders) || s2b(req.body.respectHeaders) || true;
 	options.plugin         = s2b(req.query.plugin)         || s2b(req.body.plugin)         || false;
-	options.return         = req.body.return               || req.query.return             || "jsong";
+	options.return         = req.body.return               || req.query.return             || "json";
 	options.dir            = req.query.dir                 || req.body.dir                 || "/cache/";
 
 //	if (!options.compressResponse) {
