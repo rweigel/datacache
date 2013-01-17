@@ -3,8 +3,8 @@
 <head>
   <title>Data Cache</title>
   <link rel="stylesheet" type="text/css" href="asset/bootstrap.css">
-  <link rel="stylesheet" type="text/css" href="asset/main.css">
   <link rel="stylesheet" type="text/css" href="asset/bootstrap-responsive.css">
+  <link rel="stylesheet" type="text/css" href="asset/main.css">
   <link rel="icon" type="image/ico" href="asset/favicon.ico"/>		
 </head>
 <body>
@@ -31,12 +31,10 @@
 </div>
 <div class="container">
   <div class="row">
-	    <div class="span6">
+	    <div id='input' class="span6">
 	      <h2>Submit URLs</h2>
-	      	<form id="urlForm" action="sync" method="post">
-			<p>
-			  Presets: | <span id="presets"></span>
-			</p>
+	      <br/>
+	      	<form id="urlForm" action="sync" method="post" target='response'>
 			<p>
 			  <input type='checkbox' name='forceUpdate' value='true' > Update <a href='cache'>cache</a> &nbsp; 
 			  <input type='checkbox' name='acceptGzip' checked='checked' value='true' > accept-encoding: gzip, compress</input> 
@@ -45,24 +43,41 @@
 			  <input type='checkbox' name='includeMeta' value='true' > include metadata in response</input>
 			</p>
 			<p>
-			  <span style="vertical-align:middle">Return<input type='text' name='return' style="width: 4em;" value="jsong" /></span>
-			  <span style="vertical-align:middle">Max tries: <input type='text' name='maxTries' style="width: 1em;" value="2" /></span>
-			  <span style="vertical-align:middle">Cache subdir: <input type='text' name='dir' style="width: 4em;"/></span>
-			  <span style="vertical-align:middle">Plug-in: <input type='text' name='plugin' style="width: 4em;"/></span>		  
+			Return:&nbsp;
+			<select style="width:5em;height:1.5em;" name='return'>
+  				<option value="jsong">jsong</option>
+  				<option value="jsons">jsons</option>
+  				<option value="report">report</option>
+			</select>
+			Max tries:&nbsp;
+			<select style="width:3em;height:1.5em" name='maxTries'>
+  				<option value="1">1</option>
+  				<option value="2">2</option>
+  				<option value="3">3</option>
+  				<option value="4">4</option>
+			</select>
+			<span style="vertical-align:middle">Plug-in: <input type='text' name='plugin' style="width: 4em;height:1em;"/></span>		  
 			<p>
-			  <input type='submit'/>
+				<span style="vertical-align:middle">Cache subdir: <input type='text' name='dir' style="width: 4em;height:1em;"/></span>
+				<span style="vertical-align:middle">Prefix: <input type='text' name='prefix' style="width: 12em;height:1em;"/></span>
 			</p>
 			<p>
-			  <textarea id='urls' rows='10' cols='100' name='source'></textarea>
+			  Enter one URL per line or use a pre-generated <span id="presets"></span>
+			</p>
+			
+			<p>
+			  <textarea id='urls' rows='5' cols='100' name='source'></textarea>
 			</p>
 			<p>
 			  <input type='submit'/>
 			</p>	
 	      </form>	
 	    </div>
-	    	<div class="span6">	
+	    	<div id='response' class="span6">	
 	      <div class="row">
-			<h2>Report</h2>
+			<h2>Response</h2>
+			<br/>
+			<iframe style="height:450px" name='response'></iframe>
 	    	  </div>
 	    </div>
 	</div>
@@ -80,15 +95,22 @@ $(document).ready(function(){
 	// $('#urlForm').ajaxForm();
 
 	$.getJSON("api/presets", function(data){
-		data.forEach(function(d){
-			var a = $("<a>")
-				.attr("style", "cursor:pointer")
-				.click(function(){
-					$("#urls").val(d.urls);
-				})
-				.html(d.name);
-			$("#presets").append(a);
-			$("#presets").append("&nbsp;|&nbsp;");
+		$("#presets").append("<select id='presetselect' style='height:1.5em;width:10em'/>");
+		$("#presetselect").append("<option id='title'>-list-</option>");
+		for (i = 0; i < data.length; i++) {
+			var o = $("<option/>")
+						.click(function(){$("#urls").val(data[i].urls);})
+						.attr("id",i)
+						.html(data[i].name);
+			$("#presetselect").append(o);
+		}
+		$("#presetselect").change(function () {
+			var id = $(this).find("option:selected").attr("id");
+			if (id !== "title") {
+				$("#urls").text(data[parseInt(id)].urls);
+			} else {
+				$("#urls").text("");
+			}
 		})
 	})
 })
