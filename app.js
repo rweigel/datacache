@@ -23,8 +23,6 @@ var qs = require('querystring');
 // TODO: Create .bin files with extension .binN, where N is 1+(# of data columns).
 // (or create field which is numberOfColumns).
 
-// Compress responses if accept-encoding allows it.  
-app.use(express.compress());
 
 var scheduler = require("./scheduler.js");
 var util = require("./util.js");
@@ -37,6 +35,9 @@ if (!fs.existsSync(__dirname+"/cache")) {fs.mkdirSync(__dirname+"/cache");}
 var port = process.argv[2] || 8000;
 
 // Middleware
+//app.use(express.logger());
+app.use(express.compress());
+app.use(express.methodOverride());
 app.use(express.bodyParser());
 
 app.use("/cache", express.directory(__dirname+"/cache"));
@@ -205,11 +206,11 @@ function streaminfo(results) {
 
 function stream(source, options, res) {
 	scheduler.addURLs(source, options, function (results) {
-			if (options.return === "jsong") {
+			if (options.return === "json") {
 			    res.send(results);
 			} else if (options.return === "xml") {
 				res.contentType("text/xml");
-				var ret = "<array>";
+				var ret = '<array>';
 				for (j = 0; j < results.length; j++) {
 					ret = ret + whiskers.render("<element><url>{url}</url><urlMd5>{urlMd5}</urlMd5><dataLength>{dataLength}</dataLength><error>{error}</error></element>", results[j]);
 				}
@@ -240,7 +241,7 @@ function stream(source, options, res) {
 			    res.writeHeader(200, {'Content-Length': lsi});
 			    pushfile(0);
 			} else {
-				return res.send(400, "return = jsong, jsonp, stream, or report.");
+				return res.send(400, "return = json, jsonp, stream, or report.");
 			}
 	    });
 }
@@ -252,15 +253,23 @@ function parseOptions(req) {
 	function s2b(str) {if (str === "true") {return true} else {return false}}
 	function s2i(str) {return parseInt(str)}
 
-	options.forceUpdate = s2b(req.query.forceUpdate) || s2b(req.body.forceUpdate) || false
-	options.maxTries    = s2i(req.query.maxTries)    || s2i(req.body.maxTries)    || 2;
-	options.acceptGzip  = s2b(req.query.acceptGzip)  || s2b(req.body.acceptGzip)  || true;
-	options.includeData = s2b(req.query.includeData) || s2b(req.body.includeData) || false;
-	options.includeMeta = s2b(req.query.includeMeta) || s2b(req.body.includeMeta) || false;
-	options.includeVers = s2b(req.query.includeVers) || s2b(req.body.includeVers) || false;
-	options.plugin      = s2b(req.query.plugin)      || s2b(req.body.plugin)      || false;
-	options.return      = req.body.return            || req.query.return          || "jsong";
-	options.dir         = req.query.dir              || req.body.dir              || "/cache/";
+	options.forceUpdate    = s2b(req.query.forceUpdate)    || s2b(req.body.forceUpdate)    || false
+	options.maxTries       = s2i(req.query.maxTries)       || s2i(req.body.maxTries)       || 2;
+//	options.compressResponse = s2b(req.query.compressResponse) || s2b(req.body.compressResponse)     || true;
+	options.includeData    = s2b(req.query.includeData)    || s2b(req.body.includeData)    || false;
+	options.includeMeta    = s2b(req.query.includeMeta)    || s2b(req.body.includeMeta)    || false;
+	options.includeHeader  = s2b(req.query.includeHeader)  || s2b(req.body.includeHeader)  || true;
+	options.includeLstat   = s2b(req.query.includeLstat)   || s2b(req.body.includeLstat)   || true;
+	options.includeVers    = s2b(req.query.includeVers)    || s2b(req.body.includeVers)    || false;
+	options.respectHeaders = s2b(req.query.respectHeaders) || s2b(req.body.respectHeaders) || true;
+	options.plugin         = s2b(req.query.plugin)         || s2b(req.body.plugin)         || false;
+	options.return         = req.body.return               || req.query.return             || "jsong";
+	options.dir            = req.query.dir                 || req.body.dir                 || "/cache/";
+
+//	if (!options.compressResponse) {
+//    Don't compress response even if Accept-Encoding: gzip,deflate
+//    appears in request header.
+//	}
 
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
