@@ -36,33 +36,44 @@
 	      <br/>
 	      	<form id="urlForm" action="sync" method="post" target='response'>
 			<p>
-			  <input type='checkbox' name='forceUpdate' value='true' > Update <a href='cache'>cache</a> &nbsp; 
-			  <input type='checkbox' name='acceptGzip' checked='checked' value='true' > accept-encoding: gzip, compress</input> 
-			  <br/>
-			  <input type='checkbox' name='includeData' value='true' > include data in response</input>&nbsp;
-			  <input type='checkbox' name='includeMeta' value='true' > include metadata in response</input>
+			  Response: include 
+			  <input type='checkbox' name='includeData' value='true' > data</input>&nbsp;
+			  <input type='checkbox' name='includeMeta' value='true' > metadata</input>
+			  <input type='checkbox' name='includeHeader' checked='checked' value='true' > HTTP header</input>&nbsp;
+			  <input type='checkbox' name='includeLstat' checked='checked' value='true' > lstat</input>
 			</p>
 			<p>
-			Return:&nbsp;
+			Response: return:&nbsp;
 			<select style="width:5em;height:1.5em;" name='return'>
-  				<option value="jsong">jsong</option>
+  				<option value="json">json</option>
+  				<option value="xml">xml</option>
   				<option value="jsons">jsons</option>
   				<option value="report">report</option>
 			</select>
-			Max tries:&nbsp;
+			<!-- input type='checkbox' name='compressResponse' value='false' > Don't compress response</input --> 
+			</p>
+			<p>
+			Processing:&nbsp;
+			<input type='checkbox' name='forceUpdate' value='true' >&nbsp;Update <a href='cache'>cache</a></input> 
+			&nbsp;
 			<select style="width:3em;height:1.5em" name='maxTries'>
   				<option value="1">1</option>
   				<option value="2">2</option>
   				<option value="3">3</option>
   				<option value="4">4</option>
 			</select>
-			<span style="vertical-align:middle">Plug-in: <input type='text' name='plugin' style="width: 4em;height:1em;"/></span>		  
-			<p>
-				<span style="vertical-align:middle">Cache subdir: <input type='text' name='dir' style="width: 4em;height:1em;"/></span>
-				<span style="vertical-align:middle">Prefix: <input type='text' name='prefix' style="width: 12em;height:1em;"/></span>
+			&nbsp;Max attempt(s)&nbsp;&nbsp;
 			</p>
 			<p>
-			  Enter one URL per line or use a pre-generated <span id="presets"></span>
+			Processing:&nbsp;
+				<span style="vertical-align:middle">Plug-in: <input type='text' name='plugin' style="width: 4em;height:1em;"/></span>		  
+				<span style="vertical-align:middle">&nbsp;Cache subdir: <input type='text' name='dir' style="width: 4em;height:1em;"/></span>
+			</p>
+			<p>
+			  <span style="vertical-align:middle">Prepend string to each URL: <input type='text' name='prefix' style="width: 12em;height:1em;"/></span>
+			</p>
+			<p>
+			  Enter one URL per line or use a pre-generated list <span id="presets"></span>
 			</p>
 			
 			<p>
@@ -96,12 +107,15 @@ $(document).ready(function(){
 
 	$.getJSON("api/presets", function(data){
 		$("#presets").append("<select id='presetselect' style='height:1.5em;width:10em'/>");
-		$("#presetselect").append("<option id='title'>-list-</option>");
+		$("#presetselect").append("<option id='title'>-lists-</option>");
 		for (i = 0; i < data.length; i++) {
 			var o = $("<option/>")
 						.click(function(){$("#urls").val(data[i].urls);})
 						.attr("id",i)
 						.html(data[i].name);
+			if (data[i].name == "_httpdemo") {
+				o.attr('selected',true);
+			}
 			$("#presetselect").append(o);
 		}
 		$("#presetselect").change(function () {
@@ -112,6 +126,7 @@ $(document).ready(function(){
 				$("#urls").text("");
 			}
 		})
+		$("#presetselect").trigger('change');
 	})
 })
 </script>
