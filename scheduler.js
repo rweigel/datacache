@@ -104,7 +104,7 @@ function work2result(work) {
 
 	work.work2ResultStartTime = new Date();
 	var ret = {};
-	
+	//console.log(work.header);
 	for (var key in work) {
 
 		if (key!=="data" && key!=="dataBinary" && key!=="dataJson" && key!=="datax" && key!=="meta" && key!=="metaJson" && key!=="body") {
@@ -157,9 +157,9 @@ function newWork(url, options, callback){
 		urlMd5 : util.md5(url),
 		time: 0,
 		data: "",
-		header: "",
+		header: {},
 		dir: "",
-		stats: {},
+		lstat: {},
 		versions: [],
 		isFromCache : false,
 		isFinished : false,
