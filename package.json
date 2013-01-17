@@ -9,6 +9,7 @@
 		"moment" : "1.7.0",
 		"socket.io": "0.9.10",
 		"ftp": "0.1.4",
+		"whiskers": "0.2.4",
 		"mkdirp": "*"
 	}
 }
