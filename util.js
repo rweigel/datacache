@@ -86,8 +86,10 @@ var isCached = function isCached(work, callback) {
 			work.foundInCache = true;
 			work.dir = getCacheDir(work,true);
 	    }
+	    if (work.options.respectHeaders) {
+	    }
 	    if (work.options.includeVers) {
-	    		// TODO: Get list of files named md5data./*.data.  In
+	    		// TODO: Get list of files named md5data./*.data.
 	    }
 	    callback(work);
 	});
@@ -97,56 +99,73 @@ exports.isCached = isCached;
 function getCachedData(work, callback) {
 
 	try {
-		var ext1 = ".meta";
-		var ext2 = ".data";
+	
+		var err = "";
+
+		getHeader();
+		getLstat();
+		getMeta();
+		getData();
 		
-		if (!work.options.includeData) {
+		function finished(msg) {
+			if (typeof(finished.z) == 'undefined') {
+				finished.z = 0;
+			} 
+			finished.z = finished.z+1;			
+			//console.log(msg);
+			if (finished.z == 4) {
+				work.isFinished = true;
+				callback(err);
+			};
+		}
+		
+		function getHeader() {
+			//console.log("Reading Header Started");
+			if (!work.options.includeHeader) { finished("Reading Header Finished"); return;}
+				fs.readFile(getCachePath(work) + ".header", "utf8",
+					function (err, header) {
+						tmp = header.split("\n");
+						for (i = 0; i < tmp.length; i++) {
+							kv = tmp[i].split(":");
+							work.header[kv[0]] = kv[1];
+						}
+						finished("Reading Header Finished");
+					});
+		}		
+		function getLstat() {
+			//console.log("Reading Lstat Started");
+			if (!work.options.includeLstat) { finished("Reading Lstat Finished"); return;}
 			fs.lstat(getCachePath(work) + ".data",
-				function (err,stats) {
+				function (err, stats) {
 					if (stats) {
 						work.dataLength = stats.size;
-						work.stats = stats;
+						work.lstat = stats;
+						finished("Reading Lstat Finished");
 					}
-					callback(err);
 				});
-			if (!work.options.includeMeta) {
-				return;
-			}
 		}
-		if (work.options.includeData && !work.options.includeMeta) {
-			var ext1 = ".data";
-			var ext2 = "";
-		}
-		if (!work.options.includeData && work.options.includeMeta) {
-			var ext1 = ".meta";
-			var ext2 = "";
-		}
-		
-		function getData(data) {
-			work.data = data;
-			work.dataJson = work.plugin.dataToJson(data);
-			work.dataMd5 = exports.md5(data);
-			work.dataLength = data.length;		
-		}
-		function getMeta(data) {
-			work.meta = data;
-			work.metaJson = work.plugin.metaToJson(data);
-		}
-		
-		fs.readFile(getCachePath(work) + ext1, "utf8", function (err, data) {
-			if (err) {return callback(err);}
-			if (ext1 === ".data") {getData(data);}
-			if (ext1 === ".meta") {getMeta(data);}
-			if (ext2 === "") {
-				work.isFinished = true;
-					callback(err);
-				} else {
-					fs.readFile(getCachePath(work) + ext2, "utf8", function (err, data) {
-					work.isFinished = true;
-					callback(err);
+		function getMeta() {
+			//console.log("Reading Meta Started");
+			if (!work.options.includeMeta) { finished("Reading Meta Finished"); return;}			
+			fs.readFile(getCachePath(work) + ".meta", "utf8",
+				function (err, data) {
+					work.meta       = data;
+					work.metaJson   = work.plugin.metaToJson(data);
+					finished("Reading Meta Finished");
 				});
-			}
-		});
+		}
+		function getData(callback) {
+			//console.log("Reading Data Started");
+			if (!work.options.includeData) { finished("Reading Data Finished"); return;}			
+			fs.readFile(getCachePath(work) + ".data", "utf8",
+				function (err, data) {
+					work.data       = data;
+					work.dataJson   = work.plugin.dataToJson(data);
+					work.dataMd5    = exports.md5(data);
+					work.dataLength = data.length;		
+					finished("Reading Data Finished");
+				});
+		}
 	} catch(err) {
 		console.log(err);
 	}
