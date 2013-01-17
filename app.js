@@ -9,7 +9,8 @@ var request = require("request"),
 	crypto = require("crypto"),
 	fs = require("fs"),
 	hogan = require("hogan.js"),
-	moment = require("moment");
+	moment = require("moment"),
+	whiskers = require("whiskers");
 
 var qs = require('querystring');
 // TODO: Check if cache directory is writeable and readable.
@@ -47,6 +48,15 @@ app.use("/asset", express.static(__dirname + "/asset"));
 // Set default content-type to "text".  Not needed?
 //app.use(function (req, res, next) {res.contentType("text");next();});
 
+// Rewrite /sync?return=report ... to /report ...
+app.use(function (req, res, next) {
+	ret = req.body.return || req.query.return;
+	if (ret === "report") { 
+		req.url = "/report";
+	}
+	next();
+});
+
 // app.use(express.errorHandler({ showStack: true, dumpExceptions: true }));
 
 app.get('/', function (req, res) {
@@ -70,8 +80,10 @@ app.get("/report", function (req,res) {
 app.post("/report", function (req,res) {
   	 fs.readFile(__dirname+"/report.htm", "utf8", 
   	 	function (err,data) {
-  	 		var source = (req.body.source || "").replace(/\n/g,'%0A');
+  	 		console.log(req.body);
+  	 		var source = (req.body.source || "").replace(/\r\n/g,'%0A');
   	 		var querystr = qs.stringify(req.query);
+  	 		console.log(querystr);
   	 		res.send(data.replace("__QUERYSTR__",querystr+"&source="+source));
   	 	});
 }) 
@@ -195,7 +207,15 @@ function stream(source, options, res) {
 	scheduler.addURLs(source, options, function (results) {
 			if (options.return === "jsong") {
 			    res.send(results);
-			} else if ((options.return === "jsons")) {
+			} else if (options.return === "xml") {
+				res.contentType("text/xml");
+				var ret = "<array>";
+				for (j = 0; j < results.length; j++) {
+					ret = ret + whiskers.render("<element><url>{url}</url><urlMd5>{urlMd5}</urlMd5><dataLength>{dataLength}</dataLength><error>{error}</error></element>", results[j]);
+				}
+				ret = ret + "</array>";
+				res.send(ret);
+			} else if (options.return === "jsons") {
 				res.send(streaminfo(results));
 			} else if ((options.return === "stream")) {
 			    function pushfile(j) {
@@ -220,7 +240,7 @@ function stream(source, options, res) {
 			    res.writeHeader(200, {'Content-Length': lsi});
 			    pushfile(0);
 			} else {
-				return res.send(400, "return= jsong, jsonp, data, bin, or resport.");
+				return res.send(400, "return = jsong, jsonp, stream, or report.");
 			}
 	    });
 }
@@ -257,13 +277,17 @@ function parseOptions(req) {
 function parseSource(req) {
 
     var source = req.body.source || req.query.source;
-
+    var prefix = req.body.prefix || req.query.prefix;
+    
     if (!source) return "";
 
     source = source.trim().replace("\r", "").split(/[\r\n]+/).filter(
 				function (line) {
 					return line.trim() != "";
 	    			});
-
+	
+	if (prefix)		    			
+		for (i = 0; i < source.length; i++) {source[i] = prefix + source[i];}
+	
 	return source;
 }
