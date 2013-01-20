@@ -6,7 +6,7 @@ function formatlength(l,w) {
 	ls = l.toString().replace("-1","x")
 	lsl = ls.length;
 	while (lsl < w) {
-		ls = "x" + ls;
+		ls = " " + ls;
 		lsl = ls.length;
 	}
 	return ls
@@ -46,10 +46,7 @@ function report() {
 
 	var DOMLoadedTime = new Date();
 
-	Nruns   = 1;
-	servers = false; // Get additional servers from /servers
-	TIMEOUT = 1000;
-	ASYNC   = false;
+	//ASYNC   = true;
 	//DC      = [location.href.replace(/report.*/,'sync'),"http://datacache.org/dc/sync"];
 	DC      = [location.href.replace(/report.*/,'sync')];
 
@@ -57,7 +54,8 @@ function report() {
 	colors  = ['red','blue','red','green','white']; // Need one color per server.
 	
 	var urls  = new Array();
-	urls    = querystr.replace(/.*source=(.*)/,'$1').split("%0A").filter(function(element){return element.length});
+	//console.log(querystr);
+	urls    = querystr.replace(/.*source=(.*\s+)/,'$1').split("\n").filter(function(element){return element.length});
 	//console.log(urls.length);
 	//console.log("report.js: querystring length = " + querystr.length);
 	if (urls.length == 0) {
@@ -89,14 +87,23 @@ function report() {
 		tic = new Date();
 		z = 0;
 		times[Nrun] = new Array();
-		N = querystr.split("%0A").length;
+		N = urls.length;
 
-		options = querystr.replace(/source=.*/,'').replace(/\&/g,'');
-		//console.log(options);
-		//console.log(querystr);
+		console.log(N);
+		console.log(querystr);
+		options = querystr.replace(/source=.*[\s\S]*?$/g,'');
+		options = options.replace(/\&.*=\&/g,'');
+		console.log(options);
+		console.log(querystr);
+		console.log(urls);
 		for (i = 0;i < DC.length;i++) {
 			$('#wrapper').append("<div id='status'></div>".replace('status','status-'+i+""+Nrun));
-			$('#status-'+i+""+Nrun).append("<div class='note'>Sending " + N + " URLs to " + DC[i] + (options ? " with options " + options : "") + "</div>");
+			if (ASYNC) {
+				msg = "<div class='note'>Sending " + N + " URLs (one-by-one ayncronously) to " + DC[i] + (options ? " with options " + options : "") + "</div>";
+			} else {
+				msg = "<div class='note'>Sending " + N + " URLs to (in one request) " + DC[i] + (options ? " with options " + options : "") + "</div>";
+			}
+			$('#status-'+i+""+Nrun).append(msg);
 			if (ASYNC) {
 				for (var j = 0;j < urls.length;j++) {
 					getreport(DC[i] + "?"+options+"&source="+urls[j],i,Nrun,tic);
@@ -104,7 +111,10 @@ function report() {
 					//summary(times);
 				}						
 			} else {
-				getreport(DC[i] + "?"+querystr,i,Nrun,tic);
+				console.log(querystr);
+				rurl = DC[i] + "?"+querystr.replace(/\n/g,'%0A');
+				console.log(rurl);
+				getreport(rurl,i,Nrun,tic);
 				summary(times);									
 			}
 		}
@@ -133,20 +143,16 @@ function report() {
 						//$('#status-'+i+""+Nrun).append(".  Total turn-around: "+(toc-tic)+" ms.");							
 
 						if (typeof data != "object") {
-							var template = $("#reportTemplate2").html();
+							var template = $("#reportTemplate").html();
 							status = template.replace('status','status-'+i+""+Nrun);
 							
-							tmp = data;
-							data = new Object();
-							
-							data.url = url;
-							data.requestStart    = tic;	
-							data.requestFinish   = toc;	
-							data.DOMLoadedTime   = DOMLoadedTime;
-							data.dataLength = tmp.length;
-
-							var report = $.tmpl(template,data);							
-							$('#status-'+i+""+Nrun).append(report);
+							console.log(url)
+							console.log(data);							
+							for (k = 0;k < data.length; k++) {
+								console.log(data[k]);
+								var report = $.tmpl(template,data[k]);							
+								$('#status-'+i+""+Nrun).append(report);
+							}
 							//$('#status-'+i+""+Nrun+" img").css("background-color",colors[i]);
 
 						} else {	
