@@ -74,18 +74,16 @@ app.get("/report", function (req,res) {
   	 fs.readFile(__dirname+"/report.htm", "utf8", 
   	 	function (err,data) {
   	 		var querystr = qs.stringify(req.query);
-  	 		console.log(querystr);
+			console.log(querystr);
   	 		res.send(data.replace("__QUERYSTR__", querystr));
   	 	});
 }) 
 app.post("/report", function (req,res) {
   	 fs.readFile(__dirname+"/report.htm", "utf8", 
   	 	function (err,data) {
-  	 		console.log(req.body);
-  	 		var source = (req.body.source || "").replace(/\r\n/g,'%0A');
-  	 		var querystr = qs.stringify(req.query);
+  	 		var querystr = qs.stringify(req.body).replace(/\r\n/g,'%0A');
   	 		console.log(querystr);
-  	 		res.send(data.replace("__QUERYSTR__",querystr+"&source="+source));
+  	 		res.send(data.replace("__QUERYSTR__",querystr));
   	 	});
 }) 
 
