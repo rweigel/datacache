@@ -252,7 +252,7 @@ function parseOptions(req) {
 	function s2i(str) {return parseInt(str)}
 
 	options.forceUpdate    = s2b(req.query.forceUpdate)    || s2b(req.body.forceUpdate)    || false
-	options.forceWrite     = s2b(req.query.forceWrite)     || s2b(req.body.forceWrite)     || true
+	options.forceWrite     = s2b(req.query.forceWrite)     || s2b(req.body.forceWrite)     || false
 	options.maxTries       = s2i(req.query.maxTries)       || s2i(req.body.maxTries)       || 2;
 //	options.compressResponse = s2b(req.query.compressResponse) || s2b(req.body.compressResponse)     || true;
 	options.includeData    = s2b(req.query.includeData)    || s2b(req.body.includeData)    || false;
@@ -261,7 +261,7 @@ function parseOptions(req) {
 	options.includeLstat   = s2b(req.query.includeLstat)   || s2b(req.body.includeLstat)   || false;
 	options.includeVers    = s2b(req.query.includeVers)    || s2b(req.body.includeVers)    || false;
 	options.respectHeaders = s2b(req.query.respectHeaders) || s2b(req.body.respectHeaders) || true;
-	options.plugin         = s2b(req.query.plugin)         || s2b(req.body.plugin)         || false;
+	options.plugin         = req.query.plugin              || req.body.plugin              || "";
 	options.return         = req.body.return               || req.query.return             || "json";
 	options.dir            = req.query.dir                 || req.body.dir                 || "/cache/";
 

@@ -54,7 +54,9 @@
 			</p>
 			<p>
 			Processing:&nbsp;
-			<input type='checkbox' name='forceUpdate' value='true' >&nbsp;Update <a href='cache'>cache</a></input> 
+			<input type='checkbox' name='forceUpdate' value='true' ><span title="Writes new md5url.data if different from cache version.  Other files are not modified.">&nbsp;Update <a href='cache'>cache</a>  if change</span></input> 
+			&nbsp;
+			<input type='checkbox' name='forceWrite' value='true' ><span title="Writes new md5url.* files even if md5url.data has not changed">&nbsp;Update <a href='cache'>cache</a></span></input> 
 			&nbsp;
 			<select style="width:3em;height:1.5em" name='maxTries'>
   				<option value="1">1</option>
@@ -66,7 +68,7 @@
 			</p>
 			<p>
 			Processing:&nbsp;
-				<!-- span style="vertical-align:middle">Plug-in: <input type='text' name='plugin' style="width: 4em;height:1em;"/></span-->		  
+				<span style="vertical-align:middle">Plug-in: <input type='text' name='plugin' value="" style="width: 4em;height:1em;"/></span>		  
 				<span style="vertical-align:middle">&nbsp;Cache subdir: <input type='text' name='dir' style="width: 4em;height:1em;"/></span>
 			</p>
 			<p>
