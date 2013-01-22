@@ -122,7 +122,7 @@ function getCachedData(work, callback) {
 		function getHeader() {
 			//console.log("Reading Header Started");
 			if (!work.options.includeHeader) { finished("Reading Header Finished"); return;}
-				fs.readFile(getCachePath(work) + ".header", "utf8",
+				fs.readFile(getCachePath(work) + ".header", "utf8",	
 					function (err, header) {
 						tmp = header.split("\n");
 						for (i = 0; i < tmp.length; i++) {
@@ -242,8 +242,8 @@ var writeCache = function(work, callback){
 		function renameFiles(callback) {
 			var newdir = filename + "/";
 			mkdirp(newdir, function (err) {
-					console.log(newdir);
-					console.log(newdir+filename+"/"+dataMd5old+".data");
+					console.log("Moving files to: " + newdir);
+					//console.log("filename: " + filename);
 					if (err) {console.log(err);}
 					fs.renameSync(filename+".data"  , filename+"/"+dataMd5old+".data");
 					fs.renameSync(filename+".bin"   , filename+"/"+dataMd5old+".bin");
@@ -265,9 +265,11 @@ var writeCache = function(work, callback){
 				      writeFiles();
 				  } else {
 				      dataMd5old = md5(fs.readFileSync(filename+".data"));
-				      if (work.dataMd5 != dataMd5old) {
-						if (keepversions(work.url)) {
+				      if ( (work.dataMd5 != dataMd5old) || work.options.forceWrite) {
+						if (keepversions(work.url) && (work.dataMd5 != dataMd5old)) {
 				      		renameFiles(writeFiles);
+						} else {
+							writeFiles();
 						}
 				      } else {
 					  	finish();finish();finish();finish();finish();finish();
