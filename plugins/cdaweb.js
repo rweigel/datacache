@@ -65,30 +65,44 @@ exports.dataToJson = function(data){
 }
 
 exports.extractMeta = function(body){
-	// console.log(body);
-	return body.toString().split(/\r?\n/)
-			.splice(56, 3)
-	                .join("\n");
+	// To be robust against changes in header length,
+	// find first data line and then back up three lines.
+	all = body.toString().split(/\r?\n/g);
+	for (i = 0; i < all.length; i++) {
+		if (all[i].match(/^EPOCH/)) {
+			console.log(i);
+			break;
+		}
+	}
+	return all.splice(i, 3).join("\n");
 }
 
 exports.extractMetaJson = function(body){
-	var meta = body.toString()
-				.split(/\r?\n/)
-				.splice(57, 2)
-				.join("\n");
-	//console.log(meta);
+	var meta = exports.extractMeta(body);
 	return exports.metaToJson(meta);
-
 }
 
 exports.metaToJson = function(meta){
+    //console.log("\n"+meta);
     var metaJson = meta.split(/\r?\n/)
 			.map(function(d){
 					return d.split(/\s+/);
 				});
     metaJson[0].unshift('Date');
     metaJson[0][1] = "Time";
-    metaJson[1].unshift('');
+    if (metaJson[1][0] == "") {
+    		//EPOCH                                   BX_GSE                 BY_GSE                 BZ_GSE
+    		//                          (@_x_component_)       (@_y_component_)       (@_z_component_)
+		//dd-mm-yyyy hh:mm:ss.ms                      nT                     nT                     nT
+    		tmp = metaJson[1];
+    		metaJson[1] = metaJson[2];
+    		metaJson[2] = tmp;
+    		metaJson[2].unshift("");
+    } else {
+    		// EPOCH                           <|B|>
+		// dd-mm-yyyy hh:mm:ss.ms             nT
+		// 01-01-2005 00:00:00.000       6.37000
+    }
 	return metaJson;
 }
 
