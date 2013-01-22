@@ -111,7 +111,7 @@ function work2result(work) {
 			ret[key] = work[key];
 		}
 
-		if (work.options.includeData === "true") {
+		if (work.options.includeData) {
 		    if (Object.keys(work["dataJson"]).length == 0) {
 				ret["data"] = work["data"];
 		    } else {
@@ -119,7 +119,9 @@ function work2result(work) {
 		    }
 		}
 		
-		if (work.options.includeMeta === "true") {
+		//console.log(work["meta"]);
+		//console.log(work["metaJson"]);
+		if (work.options.includeMeta) {
 		    if (Object.keys(work["metaJson"]).length == 0) {
 				if (work["meta"].length == 0) {
 					ret["meta"] = work["datax"];
@@ -205,7 +207,7 @@ function newWork(url, options, callback){
 			return this.plugin.extractDataJson(data);
 		},
 		extractMetaJson: function (data){
-			return this.plugin.extractMetaJson(data);
+			//return this.plugin.extractMetaJson(data);
 		},
 		extractRem: function(data) {
 			return this.plugin.extractRem(data);
