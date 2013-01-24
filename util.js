@@ -257,8 +257,7 @@ var writeCache = function(work, callback){
 		
 		function keepversions() {
 			return true;
-		}
-		
+		}	
 	    fs.exists(filename + ".data",
 		      function (exists) {
 				  if (!exists) {
