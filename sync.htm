@@ -44,7 +44,7 @@
 			</p>
 			<p>
 			Response: return:&nbsp;
-			<select style="width:5em;height:1.5em;" name='return'>
+			<select style="width:5em;height:2.0em;" name='return'>
   				<option value="report">report</option>
   				<option value="json">json</option>
   				<option value="xml">xml</option>
@@ -58,7 +58,7 @@
 			&nbsp;
 			<input type='checkbox' name='forceWrite' value='true' ><span title="Writes new md5url.* files even if md5url.data has not changed">&nbsp;Update <a href='cache'>cache</a></span></input> 
 			&nbsp;
-			<select style="width:3em;height:1.5em" name='maxTries'>
+			<select style="width:3em;height:2.0em" name='maxTries'>
   				<option value="1">1</option>
   				<option value="2">2</option>
   				<option value="3">3</option>
@@ -72,12 +72,11 @@
 				<span style="vertical-align:middle">&nbsp;Cache subdir: <input type='text' name='dir' style="width: 4em;height:1em;"/></span>
 			</p>
 			<p>
-			  <span style="vertical-align:middle">Prepend string to each URL: <input type='text' name='prefix' style="width: 12em;height:1em;"/></span>
-			</p>
-			<p>
 			  Enter one URL per line or use a pre-generated list <span id="presets"></span>
 			</p>
-			
+			<p>
+			  <span style="vertical-align:middle">Prepend string to line: <input type='text' name='prefix' style="width: 12em;height:1em;"/></span>
+			</p>			
 			<p>
 			  <textarea id='urls' rows='5' cols='100' name='source'></textarea>
 			</p>
@@ -108,7 +107,7 @@ $(document).ready(function(){
 	// $('#urlForm').ajaxForm();
 
 	$.getJSON("api/presets", function(data){
-		$("#presets").append("<select id='presetselect' style='height:1.5em;width:10em'/>");
+		$("#presets").append("<select id='presetselect' style='height:2.0em;width:10em'/>");
 		$("#presetselect").append("<option id='title'>-lists-</option>");
 		for (i = 0; i < data.length; i++) {
 			var o = $("<option/>")

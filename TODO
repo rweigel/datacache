@@ -1,3 +1,72 @@
+== ASCII data options ==
+
+Not yet implemented
+
+By default, the .data contains the "data-like" lines of the .out file - lines that start with an integer with no preceding spaces.
+* <code>dataLineRegex</code> The default is <code>^[0-9].*</code>.  
+* <code>dataLineNormalizerRegex</code> 
+* <code>dataLineNormalizerReplace</code>
+Any line matching <code>dataLineRegex</code> in the response from the server for a given URL will appear in the .data file.  If both are specified, <code>dataLineNormalizerRegex</code> and <code>dataLineNormalizerReplace</code> are used as below to modify one or more contiguous data lines. 
+<source lang="javascript">
+fileline.toString()
+    .replace(dataLineNormalizerRegex,dataLineNormalizerReplace)
+    .split("\n")
+    .filter(function(line){return line.search(dataLineRegex)!=-1;})
+    .join("\n") + "\n";
+</source>
+=== Example: Testing a regular expression ===
+For verifying regular expressions (for interactive regular expression creation and debugging, see [http://regexpal.com/]), open Chrome or Firefox's debugger and enter values for the first four variables given below.
+<source lang="javascript">
+fileline      = "";
+dataLineRegex = "";
+dataLineNormalizerRegex   = "";
+dataLineNormalizerReplace = "";
+fileline.toString()
+    .replace(dataLineNormalizerRegex,dataLineNormalizerReplace)
+    .split("\n")
+    .filter(function(line){return line.search(dataLineRegex)!=-1;})
+    .join("\n") + "\n";
+</source>
+
+=== Example: removing bad lines ===
+
+=== Example: data span multiple lines ===
+Note that URLs that return ASCII data that spans multiple contiguous lines can be have one or more lines combined.  For example,
+<source lang="javascript">
+filemultilines1  = "1980    01      02      00      14      00      1\nCMO     -28     13      13";
+filemultilines2  = "1980    01      02      00      14      00      1\nCMO     -28     13      13";
+filemultiline    = filemultilines1 + "\n" + filemultilines2;
+dataLineRegex    = new RegExp(/^([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)/);
+dataLineNormalizerRegex   = new RegExp(/\n([a-zA-Z]+)\s+([\d-]+)\s([\d-]+)\s([\d-]+)/g);
+dataLineNormalizerReplace = " $2 $3 $4";
+twolines = 
+filemultiline.toString()
+    .replace(dataLineNormalizerRegex,dataLineNormalizerReplace)
+    .split("\n")
+    .filter(function(line){return line.search(dataLineRegex)!=-1;})
+    .join("\n") + "\n";
+console.log(filemultilines);
+// 1980    01      02      00      14      00      1
+// CMO     -28     13      13
+// 1980    01      02      00      14      00      1
+// CMO     -28     13      13
+console.log(twolines);
+// 1980    01      02      00      14      00      1 -28 13 13
+// 1980    01      02      00      15      00      1 -23 10 9
+</source>
+
+
+Unit tests
+
+curl "http://localhost:8000/sync?includeMeta=true&source=http://cdaweb.gsfc.nasa.gov/tmp/ws18979180951/ac_h1_mfi.txt"
+curl "http://localhost:8000/sync?includeMeta=true&forceUpdate=true&source=http://cdaweb.gsfc.nasa.gov/tmp/ws18979180951/ac_h1_mfi.txt"
+
+curl -d "includeMeta=true&source=http%3A%2F%2Fcdaweb.gsfc.nasa.gov%2FWS%2Fcdasr%2F1%2Fdataviews%2Fsp_phys%2Fdatasets%2FAC_H1_MFI%2Fdata%2F20050101T000000Z%2C20050102T000000Z%2FMagnitude%3Fformat%3Dtext" "http://localhost:8000/sync"
+curl -d "includeMeta=true" "http://localhost:8000/sync?source=http%3A%2F%2Fcdaweb.gsfc.nasa.gov%2FWS%2Fcdasr%2F1%2Fdataviews%2Fsp_phys%2Fdatasets%2FAC_H1_MFI%2Fdata%2F20050101T000000Z%2C20050102T000000Z%2FMagnitude%3Fformat%3Dtext"
+
+curl -d "includeMeta=true&forceUpdate=true&source=http%3A%2F%2Fcdaweb.gsfc.nasa.gov%2FWS%2Fcdasr%2F1%2Fdataviews%2Fsp_phys%2Fdatasets%2FAC_H1_MFI%2Fdata%2F20050101T000000Z%2C20050102T000000Z%2FMagnitude%3Fformat%3Dtext" "http://localhost:8000/sync"
+curl -d "includeMeta=true&return=json&forceUpdate=false" "http://localhost:8000/sync?source=http%3A%2F%2Fcdaweb.gsfc.nasa.gov%2FWS%2Fcdasr%2F1%2Fdataviews%2Fsp_phys%2Fdatasets%2FAC_H1_MFI%2Fdata%2F20050101T000000Z%2C20050102T000000Z%2FMagnitude%3Fformat%3Dtext"
+
 
 # Add parameters CONCURRENCY = 20, TIMEOUT = 20000, and MAXCONNECTION = 1000 to
 datacache.sh.
