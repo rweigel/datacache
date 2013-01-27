@@ -1,6 +1,5 @@
-http://supermag.jhuapl.edu/script/download.mag?cli=weigel+19800101+00%3A00+24%3A00+-s+CMO+-delta%20none+-baseline+all+-imfgsm
+http%3A%2F%2Fsupermag.jhuapl.edu%2Fscript%2Fdownload.mag%3Fcli%3Dweigel%2B19800101%2B00%253A00%2B24%253A00%2B-s%2BCMO%2B-delta%2520none%2B-baseline%2Ball%2B-imfgsm%0A
 
-http://supermag.jhuapl.edu/script/download.mag?cli=weigel+19800102+00%3A00+24%3A00+-s+CMO+-delta%20none+-baseline+all+-imfgsm
+http%3A%2F%2Fsupermag.jhuapl.edu%2Fscript%2Fdownload.mag%3Fcli%3Dweigel%2B19800102%2B00%253A00%2B24%253A00%2B-s%2BCMO%2B-delta%2520none%2B-baseline%2Ball%2B-imfgsm%0A
 
-http://supermag.jhuapl.edu/script/download.mag?cli=weigel+19800103+00%3A00+24%3A00+-s+CMO+-delta%20none+-baseline+all+-imfgsm
-
+http%3A%2F%2Fsupermag.jhuapl.edu%2Fscript%2Fdownload.mag%3Fcli%3Dweigel%2B19800103%2B00%253A00%2B24%253A00%2B-s%2BCMO%2B-delta%2520none%2B-baseline%2Ball%2B-imfgsm%0A

@@ -74,7 +74,7 @@ app.get("/report", function (req,res) {
   	 fs.readFile(__dirname+"/report.htm", "utf8", 
   	 	function (err,data) {
   	 		var querystr = qs.stringify(req.query);
-			console.log(querystr);
+			//console.log(querystr);
   	 		res.send(data.replace("__QUERYSTR__", querystr));
   	 	});
 }) 
@@ -82,7 +82,7 @@ app.post("/report", function (req,res) {
   	 fs.readFile(__dirname+"/report.htm", "utf8", 
   	 	function (err,data) {
   	 		var querystr = qs.stringify(req.body).replace(/\r\n/g,'%0A');
-  	 		console.log(querystr);
+  	 		//console.log(querystr);
   	 		res.send(data.replace("__QUERYSTR__",querystr));
   	 	});
 }) 
@@ -254,7 +254,6 @@ function parseOptions(req) {
 	options.forceUpdate    = s2b(req.query.forceUpdate)    || s2b(req.body.forceUpdate)    || false
 	options.forceWrite     = s2b(req.query.forceWrite)     || s2b(req.body.forceWrite)     || false
 	options.maxTries       = s2i(req.query.maxTries)       || s2i(req.body.maxTries)       || 2;
-//	options.compressResponse = s2b(req.query.compressResponse) || s2b(req.body.compressResponse)     || true;
 	options.includeData    = s2b(req.query.includeData)    || s2b(req.body.includeData)    || false;
 	options.includeMeta    = s2b(req.query.includeMeta)    || s2b(req.body.includeMeta)    || false;
 	options.includeHeader  = s2b(req.query.includeHeader)  || s2b(req.body.includeHeader)  || false;
@@ -265,8 +264,9 @@ function parseOptions(req) {
 	options.return         = req.body.return               || req.query.return             || "json";
 	options.dir            = req.query.dir                 || req.body.dir                 || "/cache/";
 
-//console.log(options.forceUpdate);
-//console.log(options.includeMeta);
+//	options.compressResponse = s2b(req.query.compressResponse) || s2b(req.body.compressResponse)     || true;
+//  console.log(options.forceUpdate);
+//  console.log(options.includeMeta);
 //	if (!options.compressResponse) {
 //    Don't compress response even if Accept-Encoding: gzip,deflate
 //    appears in request header.

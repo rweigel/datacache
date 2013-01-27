@@ -1,5 +1,5 @@
-http://spidr.ngdc.noaa.gov/spidr/servlet/GetData?format=csv&dateFrom=19910101&dateTo=19910102&param=amie_ae
+http://spidr.ngdc.noaa.gov/spidr/servlet/GetData%3Fformat=csv%26dateFrom=19910101%26dateTo=19910102%26param=amie_ae
 
-http://spidr.ngdc.noaa.gov/spidr/servlet/GetData?format=csv&dateFrom=19910102&dateTo=19910103&param=amie_ae
+http://spidr.ngdc.noaa.gov/spidr/servlet/GetData%3Fformat=csv%26dateFrom=19910102%26dateTo=19910103%26param=amie_ae
 
-http://spidr.ngdc.noaa.gov/spidr/servlet/GetData?format=csv&dateFrom=19910103&dateTo=19910104&param=amie_ae
+http://spidr.ngdc.noaa.gov/spidr/servlet/GetData%3Fformat=csv%26dateFrom=19910103%26dateTo=19910104%26param=amie_ae
