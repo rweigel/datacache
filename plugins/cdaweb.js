@@ -90,7 +90,7 @@ exports.metaToJson = function(meta){
 				});
     metaJson[0].unshift('Date');
     metaJson[0][1] = "Time";
-    if (metaJson[1][0] == "") {
+    if (metaJson[1] && metaJson[1][0] == "") {
     		//EPOCH                                   BX_GSE                 BY_GSE                 BZ_GSE
     		//                          (@_x_component_)       (@_y_component_)       (@_z_component_)
 		//dd-mm-yyyy hh:mm:ss.ms                      nT                     nT                     nT
