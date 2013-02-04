@@ -71,6 +71,8 @@ curl -d "includeMeta=true&return=json&forceUpdate=false" "http://localhost:8000/
 # Add parameters CONCURRENCY = 20, TIMEOUT = 20000, and MAXCONNECTION = 1000 to
 datacache.sh.
 
+Max node process is 1.9 GB => max file size = 1900/20 = 95 MB since all files are held in memory.
+
 # Write keepversions() in util.js.  It reads keepversions.txt, which contains regular 
 expressions for urls that should be versioned.
 

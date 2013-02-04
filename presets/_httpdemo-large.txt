@@ -1,0 +1,10 @@
+http://mag.gmu.edu/tss0/data/QinDenton/1min/bin/QinDenton_1min-1-v0.bin
+http://mag.gmu.edu/tss0/data/QinDenton/1min/bin/QinDenton_1min-2-v0.bin
+http://mag.gmu.edu/tss0/data/QinDenton/1min/bin/QinDenton_1min-3-v0.bin
+http://mag.gmu.edu/tss0/data/QinDenton/1min/bin/QinDenton_1min-4-v0.bin
+http://mag.gmu.edu/tss0/data/QinDenton/1min/bin/QinDenton_1min-5-v0.bin
+http://mag.gmu.edu/tss0/data/QinDenton/1min/bin/QinDenton_1min-6-v0.bin
+http://mag.gmu.edu/tss0/data/QinDenton/1min/bin/QinDenton_1min-7-v0.bin
+http://mag.gmu.edu/tss0/data/QinDenton/1min/bin/QinDenton_1min-8-v0.bin
+http://mag.gmu.edu/tss0/data/QinDenton/1min/bin/QinDenton_1min-9-v0.bin
+http://mag.gmu.edu/tss0/data/QinDenton/1min/bin/QinDenton_1min-10-v0.bin
