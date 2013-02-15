@@ -27,7 +27,7 @@ exports.extractDataBinary = function (data) {
 	    .filter(function(line){return line.search(re1)!=-1;})
 	    .join("\n")
 	    .split(/\s+/g);
-	
+
 	var buff = new Buffer(8*arr.length);
 	for (i = 0;i < arr.length; i++) {
 	    buff.writeDoubleLE(parseFloat(arr[i]),8*(i-1));

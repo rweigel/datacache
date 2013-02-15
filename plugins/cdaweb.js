@@ -86,22 +86,51 @@ exports.metaToJson = function(meta){
     //console.log("\n"+meta);
     var metaJson = meta.split(/\r?\n/)
 			.map(function(d){
-					return d.split(/\s+/);
+				return d.split(/\s\s+/);
 				});
+
+    console.log(metaJson[0][0].length)
+    if (metaJson[0][0].length == 0){
+	return {};
+    }
+
     metaJson[0].unshift('Date');
     metaJson[0][1] = "Time";
     if (metaJson[1] && metaJson[1][0] == "") {
-    		//EPOCH                                   BX_GSE                 BY_GSE                 BZ_GSE
-    		//                          (@_x_component_)       (@_y_component_)       (@_z_component_)
-		//dd-mm-yyyy hh:mm:ss.ms                      nT                     nT                     nT
-    		tmp = metaJson[1];
-    		metaJson[1] = metaJson[2];
-    		metaJson[2] = tmp;
-    		metaJson[2].unshift("");
+	//EPOCH                       BX_GSE                 BY_GSE                 BZ_GSE
+	//                          (@_x_component_)       (@_y_component_)       (@_z_component_)
+	//dd-mm-yyyy hh:mm:ss.ms          nT                     nT                     nT
+	// and
+	//EPOCH                       BX_GSE                 BY_GSE                 BZ_GSE
+	//                          (@_x_component_)       (@_y_component_)       (@_z_component_)
+	//dd-mm-yyyy hh:mm:ss.ms
+
+	tmp = metaJson[1];
+	metaJson[1] = metaJson[2];
+	metaJson[1].unshift('dd-mm-yyyy');
+	metaJson[1][1] = "hh:mm:ss.ms";
+	metaJson[2] = tmp;
+	metaJson[2].unshift("");
+	a = metaJson[1].length;
+	while (metaJson[1].length < metaJson[2].length) {
+	    metaJson[1][a] = "";
+	    a = a+1;
+	}
     } else {
-    		// EPOCH                           <|B|>
-		// dd-mm-yyyy hh:mm:ss.ms             nT
-		// 01-01-2005 00:00:00.000       6.37000
+	// EPOCH                           <|B|>
+	// dd-mm-yyyy hh:mm:ss.ms             nT
+	// 01-01-2005 00:00:00.000       6.37000
+	console.log(metaJson[1]);
+
+	metaJson[1].unshift('dd-mm-yyyy');
+	metaJson[1][1] = "hh:mm:ss.ms";
+	a = metaJson[1].length;
+	while (metaJson[1].length < metaJson[0].length) {
+	    metaJson[1][a] = "";
+	    a = a+1;
+	}
+	
+
     }
 	return metaJson;
 }

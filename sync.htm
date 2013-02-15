@@ -54,9 +54,9 @@
 			</p>
 			<p>
 			Processing:&nbsp;
-			<input type='checkbox' name='forceUpdate' value='true' ><span title="Writes new md5url.data if different from cache version.  Other files are not modified.">&nbsp;Update <a href='cache'>cache</a>  if change</span></input> 
+			<input type='checkbox' name='forceUpdate' value='true' ><span title="Writes new md5url.* files if md5url.data has changed or forceWrite=true.">&nbsp;Update <a href='cache'>cache</a></span></input> 
 			&nbsp;
-			<input type='checkbox' name='forceWrite' value='true' ><span title="Writes new md5url.* files even if md5url.data has not changed">&nbsp;Update <a href='cache'>cache</a></span></input> 
+			<input type='checkbox' name='forceWrite' value='true' ><span title="Writes new md5url.data if response is different from cache version.  (Write is normally skipped otherwise.)  Other files are not modified.">&nbsp;Force <a href='cache'>cache</a> write if change.</span></input> 
 			&nbsp;
 			<select style="width:3em;height:2.0em" name='maxTries'>
   				<option value="1">1</option>

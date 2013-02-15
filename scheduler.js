@@ -111,11 +111,12 @@ function work2result(work) {
 			ret[key] = work[key];
 		}
 
+		console.log(work);
 		if (work.options.includeData) {
 		    if (Object.keys(work["dataJson"]).length == 0) {
-				ret["data"] = work["data"];
+			ret["data"] = work["data"];
 		    } else {
-				ret["dataJson"] = work["dataJson"];
+			ret["dataJson"] = work["dataJson"];
 		    }
 		}
 		

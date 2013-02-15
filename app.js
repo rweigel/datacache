@@ -27,6 +27,7 @@ var qs = require('querystring');
 var scheduler = require("./scheduler.js");
 var util = require("./util.js");
 var logger = require("./logger.js");
+app.use(express.limit('4mb'));
 
 // Create cache dir if it does not exist.
 if (!fs.existsSync(__dirname+"/cache")) {fs.mkdirSync(__dirname+"/cache");}
