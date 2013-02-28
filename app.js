@@ -248,6 +248,7 @@ function stream(source, options, res) {
 function parseOptions(req) {
 
  	var options = {};
+
         
 	function s2b(str) {if (str === "true") {return true} else {return false}}
 	function s2i(str) {return parseInt(str)}
@@ -273,6 +274,7 @@ function parseOptions(req) {
 //    appears in request header.
 //	}
 
+//	console.log(req.query);
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
 			options.dir = '/'+options.dir;
@@ -296,10 +298,9 @@ function parseSource(req) {
 				function (line) {
 					return line.trim() != "";
 	    			});
+    console.log(source);
+    if (prefix)		    			
+	for (i = 0; i < source.length; i++) {source[i] = prefix + source[i];}
 	
-	//console.log(source);
-	if (prefix)		    			
-		for (i = 0; i < source.length; i++) {source[i] = prefix + source[i];}
-	
-	return source;
+    return source;
 }

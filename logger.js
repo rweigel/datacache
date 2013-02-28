@@ -11,7 +11,7 @@ function log(type, work){
 	// Write to requests.log
 	var file = __dirname + "/log/datacache.log";
 	//console.log(file);
-	var entry = util.formatTime(new Date()) + "\t" + type + "\t" +work.url+"";
+	var entry = util.formatTime(new Date()) + "\t" + type + "\t" +work.url+"\n";
 	fs.appendFile(file, entry, function(err){if (err) console.log(err);});
 
 	// Write to STDOUT

@@ -111,7 +111,7 @@ function work2result(work) {
 			ret[key] = work[key];
 		}
 
-		console.log(work);
+		//console.log(work);
 		if (work.options.includeData) {
 		    if (Object.keys(work["dataJson"]).length == 0) {
 			ret["data"] = work["data"];
@@ -124,6 +124,13 @@ function work2result(work) {
 		//console.log(work["metaJson"]);
 		if (work.options.includeMeta) {
 		    if (Object.keys(work["metaJson"]).length == 0) {
+			if (!work.hasOwnProperty("meta")) {
+			    work["meta"] = {};
+			}
+			if (!work.hasOwnProperty("datax")) {
+			    work["datax"] = {};
+			}
+
 				if (work["meta"].length == 0) {
 					ret["meta"] = work["datax"];
 				} else {

@@ -69,7 +69,7 @@ exports.extractMeta = function(body){
 	// find first data line and then back up three lines.
 	all = body.toString().split(/\r?\n/g);
 	for (i = 0; i < all.length; i++) {
-		if (all[i].match(/^EPOCH/)) {
+		if (all[i].match(/^EPOCH|^TIME/)) {
 			console.log(i);
 			break;
 		}

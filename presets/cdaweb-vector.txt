@@ -1,4 +1,4 @@
-http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050101T000000Z,20050102T000000Z/BGSEc?format=text
+http%3A%2F%2Fcdaweb.gsfc.nasa.gov%2FWS%2Fcdasr%2F1%2Fdataviews%2Fsp_phys%2Fdatasets%2FAC_H1_MFI%2Fdata%2F20050101T000000Z%2C20050102T000000Z%2FBGSEc%3Fformat%3Dtext
 
 http://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/AC_H1_MFI/data/20050102T000000Z,20050103T000000Z/BGSEc?format=text
 
