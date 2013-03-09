@@ -226,7 +226,8 @@ var writeCache = function(work, callback){
 	    // If .data does not exist, create it.
 	    // If .data file exists and differs from new data, rename .data file.
 	    // If .data file exists and is same as new data, do nothing.
-
+		// If .data.lck file exists, it is being streamed.
+		
 	    function writeFiles() {
 			fs.writeFile(filename+".data", work.data, finish);
 			fs.writeFile(filename+".bin", work.dataBinary, finish);

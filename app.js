@@ -27,7 +27,7 @@ var qs = require('querystring');
 var scheduler = require("./scheduler.js");
 var util = require("./util.js");
 var logger = require("./logger.js");
-app.use(express.limit('4mb'));
+app.use(express.limit('4mb')); // Max POST size
 
 // Create cache dir if it does not exist.
 if (!fs.existsSync(__dirname+"/cache")) {fs.mkdirSync(__dirname+"/cache");}
@@ -218,6 +218,9 @@ function stream(source, options, res) {
 			} else if (options.return === "jsons") {
 				res.send(streaminfo(results));
 			} else if ((options.return === "stream")) {
+				// TODO: Deal with situation that file is modified while streaming.
+				// Move file to md5url.md5data first and create md5url.md5data.lck (or
+				// just ignore forceWrite).
 			    function pushfile(j) {
 			    		//console.log(results[j]);
 					fname = util.getCachePath(results[j]) + ".data";		    
