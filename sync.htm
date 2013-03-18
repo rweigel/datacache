@@ -72,16 +72,30 @@
 				<span style="vertical-align:middle">&nbsp;Cache subdir: <input type='text' name='dir' style="width: 4em;height:1em;"/></span>
 			</p>
 			<p>
-			  Enter one URL per line or use a pre-generated list <span id="presets"></span>
+			Processing:&nbsp;
+			<span style="vertical-align:middle">Data Line Regex: <input type='text' name='lineRegExp' value="^[0-9]" style="width: 4em;height:1em;"/></span>
 			</p>
 			<p>
-			  <span style="vertical-align:middle">Prepend string to line: <input type='text' name='prefix' style="width: 12em;height:1em;"/></span>
+			Processing:&nbsp;
+			<span style="vertical-align:middle">Extract Data: <input type='text' name='extractData' value='body.toString().split("\n").filter(function(line){return line.search(lineRegExp)!=-1;}).join("\n") + "\n";' style="width: 10em;height:1em;"/></span>
+			</p>
+			<p>
+			  URLs:&nbsp; <span style="vertical-align:middle">Prefix: <input type='text' name='prefix' style="width: 12em;height:1em;"/></span>
 			</p>			
+			<p>
+			  URLs:&nbsp; <span style="vertical-align:middle">Postfix: <input type='text' name='postfix' style="width: 12em;height:1em;"/></span>
+			</p>			
+			<p>
+			  URLs:&nbsp; <span style="vertical-align:middle">Template expander: <input type='text' name='templateExpander' style="width: 12em;height:1em;"/></span>
+			</p>	
+			<p>
+			  URLs:&nbsp; Enter one per line or use a pre-generated list <span id="presets"></span>
+			</p>
 			<p>
 			  <textarea id='urls' rows='5' cols='100' name='source'></textarea>
 			</p>
 			<p>
-			  <input type='submit'/>
+			  <button type='submit'>Submit</button> <button type='submit'>Expand</button>
 			</p>	
 	      </form>	
 	    </div>

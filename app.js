@@ -12,17 +12,39 @@ var request = require("request"),
 	moment = require("moment"),
 	whiskers = require("whiskers");
 
+var zlib = require('zlib');
 var qs = require('querystring');
-// TODO: Check if cache directory is writeable and readable.
-// If not, send 500 error.
+xutil = require('util');
 
-// TODO: Allow input of extractData regular expression.
+// Locking notes:
+// When md5url.data is being read for streaming, an empty file named md5url.stream is placed
+// in cache/hostname.  A file named md5url.stream is placed in cache/locks containing the string
+// hostname.
+//
+// If the .stream file exists when forceUpdate=true, the scheduler treats this as a failed attempt and
+// another request is made to download the file.
+//
+// TODO: Recognize the difference between a failed download and a failed write attempt because of
+// a stream lock and don't re-download data.  Instead write md5url-1.data and rename file when the
+// job is tried again and the .stream file does not exist.  Will need to handle case that md5url-1.data
+// already exists and will need to add option "waitForStream" to continue to wait for streaming to
+// finish when forceUpdate=true.
 
-// TODO: Allow input of timestamp2integer + startdate + integerunit.
 
-// TODO: Create .bin files with extension .binN, where N is 1+(# of data columns).
-// (or create field which is numberOfColumns).
+// TODO:
+// Check if cache directory is writeable and readable.  If not, send 500 error.
+// Remove partially written files by inspecting cache/locks/*.lck
+// Remove streaming locks by inspecting cache/locks/*.streaming
 
+process.on('exit', function () {
+	console.log('Received exit signal.  Removing lock files.');
+	// Remove partially written files by inspecting cache/locks/*.lck
+	// Remove streaming locks by inspecging cache/locks/*.streaming
+	console.log('Done.  Exiting.');
+})
+process.on('SIGINT', function () {
+	process.exit();
+});
 
 var scheduler = require("./scheduler.js");
 var util = require("./util.js");
@@ -31,13 +53,13 @@ app.use(express.limit('4mb')); // Max POST size
 
 // Create cache dir if it does not exist.
 if (!fs.existsSync(__dirname+"/cache")) {fs.mkdirSync(__dirname+"/cache");}
+if (!fs.existsSync(__dirname+"/cache/locks")) {fs.mkdirSync(__dirname+"/cache/locks");}
 
 // Get port number from command line option.
 var port = process.argv[2] || 8000;
 
 // Middleware
 //app.use(express.logger());
-app.use(express.compress());
 app.use(express.methodOverride());
 app.use(express.bodyParser());
 
@@ -59,7 +81,7 @@ app.use(function (req, res, next) {
 	next();
 });
 
-// app.use(express.errorHandler({ showStack: true, dumpExceptions: true }));
+app.use(express.errorHandler({ showStack: true, dumpExceptions: true }));
 
 app.get('/', function (req, res) {
 	res.contentType("html");
@@ -79,6 +101,7 @@ app.get("/report", function (req,res) {
   	 		res.send(data.replace("__QUERYSTR__", querystr));
   	 	});
 }) 
+
 app.post("/report", function (req,res) {
   	 fs.readFile(__dirname+"/report.htm", "utf8", 
   	 	function (err,data) {
@@ -109,6 +132,7 @@ app.get("/demo/changingfile.txt", function (req,res) {
 	//console.log(str);
 	res.send(str);
 })
+
 app.get("/report.htm", function (req,res) {
 	res.contentType("html");
 	fs.readFile(__dirname+"/report.htm", "utf8", 
@@ -130,13 +154,24 @@ app.post("/async", function (req, res) {
 app.get("/sync", function (req,res) {
 	var options = parseOptions(req);
 	var source  = parseSource(req);
+
+	// Compress response if headers accept it and streamGzip is not requested.
+	if (!options.streamGzip) 	
+		app.use(express.compress()); 
+	
 	if (source.length === 0) {
 	    res.contentType("html");
 	    fs.readFile(__dirname+"/sync.htm", "utf8", function (err, data) {res.send(data);});
 	    return;
 	}
-	stream(source,options,res);
+	console.log('sync called');
+	if (options.return === "stream") {
+		stream(source,options,res);
+	} else {
+		syncsummary(source,options,res);
+	}
 });
+
 app.post("/sync", function (req, res) {
 	var options = parseOptions(req);
 	var source  = parseSource(req);
@@ -196,17 +231,23 @@ logger.bindClientList(clients);
 function streaminfo(results) {
 	var l = 0;
 	for (var i = 0; i < results.length; i++) {
-			l = l + results[i]["dataLength"]
+			l = l + results[i]["dataLength"];
 	}
 	sresults = new Object();
 	sresults["dataLength"] = l;
 	return sresults;
 }
 
-function stream(source, options, res) {
-	scheduler.addURLs(source, options, function (results) {
+function syncsummary(source,options,res) {
+
+		function sendit(ret) {
+			res.send(ret);
+		}
+		scheduler.addURLs(source, options, function (results) {
+			// TODO: If foreUpdate=true and all updates failed, give error
+			// with message that no updates could be performed.
 			if (options.return === "json") {
-			    res.send(results);
+			    sendit(results);
 			} else if (options.return === "xml") {
 				res.contentType("text/xml");
 				var ret = '<array>';
@@ -214,44 +255,153 @@ function stream(source, options, res) {
 					ret = ret + whiskers.render("<element><url>{url}</url><urlMd5>{urlMd5}</urlMd5><dataLength>{dataLength}</dataLength><error>{error}</error></element>", results[j]);
 				}
 				ret = ret + "</array>";
-				res.send(ret);
+				sendit(ret);
 			} else if (options.return === "jsons") {
-				res.send(streaminfo(results));
-			} else if ((options.return === "stream")) {
-				// TODO: Deal with situation that file is modified while streaming.
-				// Move file to md5url.md5data first and create md5url.md5data.lck (or
-				// just ignore forceWrite).
-			    function pushfile(j) {
-			    		//console.log(results[j]);
-					fname = util.getCachePath(results[j]) + ".data";		    
-					var fstream = fs.createReadStream(fname);
-					fstream.on('error',function (err) {res.end(err);});
-					fstream.on('end',function () {
-						if (j < results.length-1) {
-						    console.log("Finished piping file #" + j + ": " + fname);
-						    j = j+1;
-						    pushfile(j);
-						} else {
-						    console.log("Finished piping file #" + j + ": " + fname);
-						    res.end();
-						}
-					});
-					// TODO: Check if file exists.  If it does not, send error.
-					fstream.on('open', function () {fstream.pipe(res,{end:false});});
-			    }
-			    var lsi = streaminfo(results)["dataLength"].toString();
-			    res.writeHeader(200, {'Content-Length': lsi});
-			    pushfile(0);
+				sendit(streaminfo(results));
 			} else {
-				return res.send(400, "return = json, jsonp, stream, or report.");
+				console.log("Unknown option");
 			}
-	    });
+		});
+}
+
+var reader = require ("buffered-reader");
+function stream(source, options, res) {
+
+	var N = source.length;
+	console.log('stream called with ' + N + ' urls');
+	res.socket.on('drain', function () {
+		console.log('res.write drain event.  gzipping = '+gzipping+' Nx = '+Nx);
+        if (Nx == N) {
+        	    if (gzipping == 0) {
+        	    		res.end();
+        	    	} else {
+        	    		console.log("Will check every " + dt + " ms for gzip completion");
+	        		var checker = setInterval(function () {        			
+	        			if (gzipping > 0) {
+		        			console.log('Gzipping not done.');
+		        		} else {
+		        			res.end();
+		        			clearInterval(checker);
+		        		}
+	        		},dt);
+	        	}
+        	}
+    });
+	
+	Nx = 0;
+	gzipping = 0;
+	draining = 0;
+	dt = 0;
+	function processwork(work,inorder) {
+	
+		var fname = util.getCachePath(work);
+		console.log("Stream locking " + fname);
+		fs.writeFileSync(fname+".streaming", "");
+		fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".streaming",work.dir);
+		
+		if (options.streamFilterReadBytes > 0) {
+			console.log("Reading Bytes");
+			var buffer = new Buffer(options.streamFilterReadBytes);
+			fs.open(fname + ".data", 'r', function (err,fd) {
+			    fs.read(fd, buffer, 0, options.streamFilterReadBytes, options.streamFilterReadPosition-1, 
+			    		function (err, bytesRead, buffer) {readcallback(err,buffer);fs.close(fd);})});
+		} else if (options.streamFilterReadLines > 0) {
+			console.log("Reading Lines");
+			var LineReader = reader.DataReader;
+			var k = 1;
+			var lr = 0;
+			var lines = "";
+			new LineReader (fname + ".data", { encoding: "utf8" })
+			    .on("error", function (error) {
+			        console.log ("error: " + error);
+			    })
+			    .on("line", function (line) {
+			        if (k >= options.streamFilterReadPosition) {
+				        	if (lr == options.streamFilterReadLines) { 
+				        		console.log("dumped lines");
+				        		console.log(lines);
+				        		readcallback("",lines);
+				        		this.interrupt();
+				        	}
+				        	console.log("read line");
+			        		lines = lines + line + "\n";
+			        		lr = lr+1;
+
+			        	}
+			        	k = k+1;
+			    })
+			    .on("end", function () {
+			        console.log("EOF");
+			    })
+			    .read();
+		} else {	
+			console.log("Reading File");	
+			// Should be no encoding if streamFilterBinary was given.
+			fs.readFile(fname + ".data", "utf8", readcallback);
+		}
+		
+		function readcallback(err, data) {
+		
+				console.log('readFile callback event');
+				console.log("Un-stream locking " + fname);
+				fs.unlinkSync(fname +".streaming", "");
+				fs.unlinkSync(__dirname+"/cache/locks/"+work.urlMd5+".streaming");
+				
+				Nx = Nx + 1;
+				if (!options.streamGzip) {
+					if (options.streamFilter === "") {
+						res.write(data);
+					} else {	
+						try {
+							eval("res.write(data."+options.streamFilter+")");
+						} catch (err) {
+							console.log("Error when evaluating " + options.streamFilter);
+							consoel.log(err);
+							res.end();
+						}							
+											
+					}
+				}
+				
+				if ((Nx < N) && (inorder)) {
+					scheduler.addURL(source[Nx], options, function (work) {processwork(work,true)});
+				}
+				
+				if (options.streamGzip) {												
+					gzipping = gzipping + 1;
+					var tic = new Date();
+					zlib.createGzip({level:1});
+					if (options.streamFilter === "") {
+						zlib.gzip(data, function (err, buffer) {dt=new Date()-tic;console.log('gzip callback event');res.write(buffer);gzipping=gzipping-1;});
+					} else {
+						var com = "data = " + data + "." + options.streamFilter;
+						console.log("Evaluating " + com);
+						try {
+							//eval(com);
+						} catch (err) {
+							//console.log(err);
+							//res.send("500",err);
+						}
+						zlib.gzip(data, function (err,buffer) {dt=new Date()-tic;console.log('gzip callback event');res.write(buffer);gzipping=gzipping-1;});
+					}
+				}						
+		}
+
+
+	}
+
+	if (options.inOrder) {
+		scheduler.addURL(source[0], options, function (work) {processwork(work,true)});
+	} else {
+		for (var jj=0;jj<N;jj++) {
+			scheduler.addURL(source[jj], options, function (work) {processwork(work)});
+		}
+	}
 }
 
 function parseOptions(req) {
 
  	var options = {};
-
         
 	function s2b(str) {if (str === "true") {return true} else {return false}}
 	function s2i(str) {return parseInt(str)}
@@ -269,15 +419,35 @@ function parseOptions(req) {
 	options.return         = req.body.return               || req.query.return             || "json";
 	options.dir            = req.query.dir                 || req.body.dir                 || "/cache/";
 
-//	options.compressResponse = s2b(req.query.compressResponse) || s2b(req.body.compressResponse)     || true;
-//  console.log(options.forceUpdate);
-//  console.log(options.includeMeta);
-//	if (!options.compressResponse) {
-//    Don't compress response even if Accept-Encoding: gzip,deflate
-//    appears in request header.
-//	}
+	options.streamOrder    = s2b(req.query.streamOrder)    || s2b(req.body.streamOrder)    || false;
+	options.streamGzip     = s2b(req.query.streamGzip)     || s2b(req.body.streamGzip)     || false;
+	options.streamFilter   = req.query.streamFilter        || req.body.streamFilter        || "";
 
-//	console.log(req.query);
+	//options.streamFilterBinary   = req.query.streamFilterBinary        || req.body.streamFilterBinary        || "";
+
+
+	options.streamFilterReadBytes    = s2i(req.query.streamFilterReadBytes)    || s2i(req.body.streamFilterReadBytes)    || 0;
+	options.streamFilterReadLines    = s2i(req.query.streamFilterReadLines)    || s2i(req.body.streamFilterReadLines)    || 0;
+	options.streamFilterReadPosition = s2i(req.query.streamFilterReadPosition) || s2i(req.body.streamFilterReadPosition) || 1;
+
+	options.lineRegExp     = req.query.lineRegExp          || req.body.lineRegExp          || "";
+	options.extractData    = req.query.extractData         || req.body.extractData         || "";
+
+	// Need to use http://gf3.github.com/sandbox/ for these insecure operations.
+	// Express decodes a "+" as a space.  Decode these parts manually.  
+	if (options.streamFilter) {
+		options.streamFilter = decodeURIComponent(req.originalUrl.replace(/.*streamFilter=(.*?)(\&|$).*/,'$1'));
+	}
+	if (options.extractData) {
+		options.extractData = decodeURIComponent(req.originalUrl.replace(/.*extractData=(.*?)(\&|$).*/,'$1'));
+	} else {
+		options.extractData = 'body.toString().split("\\n").filter(function(line){return line.search(lineRegExp)!=-1;}).join("\\n") +"\\n";';
+	}
+	if (options.lineRegExp) {
+		options.lineRegExp = decodeURIComponent(req.originalUrl.replace(/.*lineRegExp=(.*?)(\&|$).*/,'$1'));
+	} else {
+		options.lineRegExp = "^[0-9]";
+	}
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
 			options.dir = '/'+options.dir;
@@ -301,9 +471,10 @@ function parseSource(req) {
 				function (line) {
 					return line.trim() != "";
 	    			});
-    console.log(source);
-    if (prefix)		    			
-	for (i = 0; i < source.length; i++) {source[i] = prefix + source[i];}
 	
-    return source;
+	//console.log(source);
+	if (prefix)		    			
+		for (i = 0; i < source.length; i++) {source[i] = prefix + source[i];}
+	
+	return source;
 }

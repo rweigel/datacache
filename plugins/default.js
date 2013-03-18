@@ -17,12 +17,12 @@ exports.process = function (work, callback) {
 			} else {
 				work.body       = body || "";
 				work.dataBinary = work.extractDataBinary(work.body, "bin");
-				work.data       = work.extractData(work.body, "ascii");
+				work.data       = work.extractData(work.body, work.options);
 				work.dataMd5    = util.md5(work.data);
-				work.dataJson   = work.extractDataJson(work.body);
-				work.datax      = work.extractRem(work.body);
-				work.meta       = work.extractMeta(work.body);
-				work.metaJson   = work.extractMetaJson(work.body);
+				work.dataJson   = work.extractDataJson(work.body, work.options);
+				work.datax      = work.extractRem(work.body, work.options);
+				work.meta       = work.extractMeta(work.body, work.options);
+				work.metaJson   = work.extractMetaJson(work.body, work.options);
 				work.header     = response.headers;
 				//console.log(work.header);
 				util.writeCache(work, function () {callback(false, work);});
@@ -57,7 +57,7 @@ exports.process = function (work, callback) {
 						    .on("error", function(e){work.error=e;callback(true, work);conn.end();})
 						.on("end", function(){
 							work.body = buff;
-							work.data = work.extractData(work.body);
+							work.data = work.extractData(work.body, work.options);
 							work.dataMd5 =  util.md5(work.data);
 							work.header = "";
 							util.writeCache(work, function(){
@@ -74,26 +74,24 @@ exports.process = function (work, callback) {
 	}
 };
 
-exports.extractDataBinary = function (body) {return "";};
+exports.extractDataBinary = function (body, options) {return "";};
 
-exports.extractData = function (body) {
-    return body
-               .toString()
-               .split("\n")
-               .filter(function(line){return line.search(/^[0-9]/)!=-1;})
-               .join("\n") + "\n";
+exports.extractData = function (body, options) {
+	lineRegExp = options.lineRegExp;
+	console.log(options.extractData);
+	return eval(options.extractData);
 };
 
-exports.extractDataJson = function(body) {return {};};
+exports.extractDataJson = function(body, options) {return {};};
 
-exports.dataToJson = function(data) {return {};}
+exports.dataToJson = function(data, options) {return {};}
 
-exports.extractMeta = function(body) {return "";}
+exports.extractMeta = function(body, options) {return "";}
 
-exports.extractMetaJson = function (body) {return {};}
+exports.extractMetaJson = function (body, options) {return {};}
 
 exports.metaToJson = function (meta){return {};}
 
-exports.extractRem = function(body){return "";}
+exports.extractRem = function(body, options){return "";}
 
 exports.postprocess = function(work, callback){callback(false, work);};

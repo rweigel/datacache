@@ -22,8 +22,9 @@ function addURLs(source, options, callback){
 				finished.sort(function (a,b){
 					return +a.id.split("-")[1] - b.id.split("-")[1];
 				});
-				callback(finished);
+				//callback(finished);
 			}
+			callback(finished);
 		});
 	})
 }
@@ -203,26 +204,26 @@ function newWork(url, options, callback){
 			exports.emit("postprocess", this);
 			this.plugin.postprocess(this, callback);
 		},
-		extractData: function (data) {
+		extractData: function (data, options) {
 			exports.emit("extractdata", this);
-			return this.plugin.extractData(data);
+			return this.plugin.extractData(data, options);
 		},
-		extractDataBinary: function (data) {
+		extractDataBinary: function (data, options) {
 			exports.emit("extractdatabinary", this);
-			return this.plugin.extractDataBinary(data, "bin");
+			return this.plugin.extractDataBinary(data, options);
 		},
-		extractDataJson: function (data) {
-			return this.plugin.extractDataJson(data);
+		extractDataJson: function (data, options) {
+			return this.plugin.extractDataJson(data, options);
 		},
-		extractMetaJson: function (data){
-			//return this.plugin.extractMetaJson(data);
+		extractMeta: function(data, options) {
+			return this.plugin.extractMeta(data, options);
 		},
-		extractRem: function(data) {
-			return this.plugin.extractRem(data);
+		extractMetaJson: function (data, options) {
+			return this.plugin.extractMetaJson(data, options);
 		},
-		extractMeta: function(data){
-			return this.plugin.extractMeta(data);
-		},
+		extractRem: function(data, options) {
+			return this.plugin.extractRem(data, options);
+		}
 	}
 	logger.log("submit", work);
 	return work;
