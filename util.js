@@ -200,8 +200,12 @@ var writeCache = function(work, callback){
 	for (var key in work.header) {
 		header.push(key + " : " + work.header[key]);
 	}
-
-	if (!memLock[work.id]) {
+  	
+  	// If .streaming file exists, it is being streamed and result is the same
+  	// as if request for data failed.
+  	// No other process should be writing to cache directory, so no need to check lock
+  	// before writing.
+	if (!memLock[work.id] && !fs.existsSync(filename+".streaming")) {
 
 	    // If memLock[result.url] is undefined or 0, no writing is on-going.
 	    memLock[work.id] = 6;
@@ -226,9 +230,10 @@ var writeCache = function(work, callback){
 	    // If .data does not exist, create it.
 	    // If .data file exists and differs from new data, rename .data file.
 	    // If .data file exists and is same as new data, do nothing.
-		// If .data.lck file exists, it is being streamed.
-		
+				
 	    function writeFiles() {
+			//fs.writeFileSync(filename+".lck","");
+			//fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".lck",work.dir);
 			fs.writeFile(filename+".data", work.data, finish);
 			fs.writeFile(filename+".bin", work.dataBinary, finish);
 			fs.writeFile(filename+".meta", work.meta, finish);
@@ -285,6 +290,8 @@ var writeCache = function(work, callback){
 	    if (err) {logger.log("error", work); console.trace(err);}
 	    memLock[work.id]--;
 	    work.writeFinishedTime = new Date();
+	    //fs.unlinkSync(filename+".lck");
+	    //fs.unlinkSync(__dirname+"/cache/locks/"+work.urlMd5+".lck");
 	    if (memLock[work.id]==0) {callback(work);}
 	}
 }
