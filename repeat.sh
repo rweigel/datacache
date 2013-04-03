@@ -1,8 +1,3 @@
-BASE=http://localhost:8000/sync?return=stream
-PREF=http://magweb.cr.usgs.gov/data/magnetometer/FRD/OneSecond/frd201204
-
-N=$1
-
 COM="inOrder=true&streamFilterReadLines=10&prefix=$PREF&source=01vsec.sec%0A02vsec.sec"
 echo $COM
 for ((i=1; i <= $N ; i++)); do

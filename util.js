@@ -158,6 +158,8 @@ function getCachedData(work, callback) {
 		function getData(callback) {
 			//console.log("Reading Data Started");
 			if (!work.options.includeData) { finished("Reading Data Finished"); return;}			
+			// TODO: Don't specify encoding if writeDataBinary exists.
+			// create work.dataEncoding?
 			fs.readFile(getCachePath(work) + ".data", "utf8",
 				function (err, data) {
 					work.data       = data;
@@ -229,7 +231,7 @@ var writeCache = function(work, callback){
 
 	    // If .data does not exist, create it.
 	    // If .data file exists and differs from new data, rename .data file.
-	    // If .data file exists and is same as new data, do nothing.
+	    // If .data file exists and is same as new data, do nothing unless forceWrite=true.
 				
 	    function writeFiles() {
 			//fs.writeFileSync(filename+".lck","");
