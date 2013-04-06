@@ -19,7 +19,7 @@ xutil = require('util');
 eval(require('fs').readFileSync('../expandtemplate/deps/strftime.js', 'utf8'));
 eval(require('fs').readFileSync('../expandtemplate/deps/date.js', 'utf8'));	 
 eval(require('fs').readFileSync('../expandtemplate/deps/sprintf-0.7-beta1.js', 'utf8'));
-eval(require('fs').readFileSync('../expandtemplate/expandtemplate.js', 'utf8'));
+eval(require('fs').readFileSync('../expandtemplate/lib/expandtemplate.js', 'utf8'));
 
 // Locking notes:
 // When md5url.data is being read for streaming, an empty file named md5url.stream is placed
@@ -473,28 +473,41 @@ function parseSource(req) {
     var template   = req.body.template   || req.query.template;
 	var timeRange  = req.body.timeRange  || req.query.timeRange;
 	var indexRange = req.body.indexRange || req.query.indexRange;
-    
+        
     if (!source && !template) return "";
-
-	if (template) {
-		sourcet = new Array();
-		if (timeRange) {			
-			sourcet = expandtemplate(template,timeRange.split("/")[0],timeRange.split("/")[1],"strftime");
+	console.log(source);
+	
+	sourcet = new Array();
+	if (template) {	
+	    options          = {};
+	    	options.template = template;
+		options.check    = false;
+		options.debug    = true;
+		options.side     = "server";
+		if (timeRange) {
+			options.type  = "strftime";
+			options.start = timeRange.split("/")[0];
+			options.stop  = timeRange.split("/")[1];
+			sourcet = expandtemplate(options);
 		}
 		if (indexRange) {
-			sourcet = sourcet.concat(expandtemplate(template,indexRange.split("/")[0],indexRange.split("/")[1],"sprintf"));
+			options.type  = "sprintf";
+			options.start = indexRange.split("/")[0];
+			options.stop  = indexRange.split("/")[1];
+			sourcet = sourcet.concat(expandtemplate(options));
 		}
 	}
+
 	if (source) {
 		source = source.trim().replace("\r", "").split(/[\r\n]+/).filter(function (line) {return line.trim() != "";});
 	}
-	if (sourcet && source) {
+	if ((sourcet.length > 0) && (source.length > 0)) {
 		source = source.concat(sourcet);
-	} else {
+	}
+	if (sourcet.length > 0) {
 		source = sourcet;
 	}
 
-	//console.log(source);
 	if (prefix)		    			
 		for (i = 0; i < source.length; i++) {source[i] = prefix + source[i];}
 	
