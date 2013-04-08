@@ -11,6 +11,7 @@
 		"ftp": "0.1.4",
 		"whiskers": "0.2.4",
 		"mkdirp": "*",
-		"exec-sync": "*"
+		"exec-sync": "*",
+		"buffered-reader": "*"
 	}
 }
