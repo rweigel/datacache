@@ -244,12 +244,16 @@ function streaminfo(results) {
 }
 
 function syncsummary(source,options,res) {
-
 		function sendit(ret) {
-			res.send(ret);
+			//console.log(ret);
+			res.write(JSON.stringify(ret));
+			if (!sendit.N) {sendit.N = 0}
+			sendit.N = sendit.N+1;
+			if (sendit.N == source.length) {res.end();}
 		}
+		console.log(options.return);
 		scheduler.addURLs(source, options, function (results) {
-			// TODO: If foreUpdate=true and all updates failed, give error
+			// TODO: If forceUpdate=true and all updates failed, give error
 			// with message that no updates could be performed.
 			if (options.return === "json") {
 			    sendit(results);
@@ -467,7 +471,7 @@ function parseOptions(req) {
 
 function parseSource(req) {
 
-    var source = req.body.source || req.query.source;
+    var source = req.body.source || req.query.source || "";
     var prefix = req.body.prefix || req.query.prefix;
 
     var template   = req.body.template   || req.query.template;
@@ -475,9 +479,9 @@ function parseSource(req) {
 	var indexRange = req.body.indexRange || req.query.indexRange;
         
     if (!source && !template) return "";
-	console.log(source);
 	
-	sourcet = new Array();
+	var sourcet = [];
+	
 	if (template) {	
 	    options          = {};
 	    	options.template = template;
@@ -488,16 +492,19 @@ function parseSource(req) {
 			options.type  = "strftime";
 			options.start = timeRange.split("/")[0];
 			options.stop  = timeRange.split("/")[1];
+			console.log(options);
+			//eval("sourcet = expandtemplate(options)");
 			sourcet = expandtemplate(options);
+			console.log(sourcet);
 		}
 		if (indexRange) {
 			options.type  = "sprintf";
 			options.start = indexRange.split("/")[0];
 			options.stop  = indexRange.split("/")[1];
+			//eval("sourcet = sourcet.concat(expandtemplate(options))");
 			sourcet = sourcet.concat(expandtemplate(options));
 		}
 	}
-
 	if (source) {
 		source = source.trim().replace("\r", "").split(/[\r\n]+/).filter(function (line) {return line.trim() != "";});
 	}
@@ -510,6 +517,8 @@ function parseSource(req) {
 
 	if (prefix)		    			
 		for (i = 0; i < source.length; i++) {source[i] = prefix + source[i];}
+
+	console.log(source);
 	
 	return source;
 }
