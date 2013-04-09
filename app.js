@@ -156,7 +156,7 @@ app.post("/async", function (req, res) {
 	res.send(200);
 })
 
-app.get("/sync", function (req,res) {
+function handleRequest(req, res) {
 	var options = parseOptions(req);
 	var source  = parseSource(req);
 
@@ -170,20 +170,19 @@ app.get("/sync", function (req,res) {
 	    return;
 	}
 	console.log('sync called');
+	console.log(options.return);
 	if (options.return === "stream") {
 		stream(source,options,res);
 	} else {
 		syncsummary(source,options,res);
 	}
+}
+app.get("/sync", function (req,res) {
+	handleRequest(req,res);
 });
 
 app.post("/sync", function (req, res) {
-	var options = parseOptions(req);
-	var source  = parseSource(req);
-	if (source.length === 0) {
-	    return res.send(400, "At least one URL must be provided.");
-	}
-	stream(source,options,res);
+	handleRequest(req,res);
 });
 
 
@@ -244,19 +243,13 @@ function streaminfo(results) {
 }
 
 function syncsummary(source,options,res) {
-		function sendit(ret) {
-			//console.log(ret);
-			res.write(JSON.stringify(ret));
-			if (!sendit.N) {sendit.N = 0}
-			sendit.N = sendit.N+1;
-			if (sendit.N == source.length) {res.end();}
-		}
-		console.log(options.return);
+		
 		scheduler.addURLs(source, options, function (results) {
 			// TODO: If forceUpdate=true and all updates failed, give error
 			// with message that no updates could be performed.
 			if (options.return === "json") {
-			    sendit(results);
+				res.contentType('application/json');
+				res.send(results);
 			} else if (options.return === "xml") {
 				res.contentType("text/xml");
 				var ret = '<array>';
@@ -264,9 +257,10 @@ function syncsummary(source,options,res) {
 					ret = ret + whiskers.render("<element><url>{url}</url><urlMd5>{urlMd5}</urlMd5><dataLength>{dataLength}</dataLength><error>{error}</error></element>", results[j]);
 				}
 				ret = ret + "</array>";
-				sendit(ret);
+				res.send(results);
 			} else if (options.return === "jsons") {
-				sendit(streaminfo(results));
+				res.contentType('application/json');
+				res.send(JSON.stringify(results));			
 			} else {
 				console.log("Unknown option");
 			}
@@ -428,7 +422,7 @@ function parseOptions(req) {
 	options.return         = req.body.return               || req.query.return             || "json";
 	options.dir            = req.query.dir                 || req.body.dir                 || "/cache/";
 
-	options.streamOrder    = s2b(req.query.streamOrder)    || s2b(req.body.streamOrder)    || false;
+	options.streamOrder    = s2b(req.query.streamOrder)    || s2b(req.body.streamOrder)    || true;
 	options.streamGzip     = s2b(req.query.streamGzip)     || s2b(req.body.streamGzip)     || false;
 	options.streamFilter   = req.query.streamFilter        || req.body.streamFilter        || "";
 

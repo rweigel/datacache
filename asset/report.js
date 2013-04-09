@@ -149,7 +149,7 @@ function report() {
 							console.log(url)
 							console.log(data);							
 							for (k = 0;k < data.length; k++) {
-								console.log(data[k]);
+								//console.log(data[k]);
 								var report = $.tmpl(template,data[k]);							
 								$('#status-'+i+""+Nrun).append(report);
 							}

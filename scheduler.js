@@ -22,9 +22,10 @@ function addURLs(source, options, callback){
 				finished.sort(function (a,b){
 					return +a.id.split("-")[1] - b.id.split("-")[1];
 				});
-				//callback(finished);
+				callback(finished);
 			}
-			callback(finished);
+			//callback(finished);
+			//callback(work);
 		});
 	})
 }
