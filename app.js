@@ -41,6 +41,10 @@ eval(require('fs').readFileSync('../expandtemplate/lib/expandtemplate.js', 'utf8
 // Remove partially written files by inspecting cache/locks/*.lck
 // Remove streaming locks by inspecting cache/locks/*.streaming
 
+//http://stackoverflow.com/questions/9768444/possible-eventemitter-memory-leak-detected
+//Use this when in production.
+//process.setMaxListeners(0);
+
 process.on('exit', function () {
 	console.log('Received exit signal.  Removing lock files.');
 	// Remove partially written files by inspecting cache/locks/*.lck
