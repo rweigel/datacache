@@ -16,10 +16,7 @@ var zlib = require('zlib');
 var qs = require('querystring');
 xutil = require('util');
 
-eval(require('fs').readFileSync('../expandtemplate/deps/strftime.js', 'utf8'));
-eval(require('fs').readFileSync('../expandtemplate/deps/date.js', 'utf8'));	 
-eval(require('fs').readFileSync('../expandtemplate/deps/sprintf-0.7-beta1.js', 'utf8'));
-eval(require('fs').readFileSync('../expandtemplate/lib/expandtemplate.js', 'utf8'));
+var expandtemplate = require("expandtemplate").expandtemplate;
 
 // Locking notes:
 // When md5url.data is being read for streaming, an empty file named md5url.stream is placed

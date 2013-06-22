@@ -12,6 +12,7 @@
 		"whiskers": "0.2.4",
 		"mkdirp": "*",
 		"exec-sync": "*",
-		"buffered-reader": "*"
+		"buffered-reader": "*",
+		"expandtemplate" : "git://github.com/rweigel/expandtemplate"
 	}
 }
