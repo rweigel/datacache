@@ -78,7 +78,7 @@ exports.extractDataBinary = function (body, options) {return "";};
 
 exports.extractData = function (body, options) {
 	lineRegExp = options.lineRegExp;
-	console.log(options.extractData);
+	//console.log(options.extractData);
 	return eval(options.extractData);
 };
 

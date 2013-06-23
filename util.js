@@ -273,7 +273,7 @@ var writeCache = function(work, callback){
 				      writeFiles();
 				  } else {
 				      dataMd5old = md5(fs.readFileSync(filename+".data"));
-				      console.log(work.dataMd5 + " " + dataMd5old);
+				      //console.log(work.dataMd5 + " " + dataMd5old);
 				      if ( (work.dataMd5 != dataMd5old) || work.options.forceWrite) {
 						if (keepversions(work.url) && (work.dataMd5 != dataMd5old)) {
 						    renameFiles(writeFiles);

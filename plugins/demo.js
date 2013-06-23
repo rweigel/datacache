@@ -6,7 +6,7 @@ var util = require("../util.js");
 exports.name = "demo";
 
 exports.match = function(url){
-	return url.split("/")[2].toLowerCase()==="datacache.org";
+	return url.split("/")[2].toLowerCase()==="xdatacache.org";
 }
 
 exports.extractData = function(data){
