@@ -16,10 +16,12 @@ var zlib = require('zlib');
 var qs = require('querystring');
 xutil = require('util');
 
-eval(require('fs').readFileSync('../expandtemplate/deps/strftime.js', 'utf8'));
-eval(require('fs').readFileSync('../expandtemplate/deps/date.js', 'utf8'));	 
-eval(require('fs').readFileSync('../expandtemplate/deps/sprintf-0.7-beta1.js', 'utf8'));
-eval(require('fs').readFileSync('../expandtemplate/lib/expandtemplate.js', 'utf8'));
+eval(require('fs').readFileSync(__dirname + '/../expandtemplate/deps/strftime.js', 'utf8'));
+eval(require('fs').readFileSync(__dirname + '/../expandtemplate/deps/date.js', 'utf8'));	 
+eval(require('fs').readFileSync(__dirname + '/../expandtemplate/deps/sprintf-0.7-beta1.js', 'utf8'));
+eval(require('fs').readFileSync(__dirname + '/../expandtemplate/lib/expandtemplate.js', 'utf8'));
+
+var debug = false;
 
 // Locking notes:
 // When md5url.data is being read for streaming, an empty file named md5url.stream is placed
@@ -169,8 +171,8 @@ function handleRequest(req, res) {
 	    fs.readFile(__dirname+"/sync.htm", "utf8", function (err, data) {res.send(data);});
 	    return;
 	}
-	console.log('sync called');
-	console.log(options.return);
+	//console.log('sync called');
+	//console.log(options.return);
 	if (options.return === "stream") {
 		stream(source,options,res);
 	} else {
@@ -271,17 +273,18 @@ var reader = require ("buffered-reader");
 function stream(source, options, res) {
 
 	var N = source.length;
-	console.log('stream called with ' + N + ' urls');
+	//console.log('stream called with ' + N + ' urls');
 	res.socket.on('drain', function () {
-		console.log('res.write drain event.  gzipping = '+gzipping+' Nx = '+Nx);
+		if (debug) console.log('res.write drain event.  gzipping = '+gzipping+' Nx = '+Nx);
         if (Nx == N) {
         	    if (gzipping == 0) {
         	    		res.end();
         	    	} else {
-        	    		console.log("Will check every " + dt + " ms for gzip completion");
+			if (debug)
+			    console.log("Will check every " + dt + " ms for gzip completion");
 	        		var checker = setInterval(function () {        			
 	        			if (gzipping > 0) {
-		        			console.log('Gzipping not done.');
+					    if (debug) console.log('Gzipping not done.');
 		        		} else {
 		        			res.end();
 		        			clearInterval(checker);
@@ -298,18 +301,18 @@ function stream(source, options, res) {
 	function processwork(work,inorder) {
 	
 		var fname = util.getCachePath(work);
-		console.log("Stream locking " + fname);
+		if (debug) console.log("Stream locking " + fname);
 		fs.writeFileSync(fname+".streaming", "");
 		fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".streaming",work.dir);
 		
 		if (options.streamFilterReadBytes > 0) {
-			console.log("Reading Bytes");
+		    if (debug) console.log("Reading Bytes");
 			var buffer = new Buffer(options.streamFilterReadBytes);
 			fs.open(fname + ".data", 'r', function (err,fd) {
 			    fs.read(fd, buffer, 0, options.streamFilterReadBytes, options.streamFilterReadPosition-1, 
 			    		function (err, bytesRead, buffer) {readcallback(err,buffer);fs.close(fd);})});
 		} else if (options.streamFilterReadLines > 0) {
-			console.log("Reading Lines");
+		    if (debug) console.log("Reading Lines");
 			var LineReader = reader.DataReader;
 			var k = 1;
 			var lr = 0;
@@ -321,12 +324,14 @@ function stream(source, options, res) {
 			    .on("line", function (line) {
 			        if (k >= options.streamFilterReadPosition) {
 				        	if (lr == options.streamFilterReadLines) { 
+						    if (debug) {
 				        		console.log("dumped lines");
 				        		console.log(lines);
+						    }
 				        		readcallback("",lines);
 				        		this.interrupt();
 				        	}
-				        	console.log("read line");
+						if (debug) console.log("read line");
 			        		lines = lines + line + "\n";
 			        		lr = lr+1;
 
@@ -334,19 +339,20 @@ function stream(source, options, res) {
 			        	k = k+1;
 			    })
 			    .on("end", function () {
-			        console.log("EOF");
+				    if (debug) console.log("EOF");
 			    })
 			    .read();
 		} else {	
-			console.log("Reading File");	
+		    if (debug) console.log("Reading File");	
 			// Should be no encoding if streamFilterBinary was given.
 			fs.readFile(fname + ".data", "utf8", readcallback);
 		}
 		
 		function readcallback(err, data) {
-		
-				console.log('readFile callback event');
-				console.log("Un-stream locking " + fname);
+		    if (debug) {
+			console.log('readFile callback event');
+			console.log("Un-stream locking " + fname);
+		    }
 				fs.unlinkSync(fname +".streaming", "");
 				fs.unlinkSync(__dirname+"/cache/locks/"+work.urlMd5+".streaming");
 				
@@ -393,12 +399,12 @@ function stream(source, options, res) {
 
 	}
 
-	if (options.inOrder) {
-		scheduler.addURL(source[0], options, function (work) {processwork(work,true)});
+	if (options.streamOrder) {
+	    scheduler.addURL(source[0], options, function (work) {processwork(work,true)});
 	} else {
-		for (var jj=0;jj<N;jj++) {
-			scheduler.addURL(source[jj], options, function (work) {processwork(work)});
-		}
+	    for (var jj=0;jj<N;jj++) {
+		scheduler.addURL(source[jj], options, function (work) {processwork(work)});
+	    }
 	}
 }
 
@@ -486,10 +492,12 @@ function parseSource(req) {
 			options.type  = "strftime";
 			options.start = timeRange.split("/")[0];
 			options.stop  = timeRange.split("/")[1];
-			console.log(options);
+			if (debug)
+			    console.log(options);
 			//eval("sourcet = expandtemplate(options)");
 			sourcet = expandtemplate(options);
-			console.log(sourcet);
+			if (debug)
+			    console.log(sourcet);
 		}
 		if (indexRange) {
 			options.type  = "sprintf";
@@ -512,7 +520,8 @@ function parseSource(req) {
 	if (prefix)		    			
 		for (i = 0; i < source.length; i++) {source[i] = prefix + source[i];}
 
-	console.log(source);
+	if (debug)
+	    console.log(source);
 	
 	return source;
 }

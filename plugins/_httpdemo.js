@@ -7,7 +7,7 @@ var time = require("../asset/time.js");
 exports.name = "_httpdemo";
 
 exports.match = function(url){
-	return url.split("/")[2].toLowerCase()==="datacache.org";
+	return url.split("/")[2].toLowerCase()==="xdatacache.org";
 }
 
 exports.extractData = function (data) {

@@ -15,7 +15,8 @@ function log(type, work){
 	fs.appendFile(file, entry, function(err){if (err) console.log(err);});
 
 	// Write to STDOUT
-	console.log(entry);
+	var entry0 = util.formatTime(new Date()) + "\t" + type + "\t" +work.url;
+	//console.log(entry0);
 
 	// Write to clients
 	clients.forEach(function(socket){
