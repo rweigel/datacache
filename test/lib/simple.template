@@ -1,0 +1,8 @@
+Test results: 
+	{{passedSuitesCount}} suites passed, {{failedSuitesCount}} suites failed.
+
+Details: 
+{{#each suites}}	{{name}}:	{{duration}}ms
+	{{passedTestsCount}} tests passed, {{failedTestsCount}} tests are failing:
+		{{#each tests}}{{#if error}}Failed{{/if}}{{#unless error}}Passed{{/unless}}:	{{name}}	{{duration}}ms
+		{{/each}}{{/each}}
