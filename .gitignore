@@ -1,4 +1,6 @@
 cache/
 log/
+cache
+log
 node_modules/
 *.log
