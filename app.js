@@ -119,19 +119,6 @@ app.post("/report", function (req,res) {
   	 	});
 }) 
 
-app.get("/servers", function (req,res) {
-	 // servers.txt is a list of other known DC servers
-	 // Reduce list by doing HEAD request to each server?
-	 var servers = __dirname+"/servers.txt";
-	 fs.exists(servers, function (exists) {
-		if (exists) {
-	  	 	fs.readFile(servers, "utf8", 
-				function (err, data) {res.send(data.split('\n'))});
-		} else {
-			res.send("[]");
-		}
-	});
-}) 
 
 app.get("/demo/changingfile.txt", function (req,res) {
 	var date = new Date();
