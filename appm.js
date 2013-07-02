@@ -6,6 +6,11 @@ var worker;
 var numReqs = 0;
 var fs = require("fs");
 
+// Runs one datacache instance per CPU found on machine.  Each CPU has its
+// own cache directory.  No sharing of cache directories.  
+// TODO: Re-use locking code for single instance to allow sharing of cache
+// directories.
+
 // Get port number from command line option.
 var port = process.argv[2] || 8000;
 
