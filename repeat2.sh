@@ -1,5 +1,5 @@
 BASE=http://datacache.org/dc/sync?
-COM="inOrder=true&return=stream&forceUpdate=true&forceWrite=true&inOrder=true&prefix=http://datacache.org/dc/demo/file&source=1.txt%0A2.txt"
+COM="streamOrder=true&return=stream&forceUpdate=true&forceWrite=true&inOrder=true&prefix=http://datacache.org/dc/demo/file&source=1.txt%0A2.txt"
 N=100
 echo $COM
 for ((i=1; i <= $N ; i++)); do
