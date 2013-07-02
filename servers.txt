@@ -1,2 +1,0 @@
-http://localhost:8000/sync
-http://localhost:8001/sync
