@@ -32,10 +32,11 @@
     <script type="text/javascript">
 
 		querystr = "__QUERYSTR__";
-    		if (querystr.match("__")) {
+    	if (querystr.match("__QUERYSTR__")) {
 			querystr = "source=http://datacache.org/dc/demo/file1.txt%0Ahttp://datacache.org/dc/demo/file2.txt"
-    		}
-    		//querystr = "source=http%3A%2F%2Fdatacache.org%2Fdc%2Fdemo%2Ffile1.txt%0Ahttp%3A%2F%2Fdatacache.org%2Fdc%2Fdemo%2Ffile2.txt%0A";
+    	}
+
+    	//querystr = "source=http%3A%2F%2Fdatacache.org%2Fdc%2Fdemo%2Ffile1.txt%0Ahttp%3A%2F%2Fdatacache.org%2Fdc%2Fdemo%2Ffile2.txt%0A";
 		console.log(querystr);
 		console.log(querystr.replace(/%0D%0A/g,'%0A'));
 		querystr = decodeURIComponent(querystr.replace(/%0D%0A/g,'%0A'));
@@ -47,7 +48,7 @@
 		TIMEOUT = 1000;
 		ASYNC   = true;
 
-    		$(function() {report()});
+    	$(function() {report()});
     </script>
 
 </head>

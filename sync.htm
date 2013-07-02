@@ -54,9 +54,9 @@
 			</p>
 			<p>
 			Processing:&nbsp;
-			<input type='checkbox' name='forceUpdate' value='true' ><span title="Writes new md5url.* files if md5url.data has changed or forceWrite=true.">&nbsp;Update <a href='cache'>cache</a></span></input> 
+			<input type='checkbox' name='forceUpdate' value='true' ><span title="Writes new md5url.* files if md5url.data has changed.">&nbsp;Update <a href='cache'>cache</a></span></input> 
 			&nbsp;
-			<input type='checkbox' name='forceWrite' value='true' ><span title="Writes new md5url.data if response is different from cache version.  (Write is normally skipped otherwise.)  Other files are not modified.">&nbsp;Force <a href='cache'>cache</a> write if change.</span></input> 
+			<input type='checkbox' name='forceWrite' value='true' ><span title="Writes new md5url.* even if response md5url.data is same as cached md5url.data.">&nbsp;Force <a href='cache'>cache</a> write.</span></input> 
 			&nbsp;
 			<select style="width:3em;height:2.0em" name='maxTries'>
   				<option value="1">1</option>
@@ -77,7 +77,7 @@
 			</p>
 			<p>
 			Processing:&nbsp;
-			<span style="vertical-align:middle">Extract Data: <input type='text' name='extractData' value='body.toString().split("\n").filter(function(line){return line.search(lineRegExp)!=-1;}).join("\n") + "\n";' style="width: 10em;height:1em;"/></span>
+			<span style="vertical-align:middle">Extract Data: <input type='text' name='extractData' value='' style="width: 10em;height:1em;"/></span>
 			</p>
 			<p>
 			  URLs:&nbsp; <span style="vertical-align:middle">Prefix: <input type='text' name='prefix' style="width: 12em;height:1em;"/></span>

@@ -55,8 +55,11 @@ function report() {
 	
 	var urls  = new Array();
 	//console.log(querystr);
-	urls    = querystr.replace(/.*source=(.*\s+)/,'$1').split("\n").filter(function(element){return element.length});
-	//console.log(urls.length);
+	//urls    = querystr.replace(/.*source=(.*\s+)/,'$1').split("\n").filter(function(element){return element.length});
+	urls    = querystr.replace(/.*source=(.*)/,'$1').split("\n").filter(function(element){return element.length});
+	console.log("++");
+	console.log(querystr.replace(/.*source=(.*\s+)/,'$1'))
+	console.log(urls);
 	//console.log("report.js: querystring length = " + querystr.length);
 	if (urls.length == 0) {
 		$('#error').show();
@@ -89,12 +92,13 @@ function report() {
 		times[Nrun] = new Array();
 		N = urls.length;
 
-		console.log(N);
-		console.log(querystr);
+		
+		console.log("querystr: " + querystr);
 		options = querystr.replace(/source=.*[\s\S]*?$/g,'');
-		options = options.replace(/\&.*=\&/g,'');
-		console.log(options);
-		console.log(querystr);
+		console.log("options: " + options);
+		//options = options.replace(/\&.*=\&/g,'');
+		console.log("options: " + options);
+		console.log("querystr: " + querystr);
 		console.log(urls);
 		for (i = 0;i < DC.length;i++) {
 			$('#wrapper').append("<div id='status'></div>".replace('status','status-'+i+""+Nrun));
@@ -106,7 +110,8 @@ function report() {
 			$('#status-'+i+""+Nrun).append(msg);
 			if (ASYNC) {
 				for (var j = 0;j < urls.length;j++) {
-					getreport(DC[i] + "?"+options+"&source="+urls[j],i,Nrun,tic);
+					//getreport(DC[i] + "?"+options+"&source="+urls[j],i,Nrun,tic);
+					getreport(DC[i] + "?"+options+"source="+urls[j],i,Nrun,tic);
 					console.log(urls[j]);	
 					//summary(times);
 				}						
@@ -128,7 +133,7 @@ function report() {
 	}
 	
 	function getreport(url,i,Nrun,tic,callback) {
-		
+		console.log("--"+url)
 		$.ajax({
 				type: 'GET',
 				async: ASYNC,
