@@ -1,31 +1,43 @@
 var logger = require("./lib/logger")(),
 	request = require("request"),
+	async = require("async"),
 	assert = require("assert"),
 	simpleReporter = require("./lib/testReporter").simpleReporter;
 
 var urls = [
-	"http://www.google.com"
+	"http://www.google.com",
+	"http://www.yahoo.com",
+	"http://www.quotationspage.com/random.php3"
 ];
 
-module.exports = function(){
+module.exports = function(finish){
 	logger.i("light tests started");
+
+	finish = finish || function(){};
 
 	// Create a new runner in each run so that runner.results is clean
 	var runner = require("./lib/testRunner")(),
 		suite = runner.suite,
-		test = runner.test,
-		testInfo = runner.testInfo,
 		assertNot =  runner.assertNot;
 
-	urls.forEach(testUrl);
+	// Test urls concurrently
+	async.map(urls, testUrl, function(err, results){
+		logger.i("\n" + simpleReporter(runner.results));
+		finish();
+	});
 
-	function testUrl(url){
-		suite(url, function(done){
+	// Test urls sequentially
+	// async.mapSeries(urls, testUrl, function(err, results){
+	// 	logger.i("\n" + simpleReporter(runner.results));
+	// 	finish();
+	// });
+
+	function testUrl(url, urlDone){
+		suite(url, function(test, testInfo, suiteDone){
 			request({
 				uri: url,
-				timeout: 1
+				timeout: 3111
 			}, function(err, res, body){
-
 				// Add info to runner.results
 				testInfo("err", err);
 				testInfo("res", res);
@@ -39,13 +51,9 @@ module.exports = function(){
 					assert(res.statusCode == 200);
 				})
 
-				// Needs to explictly call done() since tests are executed in 
-				// request()'s callback function
-				done();
+				suiteDone();
 
-				// console.log(runner.results);
-				// console.log(simpleReporter(runner.results));
-				logger.i("\n" + simpleReporter(runner.results));
+				urlDone();
 			});
 		})
 	}

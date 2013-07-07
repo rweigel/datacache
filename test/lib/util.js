@@ -17,3 +17,17 @@ function md5(str){
 	return crypto.createHash("md5").update(str).digest("hex");
 }
 exports.md5 = md5;
+
+exports.Timer = {
+	startTimes: {},
+
+	start: function(tag){
+		tag = tag || "__default";
+		this.startTimes[tag] = new Date;
+	},
+
+	stop: function(tag){
+		tag = tag || "__default";
+		return (new Date) - this.startTimes[tag];
+	}
+};

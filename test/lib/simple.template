@@ -3,6 +3,7 @@ Test results:
 
 Details: 
 {{#each suites}}	{{name}}:	{{duration}}ms
-	{{passedTestsCount}} tests passed, {{failedTestsCount}} tests are failing:
-		{{#each tests}}{{#if error}}Failed{{/if}}{{#unless error}}Passed{{/unless}}:	{{name}}	{{duration}}ms
-		{{/each}}{{/each}}
+	{{passedTestsCount}} tests passed, {{failedTestsCount}} tests failed:
+{{#each tests}}		{{#if error}}Failed{{/if}}{{#unless error}}Passed{{/unless}}:	{{name}}	{{duration}}ms
+{{/each}}
+{{/each}}
