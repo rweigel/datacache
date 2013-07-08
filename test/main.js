@@ -1,5 +1,3 @@
-console.log('dir', __dirname);
-
 var cronJob = require("cron").CronJob,
 	async = require("async");
 
