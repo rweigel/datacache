@@ -18,7 +18,7 @@ var settings = {
 var url = settings.base + settings.com;
 
 // Concurrently repeat execution n times
-// async.times(settings.n, function(n, next){
+//async.times(settings.n, function(n, next){
 
 // Sequentially repeat execution n times
 async.timesSeries(settings.n, function(n, next){

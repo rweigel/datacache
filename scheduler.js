@@ -126,18 +126,20 @@ function work2result(work) {
 		//console.log(work["metaJson"]);
 		if (work.options.includeMeta) {
 		    if (Object.keys(work["metaJson"]).length == 0) {
-			if (!work.hasOwnProperty("meta")) {
-			    work["meta"] = {};
+		    	if (!work.hasOwnProperty("meta")) {
+		    		work["meta"] = {};
+		    	}
+		    	if (!work.hasOwnProperty("datax")) {
+		    		work["datax"] = {};
+		    	}
+		    	
+			if (typeof(work["meta"]) === "undefined") {
+			    ret["meta"] = work["datax"];			    
+			} else if (work["meta"].length == 0) {
+			    ret["meta"] = work["datax"];
+			} else {
+			    ret["meta"] = work["meta"];
 			}
-			if (!work.hasOwnProperty("datax")) {
-			    work["datax"] = {};
-			}
-
-				if (work["meta"].length == 0) {
-					ret["meta"] = work["datax"];
-				} else {
-				    ret["meta"] = work["meta"];
-				}
 		    } else {
 				ret["metaJson"] = work["metaJson"];
 		    }

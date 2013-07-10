@@ -95,11 +95,12 @@ function report() {
 		
 		console.log("querystr: " + querystr);
 		options = querystr.replace(/source=.*[\s\S]*?$/g,'');
-		console.log("options: " + options);
-		//options = options.replace(/\&.*=\&/g,'');
+		//console.log("options: " + options);
+		//options = options.replace(/.*=\&/g,'');
 		console.log("options: " + options);
 		console.log("querystr: " + querystr);
 		console.log(urls);
+		console.log(DC.length);
 		for (i = 0;i < DC.length;i++) {
 			$('#wrapper').append("<div id='status'></div>".replace('status','status-'+i+""+Nrun));
 			if (ASYNC) {

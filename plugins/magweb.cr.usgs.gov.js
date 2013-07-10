@@ -1,7 +1,7 @@
-exports.name = "magweb.cr.usgs.gov";
+exports.name = "xmagweb.cr.usgs.gov";
 
 exports.match = function(url){
-	return url.split("/")[2].toLowerCase()==="magweb.cr.usgs.gov";
+	return url.split("/")[2].toLowerCase()==="xmagweb.cr.usgs.gov";
 }
 
 exports.extractData = function (body, options) {

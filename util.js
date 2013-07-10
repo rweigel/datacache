@@ -125,11 +125,15 @@ function getCachedData(work, callback) {
 			if (!work.options.includeHeader) { finished("Reading Header Finished"); return;}
 				fs.readFile(getCachePath(work) + ".header", "utf8",	
 					function (err, header) {
+					if (typeof(header) !== 'undefined') {
 						tmp = header.split("\n");
 						for (i = 0; i < tmp.length; i++) {
 							kv = tmp[i].split(":");
 							work.header[kv[0]] = kv[1];
 						}
+					} else {
+						work.header[0] = "";
+					}
 						finished("Reading Header Finished");
 					});
 		}		
