@@ -25,7 +25,7 @@ exports.process = function(work, callback){
 						}
 						buff+=data.toString();
 					})
-					    .on("error", function(e){work.error=e;callback(true, work);conn.end();})
+				    .on("error", function(e){work.error=e;callback(true, work);conn.end();})
 					.on("end", function(){
 						work.body = buff;
 						work.data = work.extractData(work.body);
@@ -39,6 +39,7 @@ exports.process = function(work, callback){
 			});
 		})
 	})
+	.on("error", function(e){work.error=e;callback(true, work);conn.end();})
 	.connect();
 }
 

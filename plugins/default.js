@@ -54,7 +54,7 @@ exports.process = function (work, callback) {
 							}
 							buff+=data.toString();
 						})
-						    .on("error", function(e){work.error=e;callback(true, work);conn.end();})
+						.on("error", function(e){work.error=e;callback(true, work);conn.end();})
 						.on("end", function(){
 							work.body = buff;
 							work.data = work.extractData(work.body, work.options);
@@ -68,6 +68,7 @@ exports.process = function (work, callback) {
 				});
 			})
 		})
+		.on("error", function(e){work.error=e;callback(true, work);conn.end();})
 		.connect();
 	} else {
 		console.log("Error.  Protocol" + work.url.replace(/^(.*)\:.*/,"$1") + " is not supported.");
