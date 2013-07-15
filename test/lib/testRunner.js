@@ -61,10 +61,10 @@ function runner(){
 				activeSuite.failedTestsCount++;
 				if(e.name == "AssertionError"){
 					activeTest.message = e.message;
-					activeTest.actual = e.actual;
-					activeTest.expected = e.expected;
+					activeTest.actual = "" + e.actual;
+					activeTest.expected = "" + e.expected;
 				} else {
-					activeTest.message = "Unexpected error occurred: " + e.name + ":" + e.messagse;
+					activeTest.message = "Error: " + e;
 				}
 			}
 		};
