@@ -1,9 +1,12 @@
-Test results: 
-	{{passedSuitesCount}} suites passed, {{failedSuitesCount}} suites failed.
-
-Details: 
-{{#each suites}}	{{name}}:	{{duration}}ms
-	{{passedTestsCount}} tests passed, {{failedTestsCount}} tests failed:
-{{#each tests}}		{{#if error}}Failed{{/if}}{{#unless error}}Passed{{/unless}}:	{{name}}	{{duration}}ms
+Test results:\n 
+	{{passedSuitesCount}} suites passed, {{failedSuitesCount}} suites failed.\n
+\n
+Details:\n 
+{{#each suites}}
+	{{{name}}}:	{{duration}}ms\n
+	{{passedTestsCount}} tests passed, {{failedTestsCount}} tests failed:\n
+{{#each tests}}
+{{#unless error}}		Passed:	{{{name}}}	{{duration}}ms\n{{/unless}}
+{{#if error}}		Failed: {{{name}}}	{{duration}}ms	{{message}}	expected:{{expected}}	actual:{{actual}}\n{{/if}}
 {{/each}}
 {{/each}}
