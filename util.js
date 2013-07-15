@@ -169,7 +169,7 @@ function getCachedData(work, callback) {
 					work.data       = data;
 					work.dataJson   = work.plugin.dataToJson(data);
 					work.dataMd5    = exports.md5(data);
-					work.dataLength = data.length;		
+					work.dataLength = data ? data.length : 0;		
 					finished("Reading Data Finished");
 				});
 		}
