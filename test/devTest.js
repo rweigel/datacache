@@ -168,6 +168,37 @@ function(cb){
 		});
 	})
 },
+function(cb){
+	suite("should not return only partial data with return=stream", function(test, testInfo, suiteDone){
+		request({
+			uri: server + "?source=http://www.google.comr&return=stream",
+			timeout: 1000
+		}, function(err, res, body){
+			// Add info to runner.results
+			testInfo("err", err);
+			testInfo("res", res);
+			testInfo("body", body);
+
+			test("request should succeed", function(){
+				assert( !err );
+			});
+
+			test("status code should be 200", function(){
+				assert(res);
+				assert.equal(res.statusCode, 200);
+			});
+
+			test("should return all data", function(){
+				console.log("body ", body, res.body, err);
+				assert(body !== undefined, 'body should not be undefined');
+				assert(body.indexOf("</html>") > 1, 'body should contain the end of document');
+			});
+
+			suiteDone();
+			cb();
+		});
+	})
+},
 function(){
 	logger.i("\n" + simpleReporter(runner.results));
 	logger.i("Dev Tests finished.");
