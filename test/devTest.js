@@ -118,6 +118,56 @@ function(cb){
 		});
 	})
 },
+function(cb){
+	suite("should not crash with an 404 URL and return=stream", function(test, testInfo, suiteDone){
+		request({
+			uri: server + "?source=http://www.google.com/404&return=stream",
+			timeout: 1000
+		}, function(err, res, body){
+			// Add info to runner.results
+			testInfo("err", err);
+			testInfo("res", res);
+			testInfo("body", body);
+
+			test("request should succeed", function(){
+				assert( !err );
+			});
+
+			test("status code should be 200", function(){
+				assert(res);
+				assert.equal(res.statusCode, 200);
+			});
+
+			suiteDone();
+			cb();
+		});
+	})
+},
+function(cb){
+	suite("should not halt with an invalid domain name and return=stream", function(test, testInfo, suiteDone){
+		request({
+			uri: server + "?source=http://www.notexist.forever&return=stream",
+			timeout: 1000
+		}, function(err, res, body){
+			// Add info to runner.results
+			testInfo("err", err);
+			testInfo("res", res);
+			testInfo("body", body);
+
+			test("request should succeed", function(){
+				assert( !err );
+			});
+
+			test("status code should be 200", function(){
+				assert(res);
+				assert.equal(res.statusCode, 200);
+			});
+
+			suiteDone();
+			cb();
+		});
+	})
+},
 function(){
 	logger.i("\n" + simpleReporter(runner.results));
 	logger.i("Dev Tests finished.");

@@ -282,14 +282,22 @@ function stream(source, options, res) {
         	}
     });
 	
-	Nx = 0;
-	gzipping = 0;
-	draining = 0;
-	dt = 0;
+	var Nx = 0;
+	var gzipping = 0;
+	var draining = 0;
+	var dt = 0;
 	function processwork(work,inorder) {
-	
 		var fname = util.getCachePath(work);
-		if (debug) console.log("Stream locking " + fname);
+
+		if(debug) {
+			console.log("Stream locking " + fname);
+			console.log("work.error", work.error);
+		}
+
+		if(work.error){
+			return res.end();
+		}
+
 		fs.writeFileSync(fname+".streaming", "");
 		fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".streaming",work.dir);
 		
@@ -340,14 +348,22 @@ function stream(source, options, res) {
 		    if (debug) {
 			console.log('readFile callback event');
 			console.log("Un-stream locking " + fname);
+			console.log("err: ", err);
+			console.log("data: ", data);
 		    }
 				fs.unlinkSync(fname +".streaming", "");
 				fs.unlinkSync(__dirname+"/cache/locks/"+work.urlMd5+".streaming");
 				
 				Nx = Nx + 1;
+				
+				if(err){
+					return res.end();
+				}
+
 				if (!options.streamGzip) {
 					if (options.streamFilter === "") {
 						res.write(data);
+						res.end();
 					} else {	
 						try {
 							eval("res.write(data."+options.streamFilter+")");
