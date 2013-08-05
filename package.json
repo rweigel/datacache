@@ -16,11 +16,11 @@
     "expandtemplate": "git://github.com/rweigel/expandtemplate",
     "cron": "~1.0.1",
     "async": "~0.2.9",
-    "handlebars": "~1.0.12"
+    "handlebars": "~1.0.12",
+    "adm-zip": "~0.4.3"
   },
   "scripts": {
     "test": "node test/main.js"
   },
-  "devDependencies": {
-  }
+  "devDependencies": {}
 }

@@ -4,18 +4,62 @@ var moment  = require("moment");
 var request = require("request");
 var mkdirp  = require("mkdirp");
 var logger  = require("./logger.js");
+var FtpClient  = require("ftp");
 
 var TIMEOUT = 20000;
 var MAXCONNECTION = 1000;
 
+// Download a resource via http or ftp
+function download(url, callback){
+	if (url.match(/^http/)) {
+		return downloadHttp(url, callback);
+	} else if(url.match(/^ftp/)){
+		return downloadFtp(url, callback);
+	} else {
+		callback("Error.  Protocol" + url.replace(/^(.*)\:.*/,"$1") + " is not supported.");
+	}
+}
+exports.download = download;
+
+var downloadHttp = function(url, callback){
+	return get(url, function(err, response, body){
+		return callback(err, body);
+	});
+};
+
+var downloadFtp = function(url, callback){
+	var conn = new FtpClient({host: url.split("/")[2]});
+	conn.on("connect", function(){
+		conn.auth(function(err){
+			conn.get(work.url.split("/").slice(3).join("/"), function(err, stream){
+				if(err){
+					callback("Ftp download error");
+				} else{
+					var buff = "";
+					stream.on("data", function(data){
+						buff+=data.toString();
+					})
+					.on("error", function(e){work.error=e;callback(true, work);conn.end();})
+					.on("end", function(){
+						callback(false, buff);
+					});
+				}
+			});
+		})
+	})
+	.on("error", function(e){callback(e, work);conn.end();})
+	.connect();
+	return conn;
+}
+
 function get(url, callback){
-    
 	var options = {	
-					uri: url,
-    					timeout: TIMEOUT,
-    					encoding: null,
-    					pool: {maxSockets : MAXCONNECTION}
+					url: url,
+					timeout: TIMEOUT,
+					encoding: null,
+					pool: {maxSockets : MAXCONNECTION}
 				  };
+				  var i =0;
     return request.get(options, callback);
 }
 exports.get = get;
@@ -96,6 +140,11 @@ var isCached = function isCached(work, callback) {
 	});
 }
 exports.isCached = isCached;
+
+var isZipCached = function isZipCached(work){
+	return fs.existsSync(getZipCachePath(work) + ".data");
+}
+exports.isZipCached = isZipCached;
 
 function getCachedData(work, callback) {
 
@@ -184,6 +233,11 @@ function getCachePath(work){
 }
 exports.getCachePath = getCachePath;
 
+function getZipCachePath(work){
+	return getCacheDir(work) + md5(work.zipFileUrl) +".zip"; 
+}
+exports.getZipCachePath = getZipCachePath;
+
 function getCacheDir(work,relative){
     prefix = __dirname;
     if (arguments.length > 1 && relative) {
@@ -195,6 +249,7 @@ function getCacheDir(work,relative){
 		return prefix + "/cache"+work.options.dir;
     }
 }
+exports.getCacheDir = getCacheDir;
 
 var memLock = {};
 var writeCache = function(work, callback){

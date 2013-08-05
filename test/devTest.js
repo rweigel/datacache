@@ -171,7 +171,7 @@ function(cb){
 function(cb){
 	suite("should not return only partial data with return=stream", function(test, testInfo, suiteDone){
 		request({
-			uri: server + "?source=http://www.google.comr&return=stream",
+			uri: server + "?source=http://www.google.com&return=stream&forceUpdate=true",
 			timeout: 1000
 		}, function(err, res, body){
 			// Add info to runner.results
@@ -192,6 +192,64 @@ function(cb){
 				console.log("body ", body, res.body, err);
 				assert(body !== undefined, 'body should not be undefined');
 				assert(body.indexOf("</html>") > 1, 'body should contain the end of document');
+			});
+
+			suiteDone();
+			cb();
+		});
+	})
+},
+function(cb){
+	suite("request a file in zip with return=json", function(test, testInfo, suiteDone){
+		request({
+			uri: server + "?source=http://localhost:8000/test/data/test.zip/ephx_00_161.txt&return=json&forceUpdate=true",
+			timeout: 5000
+		}, function(err, res, body){
+			testInfo("err", err);
+			testInfo("res", res);
+			testInfo("body", body);
+
+			test("request should succeed", function(){
+				assert( !err );
+			});
+
+			test("status code should be 200", function(){
+				assert(res);
+				assert.equal(res.statusCode, 200);
+			});
+
+			test("error should be null", function(){
+				var result = JSON.parse(body)[0];
+				assert(!result.error);
+			});
+
+			suiteDone();
+			cb();
+		});
+	})
+},
+function(cb){
+	suite("request an inexist file in zip with return=json", function(test, testInfo, suiteDone){
+		request({
+			uri: server + "?source=http://localhost:8000/test/data/test.zip/INEXIST.txt&return=json&forceUpdate=true",
+			timeout: 1000
+		}, function(err, res, body){
+			testInfo("err", err);
+			testInfo("res", res);
+			testInfo("body", body);
+
+			test("request should succeed", function(){
+				assert( !err );
+			});
+
+			test("status code should be 200", function(){
+				assert(res);
+				assert.equal(res.statusCode, 200);
+			});
+
+			test("error should be be set to true", function(){
+				var result = JSON.parse(body)[0];
+				assert(result.error);
 			});
 
 			suiteDone();

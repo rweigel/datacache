@@ -76,6 +76,8 @@ app.use("/demo",  express.directory(__dirname+"/demo"));
 app.use("/cache", express.static(__dirname + "/cache"));
 app.use("/demo",  express.static(__dirname + "/demo"));
 app.use("/asset", express.static(__dirname + "/asset"));
+app.use("/test/data", express.static(__dirname + "/test/data"));
+app.use("/test/data", express.directory(__dirname + "/test/data"));
 
 // Set default content-type to "text".  Not needed?
 //app.use(function (req, res, next) {res.contentType("text");next();});
@@ -459,7 +461,7 @@ function parseOptions(req) {
 	if (options.lineRegExp) {
 		options.lineRegExp = decodeURIComponent(req.originalUrl.replace(/.*lineRegExp=(.*?)(\&|$).*/,'$1'));
 	} else {
-		options.lineRegExp = "^[0-9]";
+		options.lineRegExp = ".";
 	}
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
