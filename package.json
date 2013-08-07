@@ -13,7 +13,7 @@
     "mkdirp": "*",
     "exec-sync": "*",
     "buffered-reader": "*",
-    "expandtemplate": "git://github.com/rweigel/expandtemplate",
+    "tsdset": "git://github.com/rweigel/tsdset",
     "cron": "~1.0.1",
     "async": "~0.2.9",
     "handlebars": "~1.0.12",
