@@ -17,7 +17,7 @@ var runner = require("./lib/testRunner")(),
 
 async.series([
 function(cb){
-	suite("should success for a valid URL", function(test, testInfo, suiteDone){
+	suite("Should be success for a valid URL", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "?source=http://www.google.com",
 			timeout: 1000
@@ -51,7 +51,7 @@ function(cb){
 	})
 },
 function(cb){
-	suite("should handle an invalid URL gracefully", function(test, testInfo, suiteDone){
+	suite("Should handle an invalid URL gracefully", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "?source=http://www.notexist.forever",
 			timeout: 1000
@@ -85,7 +85,7 @@ function(cb){
 	})
 },
 function(cb){
-	suite("should not crash with an invalid URL and includeData=true", function(test, testInfo, suiteDone){
+	suite("Should not crash with an invalid URL and includeData=true", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "?source=http://www.notexist.forever&includeData=true",
 			timeout: 1000
@@ -119,7 +119,7 @@ function(cb){
 	})
 },
 function(cb){
-	suite("should not crash with an 404 URL and return=stream", function(test, testInfo, suiteDone){
+	suite("Should not crash with an 404 URL and return=stream", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "?source=http://www.google.com/404&return=stream",
 			timeout: 1000
@@ -144,7 +144,7 @@ function(cb){
 	})
 },
 function(cb){
-	suite("should not halt with an invalid domain name and return=stream", function(test, testInfo, suiteDone){
+	suite("Should not halt with an invalid domain name and return=stream", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "?source=http://www.notexist.forever&return=stream",
 			timeout: 1000
@@ -169,7 +169,7 @@ function(cb){
 	})
 },
 function(cb){
-	suite("should not return only partial data with return=stream", function(test, testInfo, suiteDone){
+	suite("Should not return only partial data with return=stream", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "?source=http://www.google.com&return=stream&forceUpdate=true",
 			timeout: 1000
@@ -200,7 +200,7 @@ function(cb){
 	})
 },
 function(cb){
-	suite("request a file in zip with return=json", function(test, testInfo, suiteDone){
+	suite("Request a file in zip with return=json", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "?source=http://localhost:8000/test/data/test.zip/ephx_00_161.txt&return=json&forceUpdate=true",
 			timeout: 5000
@@ -229,7 +229,7 @@ function(cb){
 	})
 },
 function(cb){
-	suite("request an inexist file in zip with return=json", function(test, testInfo, suiteDone){
+	suite("Request an inexist file in zip with return=json", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "?source=http://localhost:8000/test/data/test.zip/INEXIST.txt&return=json&forceUpdate=true",
 			timeout: 1000
