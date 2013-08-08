@@ -1,44 +1,82 @@
 var server = process.argv[2] || "http://localhost:8000/";
 //var server = process.argv[2] || "http://datacache.org/dc/";
 
-var tests     = [];
-tests[0]      = {};
-tests[0].com  = "streamOrder=true&return=stream&forceUpdate=true&forceWrite=true&inOrder=true&prefix="+server+"demo/file&source=1.txt%0A2.txt";
-tests[0].sort = false;
-tests[0].n    = 5;
 
-// The following four should give the same result.
-// The files are served with a random delay between 0 and 100 ms.
+// Testing streamOrder, streamFilterReadLines, and streamFilterReadBytes 
 
 //var prefix    = "http://magweb.cr.usgs.gov/data-stream/magnetometer/BOU/OneMinute/bou201308";
 var prefix    = server + "test/data-stream/bou201308";
-var source    = "01vmin.min%0A02vmin.min%0A03vmin.min"; // Not working.
+var args      = server + "sync?return=stream&forceUpdate=true&forceWrite=true&lineRegExp=^[0-9]";
+
+// Base test.
+
+// These two files are served without delay
 var source    = "01vmin.min%0A02vmin.min";
+var tests     = [];
 
-tests[1]      = {};
-tests[1].com  = "forceUpdate=true&forceWrite=true&lineRegExp=^[0-9]&streamOrder=true&return=stream&streamFilterReadLines=10&prefix="+prefix+"&source="+source;
-tests[1].sort = false;
-tests[1].n    = 5;
-tests[1].md5  = "09b7aee72d91499b00b7858e099fae4c";
+var j = 0;
+tests[j]      = {};
+tests[j].url  = args + "&streamOrder=true&streamFilterReadLines=10&prefix="+prefix+"&source="+source;
+tests[j].sort = false;
+tests[j].n    = 10;
+tests[j].md5  = "";
 
-// Should fail because sort is not implemented.
-tests[2]      = {};
-tests[2].com  = "forceUpdate=true&forceWrite=true&lineRegExp=^[0-9]&streamOrder=false&return=stream&streamFilterReadLines=10&prefix="+prefix+"&source="+source;
-tests[2].sort = true;
-tests[2].n    = 5;
-tests[2].md5  = tests[1].md5;
+// Stream order = false.  Sorted stream should have same md5 as previous.
+j = j+1;
+tests[j]      = {};
+tests[j].url  = args + "&streamOrder=false&streamFilterReadLines=10&prefix="+prefix+"&source="+source;
+tests[j].sort = true;
+tests[j].n    = 10;
+tests[j].md5  = "";
 
-tests[3]      = {};
-tests[3].com  = "forceUpdate=true&forceWrite=true&lineRegExp=^[0-9]&streamOrder=true&return=stream&streamFilterReadBytes=710&prefix="+prefix+"&source="+source;
-tests[3].sort = false;
-tests[3].n    = 5;
-tests[3].md5  = tests[1].md5;
+j = j+1;
+tests[j]      = {};
+tests[j].url  = args + "&streamOrder=true&streamFilterReadBytes=720&prefix="+prefix+"&source="+source;
+tests[j].sort = false;
+tests[j].n    = 10;
+tests[j].md5  = "";
 
-tests[4]      = {};
-tests[4].com  = "forceUpdate=true&forceWrite=true&lineRegExp=^[0-9]&streamOrder=false&return=stream&streamFilterReadBytes=710&prefix="+prefix+"&source="+source;
-tests[4].sort = true;
-tests[4].n    = 5;
-tests[4].md5  = tests[1].md5;
+// Fails
+j = j+1;
+tests[j]      = {};
+tests[j].url  = args + "&streamOrder=false&streamFilterReadBytes=720&prefix="+prefix+"&source="+source;
+tests[j].sort = true;
+tests[j].n    = 2;
+tests[j].md5  = "";
+
+// Base test.
+// These three files are served with random delay between 0 and 100 ms.
+var source    = "03vmin.min%0A04vmin.min%0A05vmin.min";
+
+j = j+1;
+tests[j]      = {};
+tests[j].url  = args + "&streamOrder=true&streamFilterReadLines=10&prefix="+prefix+"&source="+source;
+tests[j].sort = false;
+tests[j].n    = 10;
+tests[j].md5  = "";
+
+j = j+1;
+tests[j]      = {};
+tests[j].url  = args + "&streamOrder=false&streamFilterReadLines=10&prefix="+prefix+"&source="+source;
+tests[j].sort = true;
+tests[j].n    = 10;
+tests[j].md5  = "";
+
+j = j+1;
+tests[j]      = {};
+tests[j].url  = args + "&streamOrder=true&streamFilterReadBytes=720&prefix="+prefix+"&source="+source;
+tests[j].sort = false;
+tests[j].n    = 10;
+tests[j].md5  = "";
+
+// Fails
+j = j+1;
+tests[j]      = {};
+tests[j].url  = args + "&streamOrder=false&streamFilterReadBytes=720&prefix="+prefix+"&source="+source;
+tests[j].sort = true;
+tests[j].n    = 10;
+tests[j].md5  = "";
+
 
 var fs      = require("fs");
 var jsdiff  = require("diff");
@@ -56,12 +94,14 @@ logger.i("streamTests.js tests started.");
 var settings = {};
 
 //runtest(0);
-runtest(2);
+runtest(6);
+var debug = false;
 
 function runtest(i) {
-	settings = {base: server + "sync?", com: tests[i].com, n: tests[i].n, i:i};
-	console.log("Sequentially requesting " + settings.n + " times: " + settings.base + settings.com);
-	async.timesSeries(settings.n, testrun, testreport);
+	settings = tests[i];
+	settings.i = i;
+	console.log("Sequentially requesting " + tests[i].n + " times: " + tests[i].url);
+	async.timesSeries(tests[i].n, testrun, testreport);
 }
 
 //console.log("Concurrently requesting " + settings.n + " times: " + settings.base + settings.com);
@@ -72,7 +112,7 @@ function testrun(n, next) {
 		logger.i("test #" + n);
 		
 		request({
-			uri: settings.base + settings.com
+			uri: settings.url
 		}, function(err, res, body){
 			// Add info to runner.results
 			testInfo("err", err);
@@ -91,25 +131,50 @@ function testreport(err) {
 		.results
 		.suites
 		.map(function(result){
+
+			if (debug) console.log(settings);
+
 			if (!fs.existsSync("data-stream/streamTests.out."+settings.i)) {
-				console.log("Writing "+"data-stream/streamTests.out."+settings.i);
+				if (debug) console.log("Writing "+"data-stream/streamTests.out."+settings.i);
 				fs.writeFileSync("data-stream/streamTests.out."+settings.i,result.info.body);
-				console.log("Writing "+"data-stream/streamTests.md5."+settings.i);
+				if (debug) console.log("Writing "+"data-stream/streamTests.md5."+settings.i);
 				fs.writeFileSync("data-stream/streamTests.md5."+settings.i,md5(result.info.body));
 			} else {
-				console.log("Reading "+"data-stream/streamTests.md5."+settings.i);
+				if (debug) console.log("Reading "+"data-stream/streamTests.md5."+settings.i);
 				var expectedmd5 = fs.readFileSync("data-stream/streamTests.md5."+settings.i).toString();
-				// TODO:
-				// if (settings.sort)
-				// 	  result.info.body = sort(result.info.body)
+				if (settings.sort) {
+					if (debug) {
+						console.log("Sorting");
+						console.log("Before sort")
+						console.log(result.info.body);
+						console.log("After sort")
+					}
+					if (result.info.body.match(/\n$/)) {
+						if (debug) {
+							console.log("File has trailing newline.");
+							console.log(result.info.body.replace(/\n$/,"").split("\n").sort().join("\n")+"\n");
+						}
+						result.info.body = result.info.body.replace(/\n$/,"").split("\n").sort().join("\n")+"\n";
+					} else {
+						if (debug) { 
+							console.log(result.info.body.split("\n").sort().join("\n"));
+						}
+						result.info.body = result.info.body.split("\n").sort().join("\n");
+					}
+				} else {
+					if (debug) {
+						console.log(result.info.body);
+					}
+				}
+					  
 				var resultmd5   = md5(result.info.body);
 				if (expectedmd5 !== resultmd5) {
-					console.log("Test failed.  Showing diffs.");
-					//console.log("--- Expected");
-					//console.log(fs.readFileSync("data-stream/streamTests.out."+settings.i).toString());
-					//console.log("--- Received");
-					//console.log(result.info.body);
-					//console.log("---");
+					console.log("Test failed.");
+					console.log("--- Expected");
+					console.log(fs.readFileSync("data-stream/streamTests.out."+settings.i).toString());
+					console.log("--- Received");
+					console.log(result.info.body);
+					console.log("---");
 					//var diffs = jsdiff.diffLines(fs.readFileSync("data-stream/streamTests.out."+settings.i).toString(), result.info.body);
 					//console.log(diffs.added);
 					//console.log(diffs.removed);
