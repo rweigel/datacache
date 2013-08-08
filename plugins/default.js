@@ -7,7 +7,7 @@ exports.match = function (url) {return false;}
 exports.preprocess = function (work, callback) {callback(false, work)};
 
 exports.process = function (work, callback) {
-	
+
 	if (work.url.match(/^http/)) {
 		var headers = work.options.acceptGzip ? {"accept-encoding" : "gzip, deflate"} : {};
 		util.get(work.url, function (error, response, body) {
@@ -79,7 +79,6 @@ exports.extractDataBinary = function (body, options) {return "";};
 
 exports.extractData = function (body, options) {
 	lineRegExp = options.lineRegExp;
-	//console.log(options.extractData);
 	return eval(options.extractData);
 };
 
