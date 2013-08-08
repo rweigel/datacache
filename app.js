@@ -18,7 +18,7 @@ xutil = require('util');
 
 var expandtemplate = require("expandtemplate").expandtemplate;
 
-var debug = false;
+var debug = true;
 
 // Locking notes:
 // When md5url.data is being read for streaming, an empty file named md5url.stream is placed
@@ -72,12 +72,13 @@ app.use(express.methodOverride());
 app.use(express.bodyParser());
 
 app.use("/cache", express.directory(__dirname+"/cache"));
-app.use("/demo",  express.directory(__dirname+"/demo"));
 app.use("/cache", express.static(__dirname + "/cache"));
+app.use("/demo",  express.directory(__dirname+"/demo"));
 app.use("/demo",  express.static(__dirname + "/demo"));
-app.use("/asset", express.static(__dirname + "/asset"));
 app.use("/test/data", express.static(__dirname + "/test/data"));
 app.use("/test/data", express.directory(__dirname + "/test/data"));
+
+app.use("/asset", express.static(__dirname + "/asset"));
 
 // Set default content-type to "text".  Not needed?
 //app.use(function (req, res, next) {res.contentType("text");next();});
@@ -128,6 +129,14 @@ app.get("/demo/changingfile.txt", function (req,res) {
 			  date.getHours()    + " " + date.getMinutes() +  " " + date.getSeconds();
 	//console.log(str);
 	res.send(str);
+})
+
+// Delay serving to test stream ordering. 
+app.get("/test/data-stream/bou20130801vmin.min", function (req,res) {
+	setTimeout(function () {res.send(fs.readFileSync("test/data-stream/bou20130801vmin.min"))},100);
+})
+app.get("/test/data-stream/bou20130802vmin.min", function (req,res) {
+	setTimeout(function () {res.send(fs.readFileSync("test/data-stream/bou20130802vmin.min"))},0);
 })
 
 app.get("/report.htm", function (req,res) {
@@ -323,13 +332,14 @@ function stream(source, options, res) {
 			        if (k >= options.streamFilterReadPosition) {
 				        	if (lr == options.streamFilterReadLines) { 
 						    if (debug) {
-				        		console.log("dumped lines");
-				        		console.log(lines);
+				        		//console.log("dumped lines");
+				        		//console.log(lines);
 						    }
 				        		readcallback("",lines);
 				        		this.interrupt();
 				        	}
-						if (debug) console.log("read line");
+						//if (debug) console.log("read line");
+						console.log(line);
 			        		lines = lines + line + "\n";
 			        		lr = lr+1;
 
@@ -351,7 +361,7 @@ function stream(source, options, res) {
 			console.log('readFile callback event');
 			console.log("Un-stream locking " + fname);
 			console.log("err: ", err);
-			console.log("data: ", data);
+			//console.log("data: ", data);
 		    }
 				fs.unlinkSync(fname +".streaming", "");
 				fs.unlinkSync(__dirname+"/cache/locks/"+work.urlMd5+".streaming");
@@ -409,7 +419,7 @@ function stream(source, options, res) {
 	    scheduler.addURL(source[0], options, function (work) {processwork(work,true)});
 	} else {
 	    for (var jj=0;jj<N;jj++) {
-		scheduler.addURL(source[jj], options, function (work) {processwork(work)});
+			scheduler.addURL(source[jj], options, function (work) {processwork(work)});
 	    }
 	}
 }
@@ -434,12 +444,14 @@ function parseOptions(req) {
 	options.return         = req.body.return               || req.query.return             || "json";
 	options.dir            = req.query.dir                 || req.body.dir                 || "/cache/";
 
-	options.streamOrder    = s2b(req.query.streamOrder)    || s2b(req.body.streamOrder)    || true;
+	options.streamOrder    = req.query.streamOrder    || req.body.streamOrder    || "true";
+	options.streamOrder    = s2b(options.streamOrder);
 	options.streamGzip     = s2b(req.query.streamGzip)     || s2b(req.body.streamGzip)     || false;
 	options.streamFilter   = req.query.streamFilter        || req.body.streamFilter        || "";
 
 	//options.streamFilterBinary   = req.query.streamFilterBinary        || req.body.streamFilterBinary        || "";
-
+	
+	console.log(req.query.streamOrder);
 
 	options.streamFilterReadBytes    = s2i(req.query.streamFilterReadBytes)    || s2i(req.body.streamFilterReadBytes)    || 0;
 	options.streamFilterReadLines    = s2i(req.query.streamFilterReadLines)    || s2i(req.body.streamFilterReadLines)    || 0;
