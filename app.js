@@ -18,7 +18,7 @@ xutil = require('util');
 
 var expandtemplate = require("expandtemplate").expandtemplate;
 
-var debug = true;
+var debug = false;
 
 // Locking notes:
 // When md5url.data is being read for streaming, an empty file named md5url.stream is placed
@@ -471,7 +471,9 @@ function parseOptions(req) {
 			options.dir = options.dir+'/';
 	    }
 	}
-
+	
+	//console.log(options);
+	
 	return options;
 }
 
@@ -498,6 +500,7 @@ function parseSource(req) {
 			options.type  = "strftime";
 			options.start = timeRange.split("/")[0];
 			options.stop  = timeRange.split("/")[1];
+			options.debug = debug;
 			if (debug)
 			    console.log(options);
 			//eval("sourcet = expandtemplate(options)");
@@ -511,18 +514,19 @@ function parseSource(req) {
 			options.type  = "sprintf";
 			options.start = indexRange.split("/")[0];
 			options.stop  = indexRange.split("/")[1];
+			options.debug = debug;
 			//eval("sourcet = sourcet.concat(expandtemplate(options))");
 			sourcet = sourcet.concat(expandtemplate(options));
 		}
 	}
-	console.log(source)
+	if (debug) console.log(source);
 
 	if (source) {
 		source = source.trim().replace("\r", "").split(/[\r\n]+/).filter(function (line) {return line.trim() != "";});
 	}
 	
-	console.log(sourcet)
-	console.log(source)
+	if (debug) console.log(sourcet);
+	if (debug) console.log(source);
 	if ((sourcet.length > 0) && (source.length > 0)) {
 		source = source.concat(sourcet);
 	}
