@@ -410,13 +410,12 @@ function stream(source, options, res) {
 				if (options.streamFilter === "") {
 					console.log("Writing response");
 					res.write(data);
-					if (N == Nx) {
-						console.log("Sending res.end()");
-						res.end();
-					}
 				} else {	
 					try {
-						eval("res.write(data."+options.streamFilter+")");
+						//console.log(typeof(data));
+						//console.log(data[0]);
+						// This assumes the filter applies to ASCII.
+						eval("res.write(data.toString()."+options.streamFilter+")");
 					} catch (err) {
 						console.log("Error when evaluating " + options.streamFilter);
 						console.log(err);
@@ -424,6 +423,10 @@ function stream(source, options, res) {
 						res.end();
 					}							
 										
+				}
+				if (N == Nx) {
+					console.log("Sending res.end()");
+					res.end();
 				}
 			}
 			
