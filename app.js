@@ -19,7 +19,7 @@ xutil = require('util');
 var expandtemplate = require("tsdset").expandtemplate;
 
 var debug = false;
-var debugstream = true;
+var debugstream = false;
 
 // Locking notes:
 // Each time a file is being streamed, a stream counter is incremented for the file.
@@ -406,7 +406,7 @@ function stream(source, options, res) {
 		    stream.streaming[fname] = stream.streaming[fname] - 1;
 
 			function finished() {
-				console.log(rnd+ " Incremening Nx from " + reqstatus[rnd].Nx + " to " + (reqstatus[rnd].Nx+1));
+				if (debugstream) console.log(rnd+ " Incremening Nx from " + reqstatus[rnd].Nx + " to " + (reqstatus[rnd].Nx+1));
 				reqstatus[rnd].Nx = reqstatus[rnd].Nx + 1;
 
 				if ((reqstatus[rnd].Nx < N) && (inorder)) {
@@ -454,8 +454,8 @@ function stream(source, options, res) {
 				if (options.streamFilter === "") {
 					zlib.gzip(data, function (err, buffer) {
 						reqstatus[rnd].dt = new Date()-tic;
-						console.log(rnd+' gzip callback event');
-						console.log(rnd+ " Writing compressed buffer");
+						if (debugstream) console.log(rnd+' gzip callback event');
+						if (debugstream) console.log(rnd+ " Writing compressed buffer");
 						res.write(buffer);
 						reqstatus[rnd].gzipping=reqstatus[rnd].gzipping-1;
 						finished();
@@ -503,15 +503,19 @@ function parseOptions(req) {
 	options.includeHeader  = s2b(req.query.includeHeader)  || s2b(req.body.includeHeader)  || false;
 	options.includeLstat   = s2b(req.query.includeLstat)   || s2b(req.body.includeLstat)   || false;
 	options.includeVers    = s2b(req.query.includeVers)    || s2b(req.body.includeVers)    || false;
-	options.respectHeaders = s2b(req.query.respectHeaders) || s2b(req.body.respectHeaders) || true;
 	options.plugin         = req.query.plugin              || req.body.plugin              || "";
 	options.return         = req.body.return               || req.query.return             || "json";
 	options.dir            = req.query.dir                 || req.body.dir                 || "/cache/";
-
-	options.streamOrder    = req.query.streamOrder    || req.body.streamOrder    || "true";
-	options.streamOrder    = s2b(options.streamOrder);
 	options.streamGzip     = s2b(req.query.streamGzip)     || s2b(req.body.streamGzip)     || false;
 	options.streamFilter   = req.query.streamFilter        || req.body.streamFilter        || "";
+
+	options.streamOrder    = req.query.streamOrder         || req.body.streamOrder         || "true";
+	options.streamOrder    = s2b(options.streamOrder);
+
+	options.acceptGzip     = req.query.acceptGzip         || req.body.acceptGzip          || "true";
+	options.acceptGzip    = s2b(options.acceptGzip);
+
+	//options.respectHeaders = s2b(req.query.respectHeaders) || s2b(req.body.respectHeaders) || true;
 
 	//options.streamFilterBinary   = req.query.streamFilterBinary        || req.body.streamFilterBinary        || "";
 	
