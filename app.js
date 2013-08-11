@@ -16,7 +16,7 @@ var zlib = require('zlib');
 var qs = require('querystring');
 xutil = require('util');
 
-var expandtemplate = require("expandtemplate").expandtemplate;
+var expandtemplate = require("tsdset").expandtemplate;
 
 var debug = false;
 var debugstream = true;
