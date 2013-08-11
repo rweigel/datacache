@@ -379,7 +379,8 @@ var writeCache = function(work, callback){
 		}
 		
 		function keepversions() {
-			return true;
+			//return true;
+			return false;
 		}	
 
 	}
