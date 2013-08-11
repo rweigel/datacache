@@ -24,7 +24,7 @@ var runner    = require("./lib/testRunner")();
 var suite     = runner.suite;
 var assertNot = runner.assertNot;
 
-eval(fs.readFileSync('./streamTestsInput.js','utf8'))
+eval(fs.readFileSync(__dirname + '/streamTestsInput.js','utf8'))
 
 if (fs.existsSync("/usr/bin/md5sum")) {
 	md5com = "/usr/bin/md5sum"; // Linux
