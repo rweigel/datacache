@@ -13,7 +13,13 @@ var tests     = [];
 var j = 0;
 tests[j]      = {};
 tests[j].url  = args + "&streamOrder=true&streamFilterReadLines=10&prefix="+prefix+"&source="+source;
-tests[j].n    = 50;
+tests[j].n    = 10;
+tests[j].md5  = "651f75d088a29b4a0a95e97a1bcccd48";
+
+var j = j+1;
+tests[j]      = {};
+tests[j].url  = args + "&streamOrder=true&streamGzip=true&streamFilterReadLines=10&prefix="+prefix+"&source="+source;
+tests[j].n    = 10;
 tests[j].md5  = "651f75d088a29b4a0a95e97a1bcccd48";
 
 // Stream order = false.  Sorted stream should have same md5 as previous.
