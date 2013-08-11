@@ -3,7 +3,7 @@
 // node streamTests.js false
 //   runs all tests with sync=false (each test is run N times async, then next test is run).
 // node streamTests.js {true,false} #
-//   runs test number # only.
+//   runs test number # only (0-10)
 
 tn = parseInt(process.argv[3]) || 0; // Test Number
 
@@ -16,12 +16,8 @@ var server = process.argv[4] || "http://localhost:8000/";
 //var server = process.argv[4] || "http://datacache.org/dc/";
 
 var fs      = require("fs");
-var jsdiff  = require("diff");
-var async   = require("async");
 var logger  = require("./lib/logger")();
-var request = require("request");
 var md5     = require("./lib/util").md5;
-var zlib    = require('zlib');
 sys         = require('sys');
 exec        = require('child_process').exec;
 var child;
