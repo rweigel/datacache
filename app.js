@@ -289,7 +289,8 @@ function stream(source, options, res) {
 	var reqstatus  = {};
 	reqstatus[rnd] = {};
 	
-	reqstatus[rnd].Nx       = 0;
+	reqstatus[rnd].Nx       = 0; // Number of reads/processed URLs completed
+	reqstatus[rnd].Nd       = 0; // Number of drained reads
 	reqstatus[rnd].gzipping = 0;
 	reqstatus[rnd].dt       = 0;
 
@@ -305,8 +306,12 @@ function stream(source, options, res) {
 	}
 	
 	res.socket.on('drain', function () {
-		//if (debugstream) console.log(rnd+' res.write drain event.  reqstatus[rnd].gzipping = '+reqstatus[rnd].gzipping+' reqstatus[rnd].Nx = '+reqstatus[rnd].Nx);
-        if (reqstatus[rnd].Nx == N) {
+		// Not needed.
+		return;
+		reqstatus[rnd].Nd = reqstatus[rnd].Nd + 1;
+		if (debugstream) console.log(rnd+' res.write drain event.  reqstatus[rnd].gzipping = '+reqstatus[rnd].gzipping+' reqstatus[rnd].Nd = '+reqstatus[rnd].Nd);
+		
+        if (reqstatus[rnd].Nd == N) {
         	    if (reqstatus[rnd].gzipping == 0) {
         	    		if (debugstream) console.log(rnd+" Sending res.end()");
         	    		res.end();
@@ -336,10 +341,6 @@ function stream(source, options, res) {
 
 		if (debugstream) {
 			console.log(rnd+" Stream locking " + fname.replace(__dirname,""));
-			//var tmpstr = fname+".streaming"+rnd;
-			//console.log(rnd+" Writing " + tmpstr.replace(__dirname,""));
-			//var tmpstr = __dirname+"/cache/locks/"+work.urlMd5+".streaming"+rnd;
-			//console.log(rnd+" Writing " + tmpstr.replace(__dirname,""));
 		}
 
 		if (!stream.streaming[fname]) {
@@ -347,8 +348,6 @@ function stream(source, options, res) {
 		} else {
 			stream.streaming[fname] = stream.streaming[fname] + 1;
 		}
-		//fs.writeFileSync(fname+".streaming"+rnd, "");
-		//fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".streaming"+rnd,work.dir);
 		
 		if (options.streamFilterReadBytes > 0) {
 		    if (debugstream) console.log(rnd+" Reading Bytes of "+ fname.replace(__dirname,""));
@@ -397,6 +396,7 @@ function stream(source, options, res) {
 			// Should be no encoding if streamFilterBinary was given.
 			fs.readFile(fname + ".data", "utf8", readcallback);
 		}
+
 		
 		function readcallback(err, data) {
 		
@@ -404,9 +404,21 @@ function stream(source, options, res) {
 				console.log(rnd+" readcallback() called.  Un-stream locking " + fname.replace(__dirname,""));
 		    }		    
 		    stream.streaming[fname] = stream.streaming[fname] - 1;
-				
-			reqstatus[rnd].Nx = reqstatus[rnd].Nx + 1;
-				
+
+			function finished() {
+				console.log(rnd+ " Incremening Nx from " + reqstatus[rnd].Nx + " to " + (reqstatus[rnd].Nx+1));
+				reqstatus[rnd].Nx = reqstatus[rnd].Nx + 1;
+
+				if ((reqstatus[rnd].Nx < N) && (inorder)) {
+					scheduler.addURL(source[reqstatus[rnd].Nx], options, function (work) {processwork(work,true)});
+				}
+
+				if (N == reqstatus[rnd].Nx) {
+					if (debugstream) console.log(rnd+" N == reqstatus[rnd].Nx; Sending res.end().");
+					res.end();
+				}
+			}
+								
 			if (err) {
 				if (debugstream) console.log(rnd+" readcallback was passed err: " + err);
 				return res.end();
@@ -430,16 +442,11 @@ function stream(source, options, res) {
 					}							
 										
 				}
-				if (N == reqstatus[rnd].Nx) {
-					if (debugstream) console.log(rnd+" N == reqstatus[rnd].Nx; Sending res.end().");
-					res.end();
-				}
+
+				finished();
+				
 			}
-			
-			if ((reqstatus[rnd].Nx < N) && (inorder)) {
-				scheduler.addURL(source[reqstatus[rnd].Nx], options, function (work) {processwork(work,true)});
-			}
-			
+						
 			if (options.streamGzip) {												
 				reqstatus[rnd].gzipping = reqstatus[rnd].gzipping + 1;
 				var tic = new Date();
@@ -451,6 +458,7 @@ function stream(source, options, res) {
 						console.log(rnd+ " Writing compressed buffer");
 						res.write(buffer);
 						reqstatus[rnd].gzipping=reqstatus[rnd].gzipping-1;
+						finished();
 					});
 				} else {
 					// Not implemented.
@@ -471,6 +479,7 @@ function stream(source, options, res) {
 					});
 				}
 			}						
+
 
 		}
 
