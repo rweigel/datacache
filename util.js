@@ -299,7 +299,18 @@ var writeCache = function(work, callback){
 				  if (!exists) {
 				      writeFiles();
 				  } else {
-				      dataMd5old = md5(fs.readFileSync(filename+".data"));
+				  	  // If this fails, another process has moved it to the archive directory.
+				  	  if (app.stream.streamdebug) console.log(work.options.id+" Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1"));
+					  //dataMd5old = md5(fs.readFileSync(filename+".data"));
+					  if (1) {
+					  try {
+					      dataMd5old = md5(fs.readFileSync(filename+".data"));
+					  } catch (e) {
+					  		debugger
+					  	  if (app.stream.streamdebug) console.log(work.options.id+" Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1" + " failed."));
+						  dataMd5old = "";
+					  }
+					  }
 				      //console.log(work.dataMd5 + " " + dataMd5old);
 				      if ( (work.dataMd5 != dataMd5old) || work.options.forceWrite) {
 						if (keepversions(work.url) && (work.dataMd5 != dataMd5old)) {
