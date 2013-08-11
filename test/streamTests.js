@@ -26,6 +26,12 @@ var assertNot = runner.assertNot;
 
 eval(fs.readFileSync('./streamTestsInput.js','utf8'))
 
+if (fs.existsSync("/usr/bin/md5sum")) {
+	md5com = "/usr/bin/md5sum"; // Linux
+} else {
+	md5com = "/sbin/md5"; // OS-X
+}
+	
 runtest(tn);
 
 function runtest(j) {
@@ -75,7 +81,7 @@ function command(j,k) {
 		if (tests[j].url.match("streamOrder=false")) {
 			com = com + " | sort";
 		}
-		com = com + " | md5";
+		com = com + " | " + md5com;
 		if (k == 0) 
 			console.log(com);		
 		return com;
