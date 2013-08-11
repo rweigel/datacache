@@ -351,13 +351,16 @@ function stream(source, options, res) {
 		//fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".streaming"+rnd,work.dir);
 		
 		if (options.streamFilterReadBytes > 0) {
-		    if (debugstream) console.log(rnd+" Reading Bytes");
+		    if (debugstream) console.log(rnd+" Reading Bytes of "+ fname.replace(__dirname,""));
+		    if (debugstream) console.log(rnd+" Stream lock status " + stream.streaming[fname]);
 			var buffer = new Buffer(options.streamFilterReadBytes);
+			if (debugstream) console.log(rnd+" fs.exist: " + fs.existsSync(fname + ".data"));
 			fs.open(fname + ".data", 'r', function (err,fd) {
 			    fs.read(fd, buffer, 0, options.streamFilterReadBytes, options.streamFilterReadPosition-1, 
 			    		function (err, bytesRead, buffer) {readcallback(err,buffer);fs.close(fd);})});
 		} else if (options.streamFilterReadLines > 0) {
 		    if (debugstream) console.log(rnd+" Reading Lines of "+ fname.replace(__dirname,""));
+			if (debugstream) console.log(rnd+" fs.exist: " + fs.existsSync(fname + ".data"));
 			var LineReader = reader.DataReader;
 			var k = 1;
 			var lr = 0;
