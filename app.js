@@ -22,24 +22,16 @@ var debug = false;
 var debugstream = true;
 
 // Locking notes:
-// When md5url.data is being read for streaming, an empty file named md5url.stream is placed
-// in cache/hostname.  A file named md5url.stream is placed in cache/locks containing the string
-// hostname.
-//
-// If the .stream file exists when forceUpdate=true, the scheduler treats this as a failed attempt and
-// another request is made to download the file.
-//
-// TODO: Recognize the difference between a failed download and a failed write attempt because of
-// a stream lock and don't re-download data.  Instead write md5url-1.data and rename file when the
-// job is tried again and the .stream file does not exist.  Will need to handle case that md5url-1.data
-// already exists and will need to add option "waitForStream" to continue to wait for streaming to
-// finish when forceUpdate=true.
+// Each time a file is being streamed, a stream counter is incremented for the file.
+// If the stream counter is non-zero, forceUpdate=true will not work as expected (and
+// the old version of the file will not be kept).
+// TODO: Indicate that the update failed in the HTTP headers?
 
+// If a process tries to write a file that is being streamed, the write is aborted.
+// TODO: Indicate this in the JSON and the HTTP headers (if stream request).
 
 // TODO:
 // Check if cache directory is writeable and readable.  If not, send 500 error.
-// Remove partially written files by inspecting cache/locks/*.lck
-// Remove streaming locks by inspecting cache/locks/*.streaming
 
 //http://stackoverflow.com/questions/9768444/possible-eventemitter-memory-leak-detected
 //Use this when in production.
