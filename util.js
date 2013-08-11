@@ -9,6 +9,8 @@ var FtpClient  = require("ftp");
 var TIMEOUT = 20000;
 var MAXCONNECTION = 1000;
 
+var app = require("./app.js");
+
 // Download a resource via http or ftp
 function download(url, callback){
 	if (url.match(/^http/)) {
@@ -266,8 +268,8 @@ var writeCache = function(work, callback){
   	// as if request for data failed.
   	// No other process should be writing to cache directory, so no need to check lock
   	// before writing.
-	if (!memLock[work.id] && !fs.existsSync(filename+".streaming")) {
-
+//	if (!memLock[work.id]) {
+	if (!memLock[work.id] && (app.stream.streaming[filename] == 0 || typeof(app.stream.streaming[filename]) === "undefined")) {
 	    // If memLock[result.url] is undefined or 0, no writing is on-going.
 	    memLock[work.id] = 6;
 	    work.writeStartTime = new Date();
@@ -289,43 +291,9 @@ var writeCache = function(work, callback){
 	function writeCacheFiles() {
 
 	    // If .data does not exist, create it.
-	    // If .data file exists and differs from new data, rename .data file.
+	    // If .data file exists and differs from new data, move files to directory md5url.
 	    // If .data file exists and is same as new data, do nothing unless forceWrite=true.
-				
-	    function writeFiles() {
-			//fs.writeFileSync(filename+".lck","");
-			//fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".lck",work.dir);
-			fs.writeFile(filename+".data", work.data, finish);
-			fs.writeFile(filename+".bin", work.dataBinary, finish);
-			fs.writeFile(filename+".meta", work.meta, finish);
-			fs.writeFile(filename+".datax", work.datax, finish);
-			fs.writeFile(filename+".header", header.join("\n"), finish);
-			fs.writeFile(filename+".out", work.body, finish);
-			fs.appendFile(filename+".log", 
-				formatTime(work.jobStartTime) + 
-				"\t" + work.body.length + "\t" + 
-				work.data.length + "\n", finish);
-	    }
 
-		function renameFiles(callback) {
-			var newdir = filename + "/";
-			mkdirp(newdir, function (err) {
-					console.log("Moving files to: " + newdir);
-					//console.log("filename: " + filename);
-					if (err) {console.log(err);}
-					fs.renameSync(filename+".data"  , filename+"/"+dataMd5old+".data");
-					fs.renameSync(filename+".bin"   , filename+"/"+dataMd5old+".bin");
-					fs.renameSync(filename+".meta"  , filename+"/"+dataMd5old+".meta");
-					fs.renameSync(filename+".datax" , filename+"/"+dataMd5old+".datax");
-					fs.renameSync(filename+".header", filename+"/"+dataMd5old+".header");
-					fs.renameSync(filename+".out"   , filename+"/"+dataMd5old+".out");
-					callback();
-				});
-		}
-		
-		function keepversions() {
-			return true;
-		}	
 	    fs.exists(filename + ".data",
 		      function (exists) {
 				  if (!exists) {
@@ -344,6 +312,63 @@ var writeCache = function(work, callback){
 				      }
 				  }
 		      });
+		
+		
+	    function writeFiles() {
+			//fs.writeFileSync(filename+".lck","");
+			//fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".lck",work.dir);
+			if (app.stream.streamdebug) console.log(work.options.id + " Writing: "+filename.replace(/.*\/(.*)/,"$1")+".data");
+			if (app.stream.streaming[filename] > 0) {
+				if (app.stream.streamdebug) {
+					console.log(work.options.id + " " + filename.replace(/.*\/(.*)/,"$1") + " A stream lock was found.  Aborting write.");
+					console.log(work.options.id + " " + "Presumably, an update was recently performed.  forceUpdate=true may have unexpected results.");
+				}
+				finish();finish();finish();finish();finish();finish();
+				return;
+			}
+			fs.writeFile(filename+".data", work.data, finish);
+			fs.writeFile(filename+".bin", work.dataBinary, finish);
+			fs.writeFile(filename+".meta", work.meta, finish);
+			fs.writeFile(filename+".datax", work.datax, finish);
+			fs.writeFile(filename+".header", header.join("\n"), finish);
+			fs.writeFile(filename+".out", work.body, finish);
+			fs.appendFile(filename+".log", 
+				formatTime(work.jobStartTime) + 
+				"\t" + work.body.length + "\t" + 
+				work.data.length + "\n", finish);
+	    }
+
+		function tryrename(fname) {
+			try {
+				fs.renameSync(filename+".data"  , filename+"/"+dataMd5old+".data");			
+			} catch (e) {
+				if (app.stream.streamdebug) {
+					console.log(work.options.id  + " Could not move " + filename.replace(/.*\/(.*)/,"$1") + ".  forceUpdate=true may have unexpected results.");
+					console.log(work.options.id  + " It was probably moved by another request.");
+				}
+			}		
+		}
+		function renameFiles(callback) {
+			var newdir = filename + "/";
+			mkdirp(newdir, function (err) {
+					if (app.stream.streamdebug) console.log(work.options.id  + " Created directory " + newdir);
+					//console.log("filename: " + filename);
+					if (err) {console.log(err);}
+					if (app.stream.streamdebug)
+						console.log(work.options.id  + " Tring to move files to: " + newdir);
+					tryrename(filename+".data");					
+					tryrename(filename+".bin");					
+					tryrename(filename+".meta");					
+					tryrename(filename+".datax");					
+					tryrename(filename+".header");
+					tryrename(filename+".out");					
+					callback();
+				});
+		}
+		
+		function keepversions() {
+			return true;
+		}	
 
 	}
 
