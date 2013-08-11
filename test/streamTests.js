@@ -49,6 +49,8 @@ function checkmd5(j,k,sync,all) {
 		if (k == 0) {
 			checkmd5.completed = [];
 			checkmd5.completed[j] = 0;
+			tic = (new Date()).getTime();
+			//console.log(tic);
 		}
 		child = exec(command(j,k), function (error, stdout, stderr) {
 			checkmd5.completed[j] = checkmd5.completed[j]+1;
@@ -61,6 +63,9 @@ function checkmd5(j,k,sync,all) {
 				checkmd5(j,k+1,true,all);
 			}
 			if (checkmd5.completed[j] == tests[j].n) {
+				var toc = new Date();
+				var elapsed = (new Date()).getTime() - tic;
+				console.log(elapsed + " ms; " + elapsed/tests[j].n + " ms per request.");
 				// console.log("Done!");
 				if (all) {
 					if (j+1 < tests.length) {
