@@ -279,12 +279,10 @@ function syncsummary(source,options,res) {
 var reader = require ("buffered-reader");
 
 exports.stream = stream;
+stream.streamdebug   = debugstream;
+stream.streaming = {};
+
 function stream(source, options, res) {
-
-	stream.streamdebug   = debugstream;
-
-	stream.streaming = {};
-	
 	var rnd        = options.id;		
 	var reqstatus  = {};
 	reqstatus[rnd] = {};
