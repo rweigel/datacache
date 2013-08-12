@@ -189,7 +189,6 @@ function(cb){
 			});
 
 			test("should return all data", function(){
-				console.log("body ", body, res.body, err);
 				assert(body !== undefined, 'body should not be undefined');
 				assert(body.indexOf("</html>") > 1, 'body should contain the end of document');
 			});
