@@ -54,8 +54,8 @@ function checkmd5(j,k,sync,all) {
 		}
 		child = exec(command(j,k), function (error, stdout, stderr) {
 			checkmd5.completed[j] = checkmd5.completed[j]+1;
-			console.log(k + " " + stdout.replace(/\n$/,""));
-			if (tests[j].md5 !== stdout.replace(/\n$/,"")) {
+			console.log(k + " " + stdout.substring(0,32));
+			if (tests[j].md5 !== stdout.substring(0,32)) {
 				console.log("Error")
 				//diff(fname,"data-stream/out." + j + ".0");
 			}
