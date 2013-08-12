@@ -19,7 +19,7 @@ xutil = require('util');
 var expandtemplate = require("tsdset").expandtemplate;
 
 var debug = false;
-var debugstream = false;
+var debugstream = true;
 
 // Locking notes:
 // Each time a file is being streamed, a stream counter is incremented for the file.
@@ -302,33 +302,7 @@ function stream(source, options, res) {
 			scheduler.addURL(source[jj], options, function (work) {processwork(work)});
 	    }
 	}
-	
-	res.socket.on('drain', function () {
-		// Not needed.
-		return;
-		reqstatus[rnd].Nd = reqstatus[rnd].Nd + 1;
-		if (debugstream) console.log(rnd+' res.write drain event.  reqstatus[rnd].gzipping = '+reqstatus[rnd].gzipping+' reqstatus[rnd].Nd = '+reqstatus[rnd].Nd);
 		
-        if (reqstatus[rnd].Nd == N) {
-        	    if (reqstatus[rnd].gzipping == 0) {
-        	    		if (debugstream) console.log(rnd+" Sending res.end()");
-        	    		res.end();
-        	    	} else {
-				if (debugstream)
-			    		console.log(rnd+" Will check every " + reqstatus[rnd].dt + " ms for gzip completion");
-	        		var checker = setInterval(function () {        			
-	        			if (reqstatus[rnd].gzipping > 0) {
-					    if (debugstream) console.log(rnd+' Gzipping not done because reqstatus[rnd].gzipping > 0.');
-		        		} else {
-		        			res.end();
-		        			clearInterval(checker);
-		        		}
-	        		},reqstatus[rnd].dt);
-	        	}
-        	}
-    });
-	
-	
 	function processwork(work,inorder) {
 		var fname = util.getCachePath(work);
 
@@ -337,9 +311,7 @@ function stream(source, options, res) {
 			return res.end();
 		}
 
-		if (debugstream) {
-			console.log(rnd+" Stream locking " + fname.replace(__dirname,""));
-		}
+		if (debugstream) console.log(rnd+" Stream locking " + fname.replace(__dirname,""));
 
 		if (!stream.streaming[fname]) {
 			stream.streaming[fname] = 1;
@@ -358,43 +330,79 @@ function stream(source, options, res) {
 		} else if (options.streamFilterReadLines > 0) {
 		    if (debugstream) console.log(rnd+" Reading Lines of "+ fname.replace(__dirname,""));
 			if (debugstream) console.log(rnd+" fs.exist: " + fs.existsSync(fname + ".data"));
-			var LineReader = reader.DataReader;
-			var k = 1;
-			var lr = 0;
-			var lines = "";
-			new LineReader(fname + ".data", { encoding: "utf8" })
-			    .on("error", function (error) {
-			        console.log(rnd+" Error while reading lines: " + error);
-			    })
-			    .on("line", function (line) {
-			    		if (debugstream) console.log(rnd+" Read " + fname.replace(/.*\/(.*)/,"$1") + ": "+line);
-			        if (k >= options.streamFilterReadPosition) {
-				        	if (lr == options.streamFilterReadLines) { 
-						    if (debugstream) {
-					        		//console.log("dumped lines");
-					        		//console.log(lines);
-						    }
-				        		readcallback("",lines);
-				        		this.interrupt();
-				        	} else {
-							//if (debugstream) console.log(rnd+" Read Line: "+line);
-				        		lines = lines + line + "\n";
-				        		lr = lr+1;
-				        	}
+			//readlines2(fname);
+			//readlines(fname);
+		  	var fstream = fs.createReadStream(fname + ".data", {flags: 'r', encoding: 'utf-8', fd: null, bufferSize: 1});
+			fstream.addListener('data',processchars);
 
-			        	}
-			        	k = k+1;
-			    })
-			    .on("end", function () {
-				    if (debugstream) console.log(rnd+" LineReader end event triggered.");
-			    })
-			    .read();
 		} else {	
 		    if (debugstream) console.log(rnd+" Reading File");	
 			// Should be no encoding if streamFilterBinary was given.
 			fs.readFile(fname + ".data", "utf8", readcallback);
 		}
 
+		var line   = '';
+		var lines  = '';
+		var lr = 0; // Lines read.
+		var k = 1;  // Lines kept.
+
+ 		function processchars(char) {
+			// This preserves \r\n type newlines.
+			if (char == '\n') {
+				if (k >= options.streamFilterReadPosition && lr < options.streamFilterReadLines) {
+					if (debugstream) console.log(rnd+" Read " + fname.replace(/.*\/(.*)/,"$1") + ": "+line);
+					line = line + char;
+					lr = lr + 1;
+				} else {
+					if (k >= options.streamFilterReadPosition) {
+						readcallback("",lines);
+						fstream.removeListener('data',processchars);
+					}
+					//delete fstream;
+				}						
+				lines = lines + line;				
+				k = k+1;
+				line = '';
+			} else {
+				line = line + char;
+			}				
+		}
+		
+		function readlines(fname) {
+			var LineReader = reader.DataReader;
+			var k = 1;
+			var lr = 0;
+			var lines = "";
+			var done = false;
+			new LineReader(fname + ".data", { encoding: "utf8" })
+				.on("error", function (error) {
+					console.log(rnd+" Error while reading lines: " + error);
+				})
+				.on("line", function (line) {
+					if (debugstream) console.log(rnd+" Read " + fname.replace(/.*\/(.*)/,"$1") + ": "+line);
+					if (k >= options.streamFilterReadPosition) {
+							if (lr == options.streamFilterReadLines) { 
+							if (debugstream) {
+									//console.log("dumped lines");
+									//console.log(lines);
+							}
+							done = true;
+					
+								this.interrupt();
+							} else {
+							//if (debugstream) console.log(rnd+" Read Line: "+line);
+								lines = lines + line + "\n";
+								lr = lr+1;
+							}
+						}
+						k = k+1;
+				})
+				.on("end", function () {
+					if (debugstream) console.log(rnd+" LineReader end event triggered.");
+						readcallback("",lines);
+				})
+				.read();
+		}
 		
 		function readcallback(err, data) {
 		
