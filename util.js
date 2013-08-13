@@ -30,27 +30,25 @@ var downloadHttp = function(url, callback){
 };
 
 var downloadFtp = function(url, callback){
-	var conn = new FtpClient({host: url.split("/")[2]});
-	conn.on("connect", function(){
-		conn.auth(function(err){
-			conn.get(work.url.split("/").slice(3).join("/"), function(err, stream){
-				if(err){
-					callback("Ftp download error");
-				} else{
-					var buff = "";
-					stream.on("data", function(data){
-						buff+=data.toString();
-					})
-					.on("error", function(e){work.error=e;callback(true, work);conn.end();})
-					.on("end", function(){
-						callback(false, buff);
-					});
-				}
-			});
-		})
+	var conn = new FtpClient();
+	conn.on("ready", function(){
+		conn.get(work.url.split("/").slice(3).join("/"), function(err, stream){
+			if(err){
+				callback("Ftp download error");
+			} else{
+				var buff = "";
+				stream.on("data", function(data){
+					buff+=data.toString();
+				})
+				.on("error", function(e){work.error=e;callback(true, work);conn.end();})
+				.on("end", function(){
+					callback(false, buff);
+				});
+			}
+		});
 	})
 	.on("error", function(e){callback(e, work);conn.end();})
-	.connect();
+	.connect({host: url.split("/")[2]});
 	return conn;
 }
 

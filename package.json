@@ -8,7 +8,7 @@
     "hogan.js": "2.0.0",
     "moment": "1.7.0",
     "socket.io": "*",
-    "ftp": "0.1.4",
+    "ftp": "0.3.4",
     "whiskers": "0.2.4",
     "mkdirp": "*",
     "exec-sync": "*",
