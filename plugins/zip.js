@@ -40,6 +40,8 @@ exports.process = function (work, callback) {
 				work.datax      = work.extractRem(work.body, work.options);
 				work.meta       = work.extractMeta(work.body, work.options);
 				work.metaJson   = work.extractMetaJson(work.body, work.options);
+
+				util.writeCache(work, function () {callback(false, work);});
 			}
 			return callback(work.error, work);
 		});

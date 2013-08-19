@@ -228,6 +228,34 @@ function(cb){
 	})
 },
 function(cb){
+	suite("Request a file in zip with return=stream", function(test, testInfo, suiteDone){
+		request({
+			uri: server + "?source=http://localhost:8000/test/data/test.zip/ephx_00_161.txt&return=stream&forceUpdate=true",
+			timeout: 5000
+		}, function(err, res, body){
+			testInfo("err", err);
+			testInfo("res", res);
+			testInfo("body", body);
+
+			test("request should succeed", function(){
+				assert( !err );
+			});
+
+			test("status code should be 200", function(){
+				assert(res);
+				assert.equal(res.statusCode, 200);
+			});
+
+			test("should return correct data", function(){
+				assert(body.length > 0);
+			});
+
+			suiteDone();
+			cb();
+		});
+	})
+},
+function(cb){
 	suite("Request an inexist file in zip with return=json", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "?source=http://localhost:8000/test/data/test.zip/INEXIST.txt&return=json&forceUpdate=true",
@@ -249,6 +277,34 @@ function(cb){
 			test("error should be be set to true", function(){
 				var result = JSON.parse(body)[0];
 				assert(result.error);
+			});
+
+			suiteDone();
+			cb();
+		});
+	})
+},
+function(cb){
+	suite("Request an inexist file in zip with return=stream", function(test, testInfo, suiteDone){
+		request({
+			uri: server + "?source=http://localhost:8000/test/data/test.zip/INEXIST.txt&return=stream&forceUpdate=true",
+			timeout: 1000
+		}, function(err, res, body){
+			testInfo("err", err);
+			testInfo("res", res);
+			testInfo("body", body);
+
+			test("request should succeed", function(){
+				assert( !err );
+			});
+
+			test("status code should be 200", function(){
+				assert(res);
+				assert.equal(res.statusCode, 200);
+			});
+
+			test("response should be empty", function(){
+				assert(!body);
 			});
 
 			suiteDone();
