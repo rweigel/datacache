@@ -256,6 +256,36 @@ function(cb){
 		});
 	})
 },
+function(cb){
+	suite("should parse http://tsds.org/cc/ky.htm correctly", function(test, testInfo, suiteDone){
+		request({
+			uri: server + "?source=http://tsds.org/cc/ky.htm&return=stream&forceUpdate=true",
+			timeout: 1000
+		}, function(err, res, body){
+			testInfo("err", err);
+			testInfo("res", res);
+			testInfo("body", body);
+
+			test("request should succeed", function(){
+				assert( !err );
+			});
+
+			test("status code should be 200", function(){
+				assert(res);
+				assert.equal(res.statusCode, 200);
+			});
+
+			test("result should be correct", function(){
+				console.log(body);
+				assert(body.length > 0)
+				assert(body.indexOf("2012-01-01 01:00:00.00000 -6") > -1);
+			});
+
+			suiteDone();
+			cb();
+		});
+	})
+},
 function(){
 	logger.i("\n" + simpleReporter(runner.results));
 	logger.i("Dev Tests finished.");
