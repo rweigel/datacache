@@ -330,10 +330,10 @@ function stream(source, options, res) {
 		} else if (options.streamFilterReadLines > 0) {
 		    if (debugstream) console.log(rnd+" Reading Lines of "+ fname.replace(__dirname,""));
 			if (debugstream) console.log(rnd+" fs.exist: " + fs.existsSync(fname + ".data"));
-			//readlines2(fname);
+			readlines2(fname + ".data");
 			//readlines(fname);
-		  	var fstream = fs.createReadStream(fname + ".data", {flags: 'r', encoding: 'utf-8', fd: null, bufferSize: 1});
-			fstream.addListener('data',processchars);
+		  	//var fstream = fs.createReadStream(fname + ".data", {flags: 'r', encoding: 'utf-8', fd: null, bufferSize: 1});
+			//fstream.addListener('data',processchars);
 
 		} else {	
 		    if (debugstream) console.log(rnd+" Reading File");	
@@ -341,10 +341,6 @@ function stream(source, options, res) {
 			fs.readFile(fname + ".data", "utf8", readcallback);
 		}
 
-		var line   = '';
-		var lines  = '';
-		var lr = 0; // Lines read.
-		var k = 1;  // Lines kept.
 
  		function processchars(char) {
 			// This preserves \r\n type newlines.
@@ -367,6 +363,35 @@ function stream(source, options, res) {
 				line = line + char;
 			}				
 		}
+
+		var line   = '';
+		var lines  = '';
+		var lr = 0; // Lines read.
+		var k = 1;  // Lines kept.
+
+		function readlines2(fname) {	
+			var lineReader = require('line-reader');
+			lineReader.eachLine(fname, function(line, last) {
+
+				if (lr == 0) xlines = "";
+				if (k >= options.streamFilterReadPosition) {				  		
+					if (lr == options.streamFilterReadLines) {	
+						console.log("Callback");
+						readcallback("",lines);
+						lines = "";			  	
+						return false;
+						//cb(false); // stop reading
+					}
+					console.log("Lines: ");
+					console.log("lr = " + lr);
+					console.log(line);
+					lines = lines + line + "\n";
+					lr = lr + 1;
+				}
+				k = k+1;
+			});
+		}
+	
 		
 		function readlines(fname) {
 			var LineReader = reader.DataReader;

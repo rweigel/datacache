@@ -12,6 +12,7 @@
     "whiskers": "0.2.4",
     "mkdirp": "*",
     "exec-sync": "*",
+    "line-reader": "0.2.3",
     "buffered-reader": "*",
     "tsdset": "git://github.com/rweigel/tsdset",
     "cron": "~1.0.1",
