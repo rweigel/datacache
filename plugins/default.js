@@ -1,13 +1,15 @@
 var request = require("request");
 var util    = require("../util.js");
 
+var logger = require("../logger.js");
+
 exports.name  = "_httpdemo";
 exports.match = function (url) {return false;}
 
 exports.preprocess = function (work, callback) {callback(false, work)};
 
 exports.process = function (work, callback) {
-	
+
 	if (work.url.match(/^http/)) {
 		var headers = work.options.acceptGzip ? {"accept-encoding" : "gzip, deflate"} : {};
 		util.get(work.url, function (error, response, body) {
@@ -40,10 +42,15 @@ exports.process = function (work, callback) {
 		});
 	} else if (work.url.match(/^ftp/)) {
 		var FtpClient  = require("ftp");
-		var conn = new FtpClient({host: work.url.split("/")[2]});
-		conn.on("connect", function(){
-			conn.auth(function(err){
-				conn.get(work.url.split("/").slice(3).join("/"), function(err, stream){
+		var conn = new FtpClient();
+		var host = work.url.split("/")[2];
+		var filepath = work.url.split("/").slice(3).join("/");
+
+		logger.d("ftp connecting... ");
+		logger.d("host: " + host);
+		logger.d("connect func: " + conn.connect);
+		conn.on("ready", function(){
+				conn.get(filepath, function(err, stream){
 					if(err){
 						callback(true, work);
 					} else{
@@ -66,10 +73,15 @@ exports.process = function (work, callback) {
 						});
 					}
 				});
-			})
 		})
-		.on("error", function(e){work.error=e;callback(true, work);conn.end();})
-		.connect();
+		.on("error", function(e){
+			logger.d("ftp error: " + e);
+
+			work.error=e;
+			callback(true, work);
+			conn.end();
+		})
+		conn.connect({host: host});
 	} else {
 		console.log("Error.  Protocol" + work.url.replace(/^(.*)\:.*/,"$1") + " is not supported.");
 	}
@@ -79,7 +91,6 @@ exports.extractDataBinary = function (body, options) {return "";};
 
 exports.extractData = function (body, options) {
 	lineRegExp = options.lineRegExp;
-	//console.log(options.extractData);
 	return eval(options.extractData);
 };
 
