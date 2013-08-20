@@ -14,7 +14,7 @@
     "exec-sync": "*",
     "line-reader": "0.2.3",
     "buffered-reader": "*",
-    "tsdset": "git://github.com/rweigel/tsdset",
+    "tsdset": "https://github.com/rweigel/tsdset/tarball/master",
     "cron": "~1.0.1",
     "async": "~0.2.9",
     "handlebars": "~1.0.12",
