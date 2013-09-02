@@ -18,7 +18,7 @@ xutil = require('util');
 
 var expandtemplate = require("expandtemplate").expandtemplate;
 
-var debug = true;
+var debug = false;
 
 // Locking notes:
 // When md5url.data is being read for streaming, an empty file named md5url.stream is placed
@@ -427,11 +427,12 @@ function parseOptions(req) {
 	options.streamFilterReadLines    = s2i(req.query.streamFilterReadLines)    || s2i(req.body.streamFilterReadLines)    || 0;
 	options.streamFilterReadPosition = s2i(req.query.streamFilterReadPosition) || s2i(req.body.streamFilterReadPosition) || 1;
 
-	options.lineRegExp     = req.query.lineRegExp          || req.body.lineRegExp          || "";
+	options.lineRegExp     = req.query.lineRegExp          || req.body.lineRegExp          || "^[0-9]";
 	options.extractData    = req.query.extractData         || req.body.extractData         || "";
 
 	// Need to use http://gf3.github.com/sandbox/ for these insecure operations.
-	// Express decodes a "+" as a space.  Decode these parts manually.  
+	// Express decodes a "+" as a space.  Decode these parts manually.
+	
 	if (options.streamFilter) {
 		options.streamFilter = decodeURIComponent(req.originalUrl.replace(/.*streamFilter=(.*?)(\&|$).*/,'$1'));
 	}
@@ -439,11 +440,6 @@ function parseOptions(req) {
 		options.extractData = decodeURIComponent(req.originalUrl.replace(/.*extractData=(.*?)(\&|$).*/,'$1'));
 	} else {
 		options.extractData = 'body.toString().split("\\n").filter(function(line){return line.search(lineRegExp)!=-1;}).join("\\n") +"\\n";';
-	}
-	if (options.lineRegExp) {
-		options.lineRegExp = decodeURIComponent(req.originalUrl.replace(/.*lineRegExp=(.*?)(\&|$).*/,'$1'));
-	} else {
-		options.lineRegExp = "^[0-9]";
 	}
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
@@ -463,7 +459,12 @@ function parseSource(req) {
     var prefix = req.body.prefix || req.query.prefix;
 
     var template   = req.body.template   || req.query.template;
-	var timeRange  = req.body.timeRange  || req.query.timeRange;
+    template = decodeURIComponent(template);
+    
+    if (debug) console.log("temp---" + template);
+    if (debug) console.log("---" + source);
+
+    var timeRange  = req.body.timeRange  || req.query.timeRange;
 	var indexRange = req.body.indexRange || req.query.indexRange;
         
     if (!source && !template) return "";
@@ -471,10 +472,10 @@ function parseSource(req) {
 	var sourcet = [];
 	
 	if (template) {	
-	    options          = {};
+	    var options          = {};
 	    options.template = template;
 		options.check    = false;
-		options.debug    = true;
+		options.debug    = debug;
 		options.side     = "server";
 		if (timeRange) {
 			options.type  = "strftime";
@@ -497,14 +498,14 @@ function parseSource(req) {
 			sourcet = sourcet.concat(expandtemplate(options));
 		}
 	}
-	console.log(source)
+	//console.log(source)
 
 	if (source) {
 		source = source.trim().replace("\r", "").split(/[\r\n]+/).filter(function (line) {return line.trim() != "";});
 	}
 	
-	console.log(sourcet)
-	console.log(source)
+	//console.log(sourcet)
+	//console.log(source)
 	if ((sourcet.length > 0) && (source.length > 0)) {
 		source = source.concat(sourcet);
 	}

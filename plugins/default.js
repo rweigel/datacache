@@ -41,7 +41,7 @@ exports.process = function (work, callback) {
 	} else if (work.url.match(/^ftp/)) {
 		var FtpClient  = require("ftp");
 		var conn = new FtpClient({host: work.url.split("/")[2]});
-		conn.on("connect", function(){
+		conn.on("connect", function(err){
 			conn.auth(function(err){
 				conn.get(work.url.split("/").slice(3).join("/"), function(err, stream){
 					if(err){

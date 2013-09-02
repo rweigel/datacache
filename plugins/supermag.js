@@ -11,6 +11,7 @@ function pause(i) {
 	while(curDate-date < i);
 }
 
+if (0) {
 exports.extractDataBinary = function (data) {
 
     // Time stamp line
@@ -34,7 +35,7 @@ exports.extractDataBinary = function (data) {
 	}
 	return buff;
 }
-
+}
 exports.extractData = function (data) {
     // Time stamp line
     var re1 = /^([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)/;
