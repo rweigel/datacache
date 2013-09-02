@@ -18,6 +18,7 @@ exports.extractData = function(data0){
 	var A = "";
 	var YR = [];
 	var MODY = [];
+
 	var stations_available = [];
 	var J = 0;
 	data0 = data0.toString().split("\n");

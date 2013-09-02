@@ -123,7 +123,14 @@ $(document).ready(function(){
 // TODO: Determine which one to use based on URL
 //var socket = io.connect('http://aurora.gmu.edu:8000/');
 
-var socket = io.connect('http://datacache.org/',{resource: "dc/socket.io"});
+var socket;
+
+if(location.href.indexOf("datacache.org") > -1){
+	socket = io.connect('http://datacache.org/',{resource: "dc/socket.io"});
+} else {
+	socket = io.connect('');
+}
+
 //var socket = io.connect('',{resource: "dc/socket.io"});
 
 // socket.on("log", function(data){

@@ -12,6 +12,7 @@
     "whiskers": "0.2.4",
     "mkdirp": "*",
     "exec-sync": "*",
+    "line-reader": "0.2.3",
     "buffered-reader": "*",
     "tsdset": "https://github.com/rweigel/tsdset/tarball/master",
     "cron": "~1.0.1",

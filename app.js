@@ -16,29 +16,22 @@ var zlib = require('zlib');
 var qs = require('querystring');
 xutil = require('util');
 
-var expandtemplate = require("expandtemplate").expandtemplate;
+var expandtemplate = require("tsdset").expandtemplate;
 
 var debug = false;
+var debugstream = true;
 
 // Locking notes:
-// When md5url.data is being read for streaming, an empty file named md5url.stream is placed
-// in cache/hostname.  A file named md5url.stream is placed in cache/locks containing the string
-// hostname.
-//
-// If the .stream file exists when forceUpdate=true, the scheduler treats this as a failed attempt and
-// another request is made to download the file.
-//
-// TODO: Recognize the difference between a failed download and a failed write attempt because of
-// a stream lock and don't re-download data.  Instead write md5url-1.data and rename file when the
-// job is tried again and the .stream file does not exist.  Will need to handle case that md5url-1.data
-// already exists and will need to add option "waitForStream" to continue to wait for streaming to
-// finish when forceUpdate=true.
+// Each time a file is being streamed, a stream counter is incremented for the file.
+// If the stream counter is non-zero, forceUpdate=true will not work as expected (and
+// the old version of the file will not be kept).
+// TODO: Indicate that the update failed in the HTTP headers?
 
+// If a process tries to write a file that is being streamed, the write is aborted.
+// TODO: Indicate this in the JSON and the HTTP headers (if stream request).
 
 // TODO:
 // Check if cache directory is writeable and readable.  If not, send 500 error.
-// Remove partially written files by inspecting cache/locks/*.lck
-// Remove streaming locks by inspecting cache/locks/*.streaming
 
 //http://stackoverflow.com/questions/9768444/possible-eventemitter-memory-leak-detected
 //Use this when in production.
@@ -46,6 +39,7 @@ var debug = false;
 
 process.on('exit', function () {
 	console.log('Received exit signal.  Removing lock files.');
+	// TODO: 
 	// Remove partially written files by inspecting cache/locks/*.lck
 	// Remove streaming locks by inspecging cache/locks/*.streaming
 	console.log('Done.  Exiting.');
@@ -72,9 +66,12 @@ app.use(express.methodOverride());
 app.use(express.bodyParser());
 
 app.use("/cache", express.directory(__dirname+"/cache"));
-app.use("/demo",  express.directory(__dirname+"/demo"));
 app.use("/cache", express.static(__dirname + "/cache"));
+app.use("/demo",  express.directory(__dirname+"/demo"));
 app.use("/demo",  express.static(__dirname + "/demo"));
+app.use("/test/data", express.static(__dirname + "/test/data"));
+app.use("/test/data", express.directory(__dirname + "/test/data"));
+
 app.use("/asset", express.static(__dirname + "/asset"));
 
 // Set default content-type to "text".  Not needed?
@@ -128,6 +125,26 @@ app.get("/demo/changingfile.txt", function (req,res) {
 	res.send(str);
 })
 
+// Delay serving to test stream ordering. 
+app.get("/test/data-stream/bou20130801vmin.min", function (req,res) {
+	//setTimeout(function () {res.send(fs.readFileSync("test/data-stream/bou20130801vmin.min"))},Math.round(100*Math.random()));
+	setTimeout(function () {res.send(fs.readFileSync("test/data-stream/bou20130801vmin.min"))},0);
+
+})
+app.get("/test/data-stream/bou20130802vmin.min", function (req,res) {
+	//setTimeout(function () {res.send(fs.readFileSync("test/data-stream/bou20130802vmin.min"))},Math.round(100*Math.random()));
+	setTimeout(function () {res.send(fs.readFileSync("test/data-stream/bou20130802vmin.min"))},0);
+})
+app.get("/test/data-stream/bou20130803vmin.min", function (req,res) {
+	setTimeout(function () {res.send(fs.readFileSync("test/data-stream/bou20130803vmin.min"))},Math.round(100*Math.random()));
+})
+app.get("/test/data-stream/bou20130804vmin.min", function (req,res) {
+	setTimeout(function () {res.send(fs.readFileSync("test/data-stream/bou20130804vmin.min"))},Math.round(100*Math.random()));
+})
+app.get("/test/data-stream/bou20130805vmin.min", function (req,res) {
+	setTimeout(function () {res.send(fs.readFileSync("test/data-stream/bou20130805vmin.min"))},Math.round(100*Math.random()));
+})
+
 app.get("/report.htm", function (req,res) {
 	res.contentType("html");
 	fs.readFile(__dirname+"/report.htm", "utf8", 
@@ -149,6 +166,7 @@ app.post("/async", function (req, res) {
 function handleRequest(req, res) {
 	var options = parseOptions(req);
 	var source  = parseSource(req);
+	options.id  = Math.random().toString().substring(1,5) 
 
 	// Compress response if headers accept it and streamGzip is not requested.
 	if (!options.streamGzip) 	
@@ -160,7 +178,7 @@ function handleRequest(req, res) {
 	    return;
 	}
 	//console.log('sync called');
-	//console.log(options.return);
+	if (debugstream) console.log(options.id + " handleRequest called with source="+source);
 	if (options.return === "stream") {
 		stream(source,options,res);
 	} else {
@@ -174,7 +192,6 @@ app.get("/sync", function (req,res) {
 app.post("/sync", function (req, res) {
 	handleRequest(req,res);
 });
-
 
 app.get("/plugins", function (req, res) {
 	res.send(scheduler.plugins.map(function (p) {return p.name;}));
@@ -257,143 +274,249 @@ function syncsummary(source,options,res) {
 		});
 }
 
+
+
 var reader = require ("buffered-reader");
+
+exports.stream = stream;
+stream.streamdebug   = debugstream;
+stream.streaming = {};
+
 function stream(source, options, res) {
+	var rnd        = options.id;		
+	var reqstatus  = {};
+	reqstatus[rnd] = {};
+	
+	reqstatus[rnd].Nx       = 0; // Number of reads/processed URLs completed
+	reqstatus[rnd].Nd       = 0; // Number of drained reads
+	reqstatus[rnd].gzipping = 0;
+	reqstatus[rnd].dt       = 0;
 
 	var N = source.length;
-	//console.log('stream called with ' + N + ' urls');
-	res.socket.on('drain', function () {
-		if (debug) console.log('res.write drain event.  gzipping = '+gzipping+' Nx = '+Nx);
-        if (Nx == N) {
-        	    if (gzipping == 0) {
-        	    		res.end();
-        	    	} else {
-			if (debug)
-			    console.log("Will check every " + dt + " ms for gzip completion");
-	        		var checker = setInterval(function () {        			
-	        			if (gzipping > 0) {
-					    if (debug) console.log('Gzipping not done.');
-		        		} else {
-		        			res.end();
-		        			clearInterval(checker);
-		        		}
-	        		},dt);
-	        	}
-        	}
-    });
-	
-	Nx = 0;
-	gzipping = 0;
-	draining = 0;
-	dt = 0;
-	function processwork(work,inorder) {
-	
-		var fname = util.getCachePath(work);
-		if (debug) console.log("Stream locking " + fname);
-		fs.writeFileSync(fname+".streaming", "");
-		fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".streaming",work.dir);
-		
-		if (options.streamFilterReadBytes > 0) {
-		    if (debug) console.log("Reading Bytes");
-			var buffer = new Buffer(options.streamFilterReadBytes);
-			fs.open(fname + ".data", 'r', function (err,fd) {
-			    fs.read(fd, buffer, 0, options.streamFilterReadBytes, options.streamFilterReadPosition-1, 
-			    		function (err, bytesRead, buffer) {readcallback(err,buffer);fs.close(fd);})});
-		} else if (options.streamFilterReadLines > 0) {
-		    if (debug) console.log("Reading Lines");
-			var LineReader = reader.DataReader;
-			var k = 1;
-			var lr = 0;
-			var lines = "";
-			new LineReader (fname + ".data", { encoding: "utf8" })
-			    .on("error", function (error) {
-			        console.log ("error: " + error);
-			    })
-			    .on("line", function (line) {
-			        if (k >= options.streamFilterReadPosition) {
-				        	if (lr == options.streamFilterReadLines) { 
-						    if (debug) {
-				        		console.log("dumped lines");
-				        		console.log(lines);
-						    }
-				        		readcallback("",lines);
-				        		this.interrupt();
-				        	}
-						if (debug) console.log("read line");
-			        		lines = lines + line + "\n";
-			        		lr = lr+1;
-
-			        	}
-			        	k = k+1;
-			    })
-			    .on("end", function () {
-				    if (debug) console.log("EOF");
-			    })
-			    .read();
-		} else {	
-		    if (debug) console.log("Reading File");	
-			// Should be no encoding if streamFilterBinary was given.
-			fs.readFile(fname + ".data", "utf8", readcallback);
-		}
-		
-		function readcallback(err, data) {
-		    if (debug) {
-			console.log('readFile callback event');
-			console.log("Un-stream locking " + fname);
-		    }
-				fs.unlinkSync(fname +".streaming", "");
-				fs.unlinkSync(__dirname+"/cache/locks/"+work.urlMd5+".streaming");
-				
-				Nx = Nx + 1;
-				if (!options.streamGzip) {
-					if (options.streamFilter === "") {
-						res.write(data);
-					} else {	
-						try {
-							eval("res.write(data."+options.streamFilter+")");
-						} catch (err) {
-							console.log("Error when evaluating " + options.streamFilter);
-							consoel.log(err);
-							res.end();
-						}							
-											
-					}
-				}
-				
-				if ((Nx < N) && (inorder)) {
-					scheduler.addURL(source[Nx], options, function (work) {processwork(work,true)});
-				}
-				
-				if (options.streamGzip) {												
-					gzipping = gzipping + 1;
-					var tic = new Date();
-					zlib.createGzip({level:1});
-					if (options.streamFilter === "") {
-						zlib.gzip(data, function (err, buffer) {dt=new Date()-tic;console.log('gzip callback event');res.write(buffer);gzipping=gzipping-1;});
-					} else {
-						var com = "data = " + data + "." + options.streamFilter;
-						console.log("Evaluating " + com);
-						try {
-							//eval(com);
-						} catch (err) {
-							//console.log(err);
-							//res.send("500",err);
-						}
-						zlib.gzip(data, function (err,buffer) {dt=new Date()-tic;console.log('gzip callback event');res.write(buffer);gzipping=gzipping-1;});
-					}
-				}						
-		}
-
-
-	}
-
+	if (debugstream) console.log(options.id+' stream called with ' + N + ' urls and options.streamOrder = '+options.streamOrder);
 	if (options.streamOrder) {
 	    scheduler.addURL(source[0], options, function (work) {processwork(work,true)});
 	} else {
 	    for (var jj=0;jj<N;jj++) {
-		scheduler.addURL(source[jj], options, function (work) {processwork(work)});
+	    		if (debugstream) console.log("Adding to scheduler: " + source[jj]);
+			scheduler.addURL(source[jj], options, function (work) {processwork(work)});
 	    }
 	}
+		
+	function processwork(work,inorder) {
+		var fname = util.getCachePath(work);
+
+		if (work.error) {
+			console.log(rnd+ " Sending res.end() because of work.error: ", work.error);
+			return res.end();
+		}
+
+		if (debugstream) console.log(rnd+" Stream locking " + fname.replace(__dirname,""));
+
+		if (!stream.streaming[fname]) {
+			stream.streaming[fname] = 1;
+		} else {
+			stream.streaming[fname] = stream.streaming[fname] + 1;
+		}
+		
+		if (options.streamFilterReadBytes > 0) {
+		    if (debugstream) console.log(rnd+" Reading Bytes of "+ fname.replace(__dirname,""));
+		    if (debugstream) console.log(rnd+" Stream lock status " + stream.streaming[fname]);
+			var buffer = new Buffer(options.streamFilterReadBytes);
+			if (debugstream) console.log(rnd+" fs.exist: " + fs.existsSync(fname + ".data"));
+			fs.open(fname + ".data", 'r', function (err,fd) {
+			    fs.read(fd, buffer, 0, options.streamFilterReadBytes, options.streamFilterReadPosition-1, 
+			    		function (err, bytesRead, buffer) {readcallback(err,buffer);fs.close(fd);})});
+		} else if (options.streamFilterReadLines > 0) {
+		    if (debugstream) console.log(rnd+" Reading Lines of "+ fname.replace(__dirname,""));
+			if (debugstream) console.log(rnd+" fs.exist: " + fs.existsSync(fname + ".data"));
+			readlines2(fname + ".data");
+			//readlines(fname);
+		  	//var fstream = fs.createReadStream(fname + ".data", {flags: 'r', encoding: 'utf-8', fd: null, bufferSize: 1});
+			//fstream.addListener('data',processchars);
+
+		} else {	
+		    if (debugstream) console.log(rnd+" Reading File");	
+			// Should be no encoding if streamFilterBinary was given.
+			fs.readFile(fname + ".data", "utf8", readcallback);
+		}
+
+
+ 		function processchars(char) {
+			// This preserves \r\n type newlines.
+			if (char == '\n') {
+				if (k >= options.streamFilterReadPosition && lr < options.streamFilterReadLines) {
+					if (debugstream) console.log(rnd+" Read " + fname.replace(/.*\/(.*)/,"$1") + ": "+line);
+					line = line + char;
+					lr = lr + 1;
+				} else {
+					if (k >= options.streamFilterReadPosition) {
+						readcallback("",lines);
+						fstream.removeListener('data',processchars);
+					}
+					//delete fstream;
+				}						
+				lines = lines + line;				
+				k = k+1;
+				line = '';
+			} else {
+				line = line + char;
+			}				
+		}
+
+		var line   = '';
+		var lines  = '';
+		var lr = 0; // Lines read.
+		var k = 1;  // Lines kept.
+
+		function readlines2(fname) {	
+			var lineReader = require('line-reader');
+			lineReader.eachLine(fname, function(line, last) {
+
+				if (lr == 0) xlines = "";
+				if (k >= options.streamFilterReadPosition) {				  		
+					if (lr == options.streamFilterReadLines) {	
+						console.log("Callback");
+						readcallback("",lines);
+						lines = "";			  	
+						return false;
+						//cb(false); // stop reading
+					}
+					console.log("Lines: ");
+					console.log("lr = " + lr);
+					console.log(line);
+					lines = lines + line + "\n";
+					lr = lr + 1;
+				}
+				k = k+1;
+			});
+		}
+	
+		
+		function readlines(fname) {
+			var LineReader = reader.DataReader;
+			var k = 1;
+			var lr = 0;
+			var lines = "";
+			var done = false;
+			new LineReader(fname + ".data", { encoding: "utf8" })
+				.on("error", function (error) {
+					console.log(rnd+" Error while reading lines: " + error);
+				})
+				.on("line", function (line) {
+					if (debugstream) console.log(rnd+" Read " + fname.replace(/.*\/(.*)/,"$1") + ": "+line);
+					if (k >= options.streamFilterReadPosition) {
+							if (lr == options.streamFilterReadLines) { 
+							if (debugstream) {
+									//console.log("dumped lines");
+									//console.log(lines);
+							}
+							done = true;
+					
+								this.interrupt();
+							} else {
+							//if (debugstream) console.log(rnd+" Read Line: "+line);
+								lines = lines + line + "\n";
+								lr = lr+1;
+							}
+						}
+						k = k+1;
+				})
+				.on("end", function () {
+					if (debugstream) console.log(rnd+" LineReader end event triggered.");
+						readcallback("",lines);
+				})
+				.read();
+		}
+		
+		function readcallback(err, data) {
+		
+			if (debugstream) {
+				console.log(rnd+" readcallback() called.  Un-stream locking " + fname.replace(__dirname,""));
+		    }		    
+		    stream.streaming[fname] = stream.streaming[fname] - 1;
+
+			function finished() {
+				if (debugstream) console.log(rnd+ " Incremening Nx from " + reqstatus[rnd].Nx + " to " + (reqstatus[rnd].Nx+1));
+				reqstatus[rnd].Nx = reqstatus[rnd].Nx + 1;
+
+				if ((reqstatus[rnd].Nx < N) && (inorder)) {
+					scheduler.addURL(source[reqstatus[rnd].Nx], options, function (work) {processwork(work,true)});
+				}
+
+				if (N == reqstatus[rnd].Nx) {
+					if (debugstream) console.log(rnd+" N == reqstatus[rnd].Nx; Sending res.end().");
+					res.end();
+				}
+			}
+								
+			if (err) {
+				if (debugstream) console.log(rnd+" readcallback was passed err: " + err);
+				return res.end();
+			}
+
+			if (!options.streamGzip) {
+				if (options.streamFilter === "") {
+					if (debugstream) console.log(rnd+" Writing response");
+					res.write(data);
+				} else {	
+					try {
+						//console.log(typeof(data));
+						//console.log(data[0]);
+						// This assumes the filter applies to ASCII.
+						eval("res.write(data.toString()."+options.streamFilter+")");
+					} catch (err) {
+						console.log(rnd+" Error when evaluating " + options.streamFilter);
+						console.log(err);
+						console.log(rnd+" Sending res.end()");
+						res.end();
+					}							
+										
+				}
+
+				finished();
+				
+			}
+						
+			if (options.streamGzip) {												
+				reqstatus[rnd].gzipping = reqstatus[rnd].gzipping + 1;
+				var tic = new Date();
+				zlib.createGzip({level:1});
+				if (options.streamFilter === "") {
+					zlib.gzip(data, function (err, buffer) {
+						reqstatus[rnd].dt = new Date()-tic;
+						if (debugstream) console.log(rnd+' gzip callback event');
+						if (debugstream) console.log(rnd+ " Writing compressed buffer");
+						res.write(buffer);
+						reqstatus[rnd].gzipping=reqstatus[rnd].gzipping-1;
+						finished();
+					});
+				} else {
+					// Not implemented.
+					var com = "data = " + data + "." + options.streamFilter;
+					//if (debugstream) console.log("Evaluating " + com);
+					try {
+						//eval(com);
+					} catch (err) {
+						//console.log(err);
+						//res.send("500",err);
+					}
+					zlib.gzip(data, function (err,buffer) {
+						reqstatus[rnd].dt = new Date()-tic;
+						console.log(rnd+' gzip callback event');
+						console.log(rnd+" Writing compressed buffer");
+						res.write(buffer);
+						reqstatus[rnd].gzipping=reqstatus[rnd].gzipping-1;
+					});
+				}
+			}						
+
+
+		}
+
+
+	}
+
 }
 
 function parseOptions(req) {
@@ -411,17 +534,23 @@ function parseOptions(req) {
 	options.includeHeader  = s2b(req.query.includeHeader)  || s2b(req.body.includeHeader)  || false;
 	options.includeLstat   = s2b(req.query.includeLstat)   || s2b(req.body.includeLstat)   || false;
 	options.includeVers    = s2b(req.query.includeVers)    || s2b(req.body.includeVers)    || false;
-	options.respectHeaders = s2b(req.query.respectHeaders) || s2b(req.body.respectHeaders) || true;
 	options.plugin         = req.query.plugin              || req.body.plugin              || "";
 	options.return         = req.body.return               || req.query.return             || "json";
 	options.dir            = req.query.dir                 || req.body.dir                 || "/cache/";
-
-	options.streamOrder    = s2b(req.query.streamOrder)    || s2b(req.body.streamOrder)    || true;
 	options.streamGzip     = s2b(req.query.streamGzip)     || s2b(req.body.streamGzip)     || false;
 	options.streamFilter   = req.query.streamFilter        || req.body.streamFilter        || "";
 
-	//options.streamFilterBinary   = req.query.streamFilterBinary        || req.body.streamFilterBinary        || "";
+	options.streamOrder    = req.query.streamOrder         || req.body.streamOrder         || "true";
+	options.streamOrder    = s2b(options.streamOrder);
 
+	options.acceptGzip     = req.query.acceptGzip         || req.body.acceptGzip          || "true";
+	options.acceptGzip    = s2b(options.acceptGzip);
+
+	//options.respectHeaders = s2b(req.query.respectHeaders) || s2b(req.body.respectHeaders) || true;
+
+	//options.streamFilterBinary   = req.query.streamFilterBinary        || req.body.streamFilterBinary        || "";
+	
+	//if (debugstream) console.log("StreamOrder = " + req.query.streamOrder);
 
 	options.streamFilterReadBytes    = s2i(req.query.streamFilterReadBytes)    || s2i(req.body.streamFilterReadBytes)    || 0;
 	options.streamFilterReadLines    = s2i(req.query.streamFilterReadLines)    || s2i(req.body.streamFilterReadLines)    || 0;
@@ -441,6 +570,13 @@ function parseOptions(req) {
 	} else {
 		options.extractData = 'body.toString().split("\\n").filter(function(line){return line.search(lineRegExp)!=-1;}).join("\\n") +"\\n";';
 	}
+
+	if (options.lineRegExp) {
+		options.lineRegExp = decodeURIComponent(req.originalUrl.replace(/.*lineRegExp=(.*?)(\&|$).*/,'$1'));
+	} else {
+		options.lineRegExp = ".";
+	}
+
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
 			options.dir = '/'+options.dir;
@@ -449,7 +585,7 @@ function parseOptions(req) {
 			options.dir = options.dir+'/';
 	    }
 	}
-
+	
 	return options;
 }
 
@@ -481,6 +617,7 @@ function parseSource(req) {
 			options.type  = "strftime";
 			options.start = timeRange.split("/")[0];
 			options.stop  = timeRange.split("/")[1];
+			options.debug = debug;
 			if (debug)
 			    console.log(options);
 			//eval("sourcet = expandtemplate(options)");
@@ -494,18 +631,19 @@ function parseSource(req) {
 			options.type  = "sprintf";
 			options.start = indexRange.split("/")[0];
 			options.stop  = indexRange.split("/")[1];
+			options.debug = debug;
 			//eval("sourcet = sourcet.concat(expandtemplate(options))");
 			sourcet = sourcet.concat(expandtemplate(options));
 		}
 	}
-	//console.log(source)
 
 	if (source) {
 		source = source.trim().replace("\r", "").split(/[\r\n]+/).filter(function (line) {return line.trim() != "";});
 	}
 	
-	//console.log(sourcet)
-	//console.log(source)
+	if (debug) console.log(sourcet);
+	if (debug) console.log(source);
+
 	if ((sourcet.length > 0) && (source.length > 0)) {
 		source = source.concat(sourcet);
 	}

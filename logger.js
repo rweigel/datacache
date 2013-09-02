@@ -3,6 +3,53 @@ var util = require("./util.js");
 
 var clients = [];
 
+// speicfy current logging level. 
+// Possbile values: 0 (DEBUG), 1 (INFO), 2 (ERROR)
+// Only message with level >= current settings will be print to the screen. 
+// For example, if level =1, logger.e("err") will prints to console, 
+// while logger.d("a message") will not print to console.
+// This variable can be set through environment variable: export dc_log_level=[all|debug|info|error]
+// By default it is set to 2 and only prints errors.
+var level;
+var levelsetting = process.env.dc_log_level && process.env.dc_log_level.toLowerCase().trim();
+if( levelsetting === "all"){
+	level = -1;
+} else if( levelsetting === "debug" ){
+	level = 0;
+} else if( levelsetting === "info" ){
+	level = 1;
+} else {
+	level = 2;
+}
+
+function formatLogEntry(msg){
+	return new Date() + " " + msg;
+}
+
+// print an error
+exports.e = e;
+function e(msg){
+	if(level <=2){
+		console.log("[ERROR] "+ formatLogEntry(msg));
+	}
+} 
+
+// print an info
+exports.i = i;
+function i(msg){
+	if(level <=1){
+		console.log("[INFO] "+ formatLogEntry(msg));
+	}
+} 
+
+// print a debug
+exports.d = d;
+function d(msg){
+	if(level <=0){
+		console.log("[DEBUG] "+ formatLogEntry(msg));
+	}
+} 
+
 function bindClientList(list) {clients = list;}
 exports.bindClientList = bindClientList;
 

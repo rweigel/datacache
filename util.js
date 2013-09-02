@@ -4,18 +4,62 @@ var moment  = require("moment");
 var request = require("request");
 var mkdirp  = require("mkdirp");
 var logger  = require("./logger.js");
+var FtpClient  = require("ftp");
 
 var TIMEOUT = 20000;
 var MAXCONNECTION = 1000;
 
+var app = require("./app.js");
+
+// Download a resource via http or ftp
+function download(url, callback){
+	if (url.match(/^http/)) {
+		return downloadHttp(url, callback);
+	} else if(url.match(/^ftp/)){
+		return downloadFtp(url, callback);
+	} else {
+		callback("Error.  Protocol" + url.replace(/^(.*)\:.*/,"$1") + " is not supported.");
+	}
+}
+exports.download = download;
+
+var downloadHttp = function(url, callback){
+	return get(url, function(err, response, body){
+		return callback(err, body);
+	});
+};
+
+var downloadFtp = function(url, callback){
+	var conn = new FtpClient();
+	conn.on("ready", function(){
+		conn.get(work.url.split("/").slice(3).join("/"), function(err, stream){
+			if(err){
+				callback("Ftp download error");
+			} else{
+				var buff = "";
+				stream.on("data", function(data){
+					buff+=data.toString();
+				})
+				.on("error", function(e){work.error=e;callback(true, work);conn.end();})
+				.on("end", function(){
+					callback(false, buff);
+				});
+			}
+		});
+	})
+	.on("error", function(e){callback(e, work);conn.end();})
+	.connect({host: url.split("/")[2]});
+	return conn;
+}
+
 function get(url, callback){
-    
 	var options = {	
-					uri: url,
-    					timeout: TIMEOUT,
-    					encoding: null,
-    					pool: {maxSockets : MAXCONNECTION}
+					url: url,
+					timeout: TIMEOUT,
+					encoding: null,
+					pool: {maxSockets : MAXCONNECTION}
 				  };
+				  var i =0;
     return request.get(options, callback);
 }
 exports.get = get;
@@ -96,6 +140,11 @@ var isCached = function isCached(work, callback) {
 	});
 }
 exports.isCached = isCached;
+
+var isZipCached = function isZipCached(work){
+	return fs.existsSync(getZipCachePath(work) + ".data");
+}
+exports.isZipCached = isZipCached;
 
 function getCachedData(work, callback) {
 
@@ -184,6 +233,11 @@ function getCachePath(work){
 }
 exports.getCachePath = getCachePath;
 
+function getZipCachePath(work){
+	return getCacheDir(work) + md5(work.zipFileUrl) +".zip"; 
+}
+exports.getZipCachePath = getZipCachePath;
+
 function getCacheDir(work,relative){
     prefix = __dirname;
     if (arguments.length > 1 && relative) {
@@ -195,6 +249,7 @@ function getCacheDir(work,relative){
 		return prefix + "/cache"+work.options.dir;
     }
 }
+exports.getCacheDir = getCacheDir;
 
 var memLock = {};
 var writeCache = function(work, callback){
@@ -211,8 +266,8 @@ var writeCache = function(work, callback){
   	// as if request for data failed.
   	// No other process should be writing to cache directory, so no need to check lock
   	// before writing.
-	if (!memLock[work.id] && !fs.existsSync(filename+".streaming")) {
-
+//	if (!memLock[work.id]) {
+	if (!memLock[work.id] && (app.stream.streaming[filename] == 0 || typeof(app.stream.streaming[filename]) === "undefined")) {
 	    // If memLock[result.url] is undefined or 0, no writing is on-going.
 	    memLock[work.id] = 6;
 	    work.writeStartTime = new Date();
@@ -234,49 +289,26 @@ var writeCache = function(work, callback){
 	function writeCacheFiles() {
 
 	    // If .data does not exist, create it.
-	    // If .data file exists and differs from new data, rename .data file.
+	    // If .data file exists and differs from new data, move files to directory md5url.
 	    // If .data file exists and is same as new data, do nothing unless forceWrite=true.
-				
-	    function writeFiles() {
-			//fs.writeFileSync(filename+".lck","");
-			//fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".lck",work.dir);
-			fs.writeFile(filename+".data", work.data, finish);
-			fs.writeFile(filename+".bin", work.dataBinary, finish);
-			fs.writeFile(filename+".meta", work.meta, finish);
-			fs.writeFile(filename+".datax", work.datax, finish);
-			fs.writeFile(filename+".header", header.join("\n"), finish);
-			fs.writeFile(filename+".out", work.body, finish);
-			fs.appendFile(filename+".log", 
-				formatTime(work.jobStartTime) + 
-				"\t" + work.body.length + "\t" + 
-				work.data.length + "\n", finish);
-	    }
 
-		function renameFiles(callback) {
-			var newdir = filename + "/";
-			mkdirp(newdir, function (err) {
-					console.log("Moving files to: " + newdir);
-					//console.log("filename: " + filename);
-					if (err) {console.log(err);}
-					fs.renameSync(filename+".data"  , filename+"/"+dataMd5old+".data");
-					fs.renameSync(filename+".bin"   , filename+"/"+dataMd5old+".bin");
-					fs.renameSync(filename+".meta"  , filename+"/"+dataMd5old+".meta");
-					fs.renameSync(filename+".datax" , filename+"/"+dataMd5old+".datax");
-					fs.renameSync(filename+".header", filename+"/"+dataMd5old+".header");
-					fs.renameSync(filename+".out"   , filename+"/"+dataMd5old+".out");
-					callback();
-				});
-		}
-		
-		function keepversions() {
-			return true;
-		}	
 	    fs.exists(filename + ".data",
 		      function (exists) {
 				  if (!exists) {
 				      writeFiles();
 				  } else {
-				      dataMd5old = md5(fs.readFileSync(filename+".data"));
+				  	  // If this fails, another process has moved it to the archive directory.
+				  	  if (app.stream.streamdebug) console.log(work.options.id+" Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1"));
+					  //dataMd5old = md5(fs.readFileSync(filename+".data"));
+					  if (1) {
+					  try {
+					      dataMd5old = md5(fs.readFileSync(filename+".data"));
+					  } catch (e) {
+					  		debugger
+					  	  if (app.stream.streamdebug) console.log(work.options.id+" Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1" + " failed."));
+						  dataMd5old = "";
+					  }
+					  }
 				      //console.log(work.dataMd5 + " " + dataMd5old);
 				      if ( (work.dataMd5 != dataMd5old) || work.options.forceWrite) {
 						if (keepversions(work.url) && (work.dataMd5 != dataMd5old)) {
@@ -289,6 +321,65 @@ var writeCache = function(work, callback){
 				      }
 				  }
 		      });
+		
+		
+	    function writeFiles() {
+			//fs.writeFileSync(filename+".lck","");
+			//fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".lck",work.dir);
+			if (app.stream.streamdebug) console.log(work.options.id + " Attempting write of: "+filename.replace(/.*\/(.*)/,"$1")+".data");
+			if (app.stream.streamdebug) console.log(work.options.id + " fs.exists: " + fs.existsSync(filename));
+			if (app.stream.streaming[filename] > 0) {
+				if (app.stream.streamdebug) {
+					console.log(work.options.id + " " + filename.replace(/.*\/(.*)/,"$1") + " A stream lock was found.  Aborting write.");
+					console.log(work.options.id + " " + "Presumably, an update was recently performed.  forceUpdate=true may have unexpected results.");
+				}
+				finish();finish();finish();finish();finish();finish();
+				return;
+			}
+			fs.writeFile(filename+".data", work.data, finish);
+			fs.writeFile(filename+".bin", work.dataBinary, finish);
+			fs.writeFile(filename+".meta", work.meta, finish);
+			fs.writeFile(filename+".datax", work.datax, finish);
+			fs.writeFile(filename+".header", header.join("\n"), finish);
+			fs.writeFile(filename+".out", work.body, finish);
+			fs.appendFile(filename+".log", 
+				formatTime(work.jobStartTime) + 
+				"\t" + work.body.length + "\t" + 
+				work.data.length + "\n", finish);
+	    }
+
+		function tryrename(fname) {
+			try {
+				fs.renameSync(filename+".data"  , filename+"/"+dataMd5old+".data");			
+			} catch (e) {
+				if (app.stream.streamdebug) {
+					console.log(work.options.id  + " Could not move " + filename.replace(/.*\/(.*)/,"$1") + ".  forceUpdate=true may have unexpected results.");
+					console.log(work.options.id  + " It was probably moved by another request.");
+				}
+			}		
+		}
+		function renameFiles(callback) {
+			var newdir = filename + "/";
+			mkdirp(newdir, function (err) {
+					if (app.stream.streamdebug) console.log(work.options.id  + " Created directory " + newdir);
+					//console.log("filename: " + filename);
+					if (err) {console.log(err);}
+					if (app.stream.streamdebug)
+						console.log(work.options.id  + " Tring to move files to: " + newdir);
+					tryrename(filename+".data");					
+					tryrename(filename+".bin");					
+					tryrename(filename+".meta");					
+					tryrename(filename+".datax");					
+					tryrename(filename+".header");
+					tryrename(filename+".out");					
+					callback();
+				});
+		}
+		
+		function keepversions() {
+			//return true;
+			return false;
+		}	
 
 	}
 

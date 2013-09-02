@@ -85,11 +85,15 @@ function run() {
 					work.retries += 1;
 					worksQueue.push(work);
 				} else {
-					util.getCachedData(work, function (err) {
-						exports.emit("finish", work);
-						logger.log("finish", work);
+					if(work.data){
 						work.callback(work2result(work));
-					})
+					} else {
+						util.getCachedData(work, function (err) {
+							exports.emit("finish", work);
+							logger.log("finish", work);
+							work.callback(work2result(work));
+						})
+					}
 				}
 				work.finishFinishedTime = new Date();				
 				run();

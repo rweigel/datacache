@@ -11,36 +11,34 @@ exports.match = function(url){
 }
 
 exports.process = function(work, callback){
-	var conn = new FtpClient({host: work.url.split("/")[2]});
-	conn.on("connect", function(){
-		conn.auth(function(err){
-			conn.get(work.url.split("/").slice(3).join("/"), function(err, stream){
-				if(err){
-					callback(true, work);
-				} else{
-					var buff = "";
-					stream.on("data", function(data){
-						if(!work.responseTime) {
-						    //work.responseTime = new Date();
-						}
-						buff+=data.toString();
-					})
-				    .on("error", function(e){work.error=e;callback(true, work);conn.end();})
-					.on("end", function(){
-						work.body = buff;
-						work.data = work.extractData(work.body);
-						work.dataMd5 =  util.md5(work.data);
-						work.header = "";
-						util.writeCache(work, function(){
-							callback(false, work);
-						});
+	var conn = new FtpClient();
+	conn.on("ready", function(){
+		conn.get(work.url.split("/").slice(3).join("/"), function(err, stream){
+			if(err){
+				callback(true, work);
+			} else{
+				var buff = "";
+				stream.on("data", function(data){
+					if(!work.responseTime) {
+					    //work.responseTime = new Date();
+					}
+					buff+=data.toString();
+				})
+			    .on("error", function(e){work.error=e;callback(true, work);conn.end();})
+				.on("end", function(){
+					work.body = buff;
+					work.data = work.extractData(work.body);
+					work.dataMd5 =  util.md5(work.data);
+					work.header = "";
+					util.writeCache(work, function(){
+						callback(false, work);
 					});
-				}
-			});
-		})
+				});
+			}
+		});
 	})
 	.on("error", function(e){work.error=e;callback(true, work);conn.end();})
-	.connect();
+	.connect({host: work.url.split("/")[2]});
 }
 
 exports.extractData = function(data){
