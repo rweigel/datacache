@@ -313,6 +313,34 @@ function(cb){
 		});
 	})
 },
+function(cb){
+	suite("request with extractData", function(test, testInfo, suiteDone){
+		request({
+			uri: server + "sync?source=http://www.google.com&extractData=$(\"a\").text()&return=stream&forceUpdate=true",
+			timeout: 1000
+		}, function(err, res, body){
+			testInfo("err", err);
+			testInfo("res", res);
+			testInfo("body", body);
+
+			test("request should succeed", function(){
+				assert( !err );
+			});
+
+			test("status code should be 200", function(){
+				assert(res);
+				assert.equal(res.statusCode, 200);
+			});
+
+			test("response should have the correct content", function(){
+				assert(body.indexOf("Search")==0);
+			});
+
+			suiteDone();
+			cb();
+		});
+	})
+},
 function(){
 	logger.i("\n" + simpleReporter(runner.results));
 	logger.i("Dev Tests finished.");
