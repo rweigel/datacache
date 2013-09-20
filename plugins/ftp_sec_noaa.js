@@ -7,7 +7,7 @@ exports.name = "noaa";
 exports.match = function(url){
     //console.log(url);
     //console.log(typeof url);
-    return url.split("/")[2].toLowerCase()==="ftp.sec.noaa.gov";
+    return url.split("/")[2].toLowerCase()==="xftp.sec.noaa.gov";
 }
 
 exports.process = function(work, callback){

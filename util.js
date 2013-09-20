@@ -327,7 +327,7 @@ var writeCache = function(work, callback){
 			//fs.writeFileSync(filename+".lck","");
 			//fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".lck",work.dir);
 			if (app.stream.streamdebug) console.log(work.options.id + " Attempting write of: "+filename.replace(/.*\/(.*)/,"$1")+".data");
-			if (app.stream.streamdebug) console.log(work.options.id + " fs.exists: " + fs.existsSync(filename));
+			if (app.stream.streamdebug) console.log(work.options.id + " fs.exists: " + fs.existsSync(filename+".data"));
 			if (app.stream.streaming[filename] > 0) {
 				if (app.stream.streamdebug) {
 					console.log(work.options.id + " " + filename.replace(/.*\/(.*)/,"$1") + " A stream lock was found.  Aborting write.");
@@ -336,6 +336,8 @@ var writeCache = function(work, callback){
 				finish();finish();finish();finish();finish();finish();
 				return;
 			}
+			console.log("work.data.length:")
+			console.log(work.data.length)
 			fs.writeFile(filename+".data", work.data, finish);
 			fs.writeFile(filename+".bin", work.dataBinary, finish);
 			fs.writeFile(filename+".meta", work.meta, finish);

@@ -18,8 +18,8 @@ xutil = require('util');
 
 var expandtemplate = require("tsdset").expandtemplate;
 
-var debug = false;
-var debugstream = true;
+var debug = true;
+var debugstream = false;
 
 // Locking notes:
 // Each time a file is being streamed, a stream counter is incremented for the file.
@@ -178,7 +178,8 @@ function handleRequest(req, res) {
 	    return;
 	}
 	//console.log('sync called');
-	if (debugstream) console.log(options.id + " handleRequest called with source="+source);
+	console.log(options.id + " handleRequest called with source="+source)
+	if (debug || debugstream) console.log(options.id + " handleRequest called with source="+source);
 	if (options.return === "stream") {
 		stream(source,options,res);
 	} else {
@@ -186,10 +187,12 @@ function handleRequest(req, res) {
 	}
 }
 app.get("/sync", function (req,res) {
+	console.log("GET")
 	handleRequest(req,res);
 });
 
 app.post("/sync", function (req, res) {
+	console.log("POST")
 	handleRequest(req,res);
 });
 
@@ -535,11 +538,24 @@ function parseOptions(req) {
 	options.includeLstat   = s2b(req.query.includeLstat)   || s2b(req.body.includeLstat)   || false;
 	options.includeVers    = s2b(req.query.includeVers)    || s2b(req.body.includeVers)    || false;
 	options.plugin         = req.query.plugin              || req.body.plugin              || "";
-	options.return         = req.body.return               || req.query.return             || "json";
+	options.return         = req.query.return              || req.body.return             || "json";
 	options.dir            = req.query.dir                 || req.body.dir                 || "/cache/";
 	options.streamGzip     = s2b(req.query.streamGzip)     || s2b(req.body.streamGzip)     || false;
 	options.streamFilter   = req.query.streamFilter        || req.body.streamFilter        || "";
+	options.lineRegExp     = req.query.lineRegExp          || req.body.lineRegExp          || ".";
+	
+	options.lineFormatter  = req.query.lineFormatter       || req.body.lineFormatter    || "";
 
+	if (options.lineFormatter === "") {
+		options.lineFilter  = req.query.lineFilter          || req.body.lineFilter          || "function(line){return line.search(lineRegExp)!=-1;}";
+	} else {
+		lineFormatter = require(___dirname + "/plugins/" + options.LineFormatter + ".js")
+		options.lineFilter  = req.query.lineFilter          || req.body.lineFilter          || "function(line){if (line.search(lineRegExp) != -1) return linePlugin.formatLine(line,req);"
+	}
+
+	
+	options.extractData    = req.query.extractData         || req.body.extractData         || 'body.toString().split("\\n").filter('+options.lineFilter+').join("\\n") +"\\n";';
+	
 	options.streamOrder    = req.query.streamOrder         || req.body.streamOrder         || "true";
 	options.streamOrder    = s2b(options.streamOrder);
 
@@ -556,26 +572,30 @@ function parseOptions(req) {
 	options.streamFilterReadLines    = s2i(req.query.streamFilterReadLines)    || s2i(req.body.streamFilterReadLines)    || 0;
 	options.streamFilterReadPosition = s2i(req.query.streamFilterReadPosition) || s2i(req.body.streamFilterReadPosition) || 1;
 
-	options.lineRegExp     = req.query.lineRegExp          || req.body.lineRegExp          || "^[0-9]";
-	options.extractData    = req.query.extractData         || req.body.extractData         || "";
+	//options.lineRegExp     = req.query.lineRegExp          || req.body.lineRegExp          || "^[0-9]";
+	//options.extractData    = req.query.extractData         || req.body.extractData         || "";
 
 	// Need to use http://gf3.github.com/sandbox/ for these insecure operations.
 	// Express decodes a "+" as a space.  Decode these parts manually.
+	// No: + should be encoded by client.
 	
-	if (options.streamFilter) {
-		options.streamFilter = decodeURIComponent(req.originalUrl.replace(/.*streamFilter=(.*?)(\&|$).*/,'$1'));
-	}
-	if (options.extractData) {
-		options.extractData = decodeURIComponent(req.originalUrl.replace(/.*extractData=(.*?)(\&|$).*/,'$1'));
-	} else {
-		options.extractData = 'body.toString().split("\\n").filter(function(line){return line.search(lineRegExp)!=-1;}).join("\\n") +"\\n";';
-	}
+	//if (options.streamFilter) {
+		//options.streamFilter = decodeURIComponent(req.originalUrl.replace(/.*streamFilter=(.*?)(\&|$).*/,'$1'));
+	//}
 
-	if (options.lineRegExp) {
-		options.lineRegExp = decodeURIComponent(req.originalUrl.replace(/.*lineRegExp=(.*?)(\&|$).*/,'$1'));
-	} else {
-		options.lineRegExp = ".";
-	}
+	//if (options.extractData) {
+	//	options.extractData = decodeURIComponent(req.originalUrl.replace(/.*extractData=(.*?)(\&|$).*/,'$1'));
+	//} else {
+	//	options.extractData = 'body.toString().split("\\n").filter(function(line){return line.search(lineRegExp)!=-1;}).join("\\n") +"\\n";';
+	//}
+
+	console.log(req.body)
+	console.log(req.query)
+	//if (options.lineRegExp) {
+		//options.lineRegExp = decodeURIComponent(req.originalUrl.replace(/.*lineRegExp=(.*?)(\&|$).*/,'$1'));
+	//} else {
+		//options.lineRegExp = ".";
+	//}
 
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
@@ -586,6 +606,7 @@ function parseOptions(req) {
 	    }
 	}
 	
+	console.log(options);
 	return options;
 }
 
@@ -594,8 +615,11 @@ function parseSource(req) {
     var source = req.body.source || req.query.source || "";
     var prefix = req.body.prefix || req.query.prefix;
 
-    var template   = req.body.template   || req.query.template;
-    template = decodeURIComponent(template);
+    var template   = req.body.template || req.query.template;
+    console.log(req.body)
+    console.log(req.query)
+    //template = decodeURIComponent(template);
+    
     
     if (debug) console.log("temp---" + template);
     if (debug) console.log("---" + source);

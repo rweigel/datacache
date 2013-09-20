@@ -128,8 +128,11 @@ function work2result(work) {
 		
 		//console.log(work["meta"]);
 		//console.log(work["metaJson"]);
+		//console.log(work.options.includeMeta)
 		if (work.options.includeMeta) {
-		    if (Object.keys(work["metaJson"]).length == 0) {
+			//console.log(work.options.includeMeta)
+
+			//if (Object.keys(work["metaJson"]).length == 0) {
 		    	if (!work.hasOwnProperty("meta")) {
 		    		work["meta"] = {};
 		    	}
@@ -137,17 +140,17 @@ function work2result(work) {
 		    		work["datax"] = {};
 		    	}
 		    	
-			if (typeof(work["meta"]) === "undefined") {
-			    ret["meta"] = work["datax"];			    
-			} else if (work["meta"].length == 0) {
-			    ret["meta"] = work["datax"];
-			} else {
-			    ret["meta"] = work["meta"];
-			}
-		    } else {
-				ret["metaJson"] = work["metaJson"];
-		    }
-		}
+				if (typeof(work["meta"]) === "undefined") {
+				    ret["meta"] = work["datax"];			    
+				} else if (work["meta"].length == 0) {
+				    ret["meta"] = work["datax"];
+				} else {
+				    ret["meta"] = work["meta"];
+				}
+			    } else {
+					ret["metaJson"] = work["metaJson"];
+			    }
+			//}
 	}
 	ret.work2ResultFinishedTime = new Date();
 	ret.jobFinishedTime = new Date();
