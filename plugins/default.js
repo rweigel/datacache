@@ -3,6 +3,10 @@ var util    = require("../util.js");
 
 var logger = require("../logger.js");
 
+var localeval = require("localeval");
+var jsdom = require("jsdom");
+var jquery = require("jquery");
+
 exports.name  = "_httpdemo";
 exports.match = function (url) {return false;}
 
@@ -90,8 +94,27 @@ exports.process = function (work, callback) {
 exports.extractDataBinary = function (body, options) {return "";};
 
 exports.extractData = function (body, options) {
-	lineRegExp = options.lineRegExp;
-	return eval(options.extractData);
+	var window
+	var $;
+	try {
+		window = jsdom.jsdom(body).createWindow();
+		$ = jquery.create(window);	
+	} catch(e){
+		logger.d("Error in trying to parse data as html, probably it is not in valid html format");
+	}
+
+	try {
+		return localeval(options.extractData, {
+			$: $,
+			document: window.document,
+			out: body,
+			body: body,
+			lineRegExp: options.lineRegExp
+		});
+	} catch(e) {
+		logger.d("Error in trying to eval options.extractData: ", e, options.extractData);
+		return "Error occurred while extracting data";
+	}
 };
 
 exports.extractDataJson = function(body, options) {return {};};

@@ -20,7 +20,8 @@
     "handlebars": "~1.0.12",
     "adm-zip": "~0.4.3",
     "jquery": "~1.8.3",
-    "jsdom": "~0.8.3"
+    "jsdom": "~0.8.3",
+    "localeval": "~13.6.10"
   },
   "scripts": {
     "test": "node test/main.js"

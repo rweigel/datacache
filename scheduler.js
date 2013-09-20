@@ -7,7 +7,7 @@ exports.setMaxListeners(1000);
 
 var logger = require("./logger.js");
 
-var params = { concurrency : 20 };
+var params = { concurrency : 5 };
 
 var runningWorks = [];
 var worksQueue   = [];
@@ -57,9 +57,14 @@ exports.plugins = plugins;
 
 function run() {
 
+	logger.d("scheduler: "+runningWorks.length + ", " + params.concurrency);
+
 	while (runningWorks.length < params.concurrency && worksQueue.length > 0) {
 		var work = worksQueue.shift();
 		runningWorks.push(work);
+
+		logger.d("processing work");
+
 		work.cacheCheckStartTime = new Date();
 		util.isCached(work, function (work) {
 			work.cacheCheckFinishedTime = new Date();
@@ -102,7 +107,8 @@ function run() {
 		})		
 	}
 	if (worksQueue.length > 0) {
-	    process.nextTick(run);
+	    logger.d("scheduler: delaying")
+	    setImmediate(run);
 	}
 }
 

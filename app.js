@@ -10,7 +10,8 @@ var request = require("request"),
 	fs = require("fs"),
 	hogan = require("hogan.js"),
 	moment = require("moment"),
-	whiskers = require("whiskers");
+	whiskers = require("whiskers"),
+	domain = require("domain");
 
 var zlib = require('zlib');
 var qs = require('querystring');
@@ -61,6 +62,29 @@ if (!fs.existsSync(__dirname+"/cache/locks")) {fs.mkdirSync(__dirname+"/cache/lo
 var port = process.argv[2] || 8000;
 
 // Middleware
+
+/* wrap app.VERB to handle exceptions: send 500 back to the client before crashing*/
+["get", "post", "put"].forEach(function(verb){
+	var old = app[verb];
+	var params = arguments;
+	app[verb] = function(route, callback){
+		old.call(app, route, function(req, res){
+			var d = domain.create();
+			d.on('error', function(err){
+				res.send(500, "Internal Servel Error.");
+
+				//TODO: needs a better error handling, like let other works in the queue finish before closing the server. 
+
+				/* Re-throw the exception to crash the server. */
+				throw err;
+			});
+			d.run(function(){
+				callback(req, res);
+			})
+		});
+	}
+})
+
 //app.use(express.logger());
 app.use(express.methodOverride());
 app.use(express.bodyParser());
@@ -328,6 +352,7 @@ function stream(source, options, res) {
 			var buffer = new Buffer(options.streamFilterReadBytes);
 			if (debugstream) console.log(rnd+" fs.exist: " + fs.existsSync(fname + ".data"));
 			fs.open(fname + ".data", 'r', function (err,fd) {
+				logger.d("processwork: ", "error:", err, "fd:", fd, fd==undefined,  "readbytes:", options.streamFilterReadBytes, "readPosition:", options.streamFilterReadPosition);
 			    fs.read(fd, buffer, 0, options.streamFilterReadBytes, options.streamFilterReadPosition-1, 
 			    		function (err, bytesRead, buffer) {readcallback(err,buffer);fs.close(fd);})});
 		} else if (options.streamFilterReadLines > 0) {

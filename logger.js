@@ -22,31 +22,31 @@ if( levelsetting === "all"){
 	level = 2;
 }
 
-function formatLogEntry(msg){
-	return new Date() + " " + msg;
+function formatLogEntry(msgs){
+	return new Date() + " " + Array.prototype.slice.call(msgs, 0).join(" ");
 }
 
 // print an error
 exports.e = e;
-function e(msg){
+function e(){
 	if(level <=2){
-		console.log("[ERROR] "+ formatLogEntry(msg));
+		console.log("[ERROR] "+ formatLogEntry(arguments));
 	}
 } 
 
 // print an info
 exports.i = i;
-function i(msg){
+function i(){
 	if(level <=1){
-		console.log("[INFO] "+ formatLogEntry(msg));
+		console.log("[INFO] "+ formatLogEntry(arguments));
 	}
 } 
 
 // print a debug
 exports.d = d;
-function d(msg){
+function d(){
 	if(level <=0){
-		console.log("[DEBUG] "+ formatLogEntry(msg));
+		console.log("[DEBUG] "+ formatLogEntry(arguments));
 	}
 } 
 
