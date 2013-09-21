@@ -13,6 +13,8 @@ var request = require("request"),
 	whiskers = require("whiskers"),
 	domain = require("domain");
 
+//var jsdom = require("jsdom");
+
 var zlib = require('zlib');
 var qs = require('querystring');
 xutil = require('util');
@@ -42,7 +44,7 @@ process.on('exit', function () {
 	console.log('Received exit signal.  Removing lock files.');
 	// TODO: 
 	// Remove partially written files by inspecting cache/locks/*.lck
-	// Remove streaming locks by inspecging cache/locks/*.streaming
+	// Remove streaming locks by inspecting cache/locks/*.streaming
 	console.log('Done.  Exiting.');
 })
 process.on('SIGINT', function () {
@@ -210,6 +212,7 @@ function handleRequest(req, res) {
 		syncsummary(source,options,res);
 	}
 }
+
 app.get("/sync", function (req,res) {
 	console.log("GET")
 	handleRequest(req,res);
@@ -310,6 +313,7 @@ stream.streamdebug   = debugstream;
 stream.streaming = {};
 
 function stream(source, options, res) {
+
 	var rnd        = options.id;		
 	var reqstatus  = {};
 	reqstatus[rnd] = {};
@@ -359,37 +363,11 @@ function stream(source, options, res) {
 		    if (debugstream) console.log(rnd+" Reading Lines of "+ fname.replace(__dirname,""));
 			if (debugstream) console.log(rnd+" fs.exist: " + fs.existsSync(fname + ".data"));
 			readlines2(fname + ".data");
-			//readlines(fname);
-		  	//var fstream = fs.createReadStream(fname + ".data", {flags: 'r', encoding: 'utf-8', fd: null, bufferSize: 1});
-			//fstream.addListener('data',processchars);
 
 		} else {	
 		    if (debugstream) console.log(rnd+" Reading File");	
 			// Should be no encoding if streamFilterBinary was given.
 			fs.readFile(fname + ".data", "utf8", readcallback);
-		}
-
-
- 		function processchars(char) {
-			// This preserves \r\n type newlines.
-			if (char == '\n') {
-				if (k >= options.streamFilterReadPosition && lr < options.streamFilterReadLines) {
-					if (debugstream) console.log(rnd+" Read " + fname.replace(/.*\/(.*)/,"$1") + ": "+line);
-					line = line + char;
-					lr = lr + 1;
-				} else {
-					if (k >= options.streamFilterReadPosition) {
-						readcallback("",lines);
-						fstream.removeListener('data',processchars);
-					}
-					//delete fstream;
-				}						
-				lines = lines + line;				
-				k = k+1;
-				line = '';
-			} else {
-				line = line + char;
-			}				
 		}
 
 		var line   = '';
@@ -418,43 +396,6 @@ function stream(source, options, res) {
 				}
 				k = k+1;
 			});
-		}
-	
-		
-		function readlines(fname) {
-			var LineReader = reader.DataReader;
-			var k = 1;
-			var lr = 0;
-			var lines = "";
-			var done = false;
-			new LineReader(fname + ".data", { encoding: "utf8" })
-				.on("error", function (error) {
-					console.log(rnd+" Error while reading lines: " + error);
-				})
-				.on("line", function (line) {
-					if (debugstream) console.log(rnd+" Read " + fname.replace(/.*\/(.*)/,"$1") + ": "+line);
-					if (k >= options.streamFilterReadPosition) {
-							if (lr == options.streamFilterReadLines) { 
-							if (debugstream) {
-									//console.log("dumped lines");
-									//console.log(lines);
-							}
-							done = true;
-					
-								this.interrupt();
-							} else {
-							//if (debugstream) console.log(rnd+" Read Line: "+line);
-								lines = lines + line + "\n";
-								lr = lr+1;
-							}
-						}
-						k = k+1;
-				})
-				.on("end", function () {
-					if (debugstream) console.log(rnd+" LineReader end event triggered.");
-						readcallback("",lines);
-				})
-				.read();
 		}
 		
 		function readcallback(err, data) {
@@ -575,63 +516,34 @@ function parseOptions(req) {
 		options.lineFilter  = req.query.lineFilter          || req.body.lineFilter          || "function(line){return line.search(lineRegExp)!=-1;}";
 	} else {
 		lineFormatter = require(___dirname + "/plugins/" + options.LineFormatter + ".js")
-		options.lineFilter  = req.query.lineFilter          || req.body.lineFilter          || "function(line){if (line.search(lineRegExp) != -1) return linePlugin.formatLine(line,req);"
+		options.lineFilter  = req.query.lineFilter          || req.body.lineFilter          || "function(line){if (line.search(lineRegExp) != -1) return lineFormatter.formatLine(line,req);"
 	}
-
 	
-	options.extractData    = req.query.extractData         || req.body.extractData         || 'body.toString().split("\\n").filter('+options.lineFilter+').join("\\n") +"\\n";';
-	
+	options.extractData    = req.query.extractData         || req.body.extractData         || 'body.toString().split("\\n").filter('+options.lineFilter+').join("\\n") +"\\n";';	
 	options.streamOrder    = req.query.streamOrder         || req.body.streamOrder         || "true";
 	options.streamOrder    = s2b(options.streamOrder);
 
 	options.acceptGzip     = req.query.acceptGzip         || req.body.acceptGzip          || "true";
-	options.acceptGzip    = s2b(options.acceptGzip);
+	options.acceptGzip     = s2b(options.acceptGzip);
 
 	//options.respectHeaders = s2b(req.query.respectHeaders) || s2b(req.body.respectHeaders) || true;
-
 	//options.streamFilterBinary   = req.query.streamFilterBinary        || req.body.streamFilterBinary        || "";
-	
-	//if (debugstream) console.log("StreamOrder = " + req.query.streamOrder);
 
 	options.streamFilterReadBytes    = s2i(req.query.streamFilterReadBytes)    || s2i(req.body.streamFilterReadBytes)    || 0;
 	options.streamFilterReadLines    = s2i(req.query.streamFilterReadLines)    || s2i(req.body.streamFilterReadLines)    || 0;
 	options.streamFilterReadPosition = s2i(req.query.streamFilterReadPosition) || s2i(req.body.streamFilterReadPosition) || 1;
 
-	//options.lineRegExp     = req.query.lineRegExp          || req.body.lineRegExp          || "^[0-9]";
-	//options.extractData    = req.query.extractData         || req.body.extractData         || "";
-
-	// Need to use http://gf3.github.com/sandbox/ for these insecure operations.
-	// Express decodes a "+" as a space.  Decode these parts manually.
-	// No: + should be encoded by client.
-	
-	//if (options.streamFilter) {
-		//options.streamFilter = decodeURIComponent(req.originalUrl.replace(/.*streamFilter=(.*?)(\&|$).*/,'$1'));
-	//}
-
-	//if (options.extractData) {
-	//	options.extractData = decodeURIComponent(req.originalUrl.replace(/.*extractData=(.*?)(\&|$).*/,'$1'));
-	//} else {
-	//	options.extractData = 'body.toString().split("\\n").filter(function(line){return line.search(lineRegExp)!=-1;}).join("\\n") +"\\n";';
-	//}
-
-	console.log(req.body)
-	console.log(req.query)
-	//if (options.lineRegExp) {
-		//options.lineRegExp = decodeURIComponent(req.originalUrl.replace(/.*lineRegExp=(.*?)(\&|$).*/,'$1'));
-	//} else {
-		//options.lineRegExp = ".";
-	//}
-
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
 			options.dir = '/'+options.dir;
 	    }
-	    if (options.dir[options.dir.length-1]!=='/'){
-			options.dir = options.dir+'/';
+	    if (options.dir[options.dir.length-1] !== '/'){
+			options.dir = options.dir + '/';
 	    }
 	}
 	
-	console.log(options);
+	if (debug) console.log(options);
+	
 	return options;
 }
 
@@ -641,13 +553,9 @@ function parseSource(req) {
     var prefix = req.body.prefix || req.query.prefix;
 
     var template   = req.body.template || req.query.template;
-    console.log(req.body)
-    console.log(req.query)
-    //template = decodeURIComponent(template);
     
-    
-    if (debug) console.log("temp---" + template);
-    if (debug) console.log("---" + source);
+    if (debug) console.log("template: " + template);
+    if (debug) console.log("source: " + source);
 
     var timeRange  = req.body.timeRange  || req.query.timeRange;
 	var indexRange = req.body.indexRange || req.query.indexRange;
@@ -667,12 +575,10 @@ function parseSource(req) {
 			options.start = timeRange.split("/")[0];
 			options.stop  = timeRange.split("/")[1];
 			options.debug = debug;
-			if (debug)
-			    console.log(options);
-			//eval("sourcet = expandtemplate(options)");
+			if (debug) console.log(options);
 			sourcet = expandtemplate(options);
 			if (debug) {
-				console.log("sourcet=");
+				console.log("sourcet = ");
 			    console.log(sourcet);
 			}
 		}
@@ -681,7 +587,6 @@ function parseSource(req) {
 			options.start = indexRange.split("/")[0];
 			options.stop  = indexRange.split("/")[1];
 			options.debug = debug;
-			//eval("sourcet = sourcet.concat(expandtemplate(options))");
 			sourcet = sourcet.concat(expandtemplate(options));
 		}
 	}
