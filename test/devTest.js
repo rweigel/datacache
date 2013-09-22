@@ -341,6 +341,158 @@ function(cb){
 		});
 	})
 },
+function(cb){
+	suite("request with more than 1 URLs", function(test, testInfo, suiteDone){
+		request({
+			uri: server + "sync?source=http://www.google.com\nhttp://www.yahoo.com&extractData=$(\"a\").text()&return=stream&forceUpdate=true",
+			timeout: 1000
+		}, function(err, res, body){
+			testInfo("err", err);
+			testInfo("res", res);
+			testInfo("body", body);
+
+			test("request should succeed", function(){
+				assert( !err );
+			});
+
+			test("status code should be 200", function(){
+				assert(res);
+				assert.equal(res.statusCode, 200);
+			});
+
+			test("response should have the correct content", function(){
+				assert(body.indexOf("Google") > -1, "should have content from google");
+				assert(body.indexOf("Yahoo") > -1, "should have content from Yahoo");
+			});
+
+			suiteDone();
+			cb();
+		});
+	})
+},
+function(cb){
+	suite("request with prefix", function(test, testInfo, suiteDone){
+		request({
+			uri: server + "sync?prefix=http://www.google.com/&source=webhp\nintl/en/about/&extractData=$(\"a\").text()&return=stream&forceUpdate=true",
+			timeout: 1000
+		}, function(err, res, body){
+			testInfo("err", err);
+			testInfo("res", res);
+			testInfo("body", body);
+
+			test("request should succeed", function(){
+				assert( !err );
+			});
+
+			test("status code should be 200", function(){
+				assert(res);
+				assert.equal(res.statusCode, 200);
+			});
+
+			test("response should have the correct content", function(){
+				assert(body.indexOf("Google") > -1, "should have content from google");
+				assert(body.indexOf("philosophy") > -1, "should have content from google's about page");
+			});
+
+			suiteDone();
+			cb();
+		});
+	})
+},
+function(cb){
+	suite("request with template and timeRange", function(test, testInfo, suiteDone){
+		request({
+			uri: server + "sync?template=http://datacache.org/dc/demo/file$Y$m$d.txt&timeRange=1999-01-01/1999-01-03",
+			timeout: 1000
+		}, function(err, res, body){
+			testInfo("err", err);
+			testInfo("res", res);
+			testInfo("body", body);
+
+			test("request should succeed", function(){
+				assert( !err );
+			});
+
+			test("status code should be 200", function(){
+				assert(res);
+				assert.equal(res.statusCode, 200);
+			});
+
+			test("response should have the correct content", function(){
+				var result = JSON.parse(body);
+				assert(result.length === 2);
+				assert(result[0].url === "http://datacache.org/dc/demo/file19990101.txt");
+				assert(result[1].url === "http://datacache.org/dc/demo/file19990102.txt");
+			});
+
+			suiteDone();
+			cb();
+		});
+	})
+},
+function(cb){
+	suite("request with template and indexRange", function(test, testInfo, suiteDone){
+		request({
+			uri: server + "sync?template=http://datacache.org/dc/demo/file%d.txt&indexRange=1/2",
+			timeout: 1000
+		}, function(err, res, body){
+			testInfo("err", err);
+			testInfo("res", res);
+			testInfo("body", body);
+
+			test("request should succeed", function(){
+				assert( !err );
+			});
+
+			test("status code should be 200", function(){
+				assert(res);
+				assert.equal(res.statusCode, 200);
+			});
+
+			test("response should have the correct content", function(){
+				var result = JSON.parse(body);
+				assert(result.length === 2);
+				assert(result[0].url === "http://datacache.org/dc/demo/file1.txt");
+				assert(result[1].url === "http://datacache.org/dc/demo/file2.txt");
+			});
+
+			suiteDone();
+			cb();
+		});
+	})
+},
+function(cb){
+	suite("request with lineRegExp", function(test, testInfo, suiteDone){
+		request({
+			uri: server + "sync?source=http://localhost:8000/test/data/stream.txt&return=json&lineRegExp=^[0-9].*&includeData=true&forceUpdate=true",
+			timeout: 1000
+		}, function(err, res, body){
+			testInfo("err", err);
+			testInfo("res", res);
+			testInfo("body", body);
+
+			test("request should succeed", function(){
+				console.log(err);
+				assert( !err );
+			});
+
+			test("status code should be 200", function(){
+				assert(res);
+				assert.equal(res.statusCode, 200);
+			});
+
+			test("response should have the correct content", function(){
+				console.log("body", body)
+				assert(body.indexOf("1 2 3") > -1);
+				assert(body.indexOf("a b c") == -1);
+				assert(body.indexOf("4 5 6") > -1);
+			});
+
+			suiteDone();
+			cb();
+		});
+	})
+},
 function(){
 	logger.i("\n" + simpleReporter(runner.results));
 	logger.i("Dev Tests finished.");

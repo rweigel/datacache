@@ -9,3 +9,6 @@ Details:\n\n
 {{#if error}}		Failed: {{{name}}} ({{duration}}ms)	{{message}}	expected:{{expected}}	actual:{{actual}}\n{{/if}}
 {{/each}}
 {{/each}}
+Test results:\n 
+ {{passedSuitesCount}} suites passed, {{failedSuitesCount}} suites failed.\n
+Details:\n\n

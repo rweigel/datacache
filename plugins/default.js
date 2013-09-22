@@ -109,7 +109,7 @@ exports.extractData = function (body, options) {
 			document: window.document,
 			out: body,
 			body: body,
-			lineRegExp: options.lineRegExp
+			lineRegExp: new RegExp(options.lineRegExp)
 		});
 	} catch(e) {
 		logger.d("Error in trying to eval options.extractData: ", e, options.extractData);
