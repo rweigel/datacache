@@ -7,7 +7,9 @@ var localeval = require("localeval");
 var jsdom = require("jsdom");
 var jquery = require("jquery");
 
-exports.name  = "_httpdemo";
+exports.name  = "default";
+exports.version = "1.0.0";
+
 exports.match = function (url) {return false;}
 
 exports.preprocess = function (work, callback) {callback(false, work)};
@@ -93,16 +95,42 @@ exports.process = function (work, callback) {
 
 exports.extractDataBinary = function (body, options) {return "";};
 
+exports.extractSignature = function (options) {
+	var version = "1.0.0" 
+	if (options.lineFormatter !== "") {
+		return lineFormatter.extractSignature(options);
+		//return lineFormatter.extractSignature(options)+version.split(".")[0];
+	} else {
+		return "";
+	}
+}
+
 exports.extractData = function (body, options) {
+
+	var lineRegExp = options.lineRegExp;
+
+	//console.log("lineformatter: " + options.lineFormatter)
+	if (options.lineFormatter !== "") {
+		var lineFormatter = require(__dirname + "/" + options.lineFormatter + ".js");
+	}
+	
+	// TODO: Need to allow access to lineFormatter in window object so
+	// || options.lineFormatter !== "" is not needed.
+	//if (options.unsafeEval) {
+	if (options.unsafeEval || options.lineFormatter !== "") {
+		return eval(options.extractData);
+	}
+
 	var window
 	var $;
 	try {
 		window = jsdom.jsdom(body).createWindow();
 		$ = jquery.create(window);	
-	} catch(e){
-		logger.d("Error in trying to parse data as html, probably it is not in valid html format");
+	} catch(e) {
+		logger.d("Error when trying to parse data as html, probably it is not in valid html format.");
 	}
 
+	//console.log("lineRegExp: " + options.lineRegExp)
 	try {
 		return localeval(options.extractData, {
 			$: $,
@@ -113,7 +141,7 @@ exports.extractData = function (body, options) {
 		});
 	} catch(e) {
 		logger.d("Error in trying to eval options.extractData: ", e, options.extractData);
-		return "Error occurred while extracting data";
+		return "Error occurred while extracting data\n";
 	}
 };
 
