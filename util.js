@@ -336,8 +336,7 @@ var writeCache = function(work, callback){
 				finish();finish();finish();finish();finish();finish();
 				return;
 			}
-			console.log("work.data.length:")
-			console.log(work.data.length)
+			//console.log("work.data.length: "+work.data.length)
 			fs.writeFile(filename+".data", work.data, finish);
 			fs.writeFile(filename+".bin", work.dataBinary, finish);
 			fs.writeFile(filename+".meta", work.meta, finish);
