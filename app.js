@@ -15,13 +15,14 @@ var request = require("request"),
 
 //var jsdom = require("jsdom");
 
+var lineReader = require('line-reader');
 var zlib = require('zlib');
 var qs = require('querystring');
 xutil = require('util');
 
 var expandtemplate = require("tsdset").expandtemplate;
 
-var debug = true;
+var debug = false;
 var debugstream = false;
 
 // Locking notes:
@@ -204,7 +205,7 @@ function handleRequest(req, res) {
 	    return;
 	}
 	//console.log('sync called');
-	console.log(options.id + " handleRequest called with source="+source)
+	if (debug) console.log(options.id + " handleRequest called with source="+source)
 	if (debug || debugstream) console.log(options.id + " handleRequest called with source="+source);
 	if (options.return === "stream") {
 		stream(source,options,res);
@@ -214,12 +215,12 @@ function handleRequest(req, res) {
 }
 
 app.get("/sync", function (req,res) {
-	console.log("GET")
+	if (debug) console.log("GET")
 	handleRequest(req,res);
 });
 
 app.post("/sync", function (req, res) {
-	console.log("POST")
+	if (debug) console.log("POST")
 	handleRequest(req,res);
 });
 
@@ -286,6 +287,7 @@ function syncsummary(source,options,res) {
 			// with message that no updates could be performed.
 			if (options.return === "json") {
 				res.contentType('application/json');
+				//console.log(results)
 				res.send(results);
 			} else if (options.return === "xml") {
 				res.contentType("text/xml");
@@ -359,10 +361,10 @@ function stream(source, options, res) {
 				logger.d("processwork: ", "error:", err, "fd:", fd, fd==undefined,  "readbytes:", options.streamFilterReadBytes, "readPosition:", options.streamFilterReadPosition);
 			    fs.read(fd, buffer, 0, options.streamFilterReadBytes, options.streamFilterReadPosition-1, 
 			    		function (err, bytesRead, buffer) {readcallback(err,buffer);fs.close(fd);})});
-		} else if (options.streamFilterReadLines > 0) {
+		} else if ( options.streamFilterReadLines > 0 || options.streamFilterReadColumns !== "0" ) {
 		    if (debugstream) console.log(rnd+" Reading Lines of "+ fname.replace(__dirname,""));
 			if (debugstream) console.log(rnd+" fs.exist: " + fs.existsSync(fname + ".data"));
-			readlines2(fname + ".data");
+			readline(fname + ".data");
 
 		} else {	
 		    if (debugstream) console.log(rnd+" Reading File");	
@@ -375,27 +377,43 @@ function stream(source, options, res) {
 		var lr = 0; // Lines read.
 		var k = 1;  // Lines kept.
 
-		function readlines2(fname) {	
-			var lineReader = require('line-reader');
+		function readline(fname) {	
 			lineReader.eachLine(fname, function(line, last) {
 
-				if (lr == 0) xlines = "";
+				var stopline = options.streamFilterReadLines;
+				if (options.streamFilterReadLines == 0) {
+					stopline = Infinity;
+				}
+				//var startline = options.streamFilterReadPosition;
+				//if (startline == 0) {startline = 1}
+				//console.log("here")
 				if (k >= options.streamFilterReadPosition) {				  		
-					if (lr == options.streamFilterReadLines) {	
-						console.log("Callback");
+					if (lr == stopline) {	
+						if (debugstream) console.log("readline: Callback");
 						readcallback("",lines);
 						lines = "";			  	
-						return false;
-						//cb(false); // stop reading
 					}
-					console.log("Lines: ");
-					console.log("lr = " + lr);
-					console.log(line);
+					if (debugstream) console.log("Lines: ");
+					if (debugstream) console.log("lr = " + lr);
+					if (debugstream) console.log(line);
+
+					if (options.streamFilterReadColumns !== "0") {
+						var outcolumns = options.streamFilterReadColumns.split(/,/);
+						//console.log(outcolumns)
+						linea = line.split(" ");
+						//console.log(linea)
+						line = "";
+						for (var z = 0;z < outcolumns.length; z++) {
+							line = line + linea[parseInt(outcolumns[z])-1] + " ";
+						}
+					}
+
+					line = line.substring(0,line.length-1);
 					lines = lines + line + "\n";
 					lr = lr + 1;
 				}
 				k = k+1;
-			});
+			}).then(function () {readcallback("",lines)});
 		}
 		
 		function readcallback(err, data) {
@@ -495,6 +513,10 @@ function parseOptions(req) {
 	function s2b(str) {if (str === "true") {return true} else {return false}}
 	function s2i(str) {return parseInt(str)}
 
+	// TODO: Copy req.body to req.query.
+	options.req = {};
+	options.req.query      = req.query;
+	
 	options.forceUpdate    = s2b(req.query.forceUpdate)    || s2b(req.body.forceUpdate)    || false
 	options.forceWrite     = s2b(req.query.forceWrite)     || s2b(req.body.forceWrite)     || false
 	options.maxTries       = s2i(req.query.maxTries)       || s2i(req.body.maxTries)       || 2;
@@ -503,23 +525,31 @@ function parseOptions(req) {
 	options.includeHeader  = s2b(req.query.includeHeader)  || s2b(req.body.includeHeader)  || false;
 	options.includeLstat   = s2b(req.query.includeLstat)   || s2b(req.body.includeLstat)   || false;
 	options.includeVers    = s2b(req.query.includeVers)    || s2b(req.body.includeVers)    || false;
-	options.plugin         = req.query.plugin              || req.body.plugin              || "";
-	options.return         = req.query.return              || req.body.return             || "json";
+	options.return         = req.query.return              || req.body.return              || "json";
 	options.dir            = req.query.dir                 || req.body.dir                 || "/cache/";
+
+	options.plugin         = req.query.plugin        || req.body.plugin        || "default";
+	options.lineRegExp     = req.query.lineRegExp    || req.body.lineRegExp    || ".";	
+	options.lineFormatter  = req.query.lineFormatter || req.body.lineFormatter || "";
+	
+	if (options.lineFormatter === "") {
+		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){return line.search(lineRegExp)!=-1;}";
+		options.extractData = req.query.extractData  || req.body.extractData   || 'body.toString().split("\\n").filter('+options.lineFilter+').join("\\n") +"\\n"';	
+	} else {
+		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){if (line.search(lineRegExp) != -1) return lineFormatter.formatLine(line,options);}"
+		options.extractData = '(body.toString().split("\\n").map(function(line){if (line.search(lineRegExp) != -1) {return lineFormatter.formatLine(line,options);}}).join("\\n")+"\\n").replace(/^\\n+/,"").replace(/\\n\\n+/g,"\\n")';
+	}
+
+	if (req.query.lineRegExp || req.body.lineRegExp || req.query.extractData || req.body.extractData) {
+		options.unsafeEval = false;
+	} else {
+		options.unsafeEval = true;
+	}
+
+	//console.log("lineRegExp: " + options.lineRegExp)
 	options.streamGzip     = s2b(req.query.streamGzip)     || s2b(req.body.streamGzip)     || false;
 	options.streamFilter   = req.query.streamFilter        || req.body.streamFilter        || "";
-	options.lineRegExp     = req.query.lineRegExp          || req.body.lineRegExp          || ".";
-	
-	options.lineFormatter  = req.query.lineFormatter       || req.body.lineFormatter    || "";
 
-	if (options.lineFormatter === "") {
-		options.lineFilter  = req.query.lineFilter          || req.body.lineFilter          || "function(line){return line.search(lineRegExp)!=-1;}";
-	} else {
-		lineFormatter = require(___dirname + "/plugins/" + options.LineFormatter + ".js")
-		options.lineFilter  = req.query.lineFilter          || req.body.lineFilter          || "function(line){if (line.search(lineRegExp) != -1) return lineFormatter.formatLine(line,req);"
-	}
-	
-	options.extractData    = req.query.extractData         || req.body.extractData         || 'body.toString().split("\\n").filter('+options.lineFilter+').join("\\n") +"\\n";';	
 	options.streamOrder    = req.query.streamOrder         || req.body.streamOrder         || "true";
 	options.streamOrder    = s2b(options.streamOrder);
 
@@ -532,7 +562,8 @@ function parseOptions(req) {
 	options.streamFilterReadBytes    = s2i(req.query.streamFilterReadBytes)    || s2i(req.body.streamFilterReadBytes)    || 0;
 	options.streamFilterReadLines    = s2i(req.query.streamFilterReadLines)    || s2i(req.body.streamFilterReadLines)    || 0;
 	options.streamFilterReadPosition = s2i(req.query.streamFilterReadPosition) || s2i(req.body.streamFilterReadPosition) || 1;
-
+	options.streamFilterReadColumns  = req.query.streamFilterReadColumns       || req.body.streamFilterReadColumns       || "0";
+	
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
 			options.dir = '/'+options.dir;
