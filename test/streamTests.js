@@ -3,7 +3,7 @@
 // node streamTests.js false
 //   runs all tests with sync=false (each test is run N times async, then next test is run).
 // node streamTests.js {true,false} #
-//   runs test number # only (0-10)
+//   runs test number #
 
 tn = parseInt(process.argv[3]) || 0; // Test Number
 
@@ -55,6 +55,7 @@ function checkmd5(j,k,sync,all) {
 		child = exec(command(j,k), function (error, stdout, stderr) {
 			checkmd5.completed[j] = checkmd5.completed[j]+1;
 			console.log(k + " " + stdout.substring(0,32));
+			
 			if (tests[j].md5 !== stdout.substring(0,32)) {
 				console.log("Error")
 				//diff(fname,"data-stream/out." + j + ".0");
