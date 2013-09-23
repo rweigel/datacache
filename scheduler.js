@@ -174,6 +174,10 @@ function newWork(url, options, callback){
 	} else {
 		plugin = plugins.find(function(d){ return d.match(url);}) || defaultPlugin;
 	}
+
+	var extractSignature = "";
+	if (plugin.extractSignature) extractSignature = plugin.extractSignature(options);
+
 	var work = {
 		id: util.getId(),
 		plugin : plugin,
@@ -181,7 +185,7 @@ function newWork(url, options, callback){
 		options : options ? options : {},
 		dataMd5 : "",
 		dataLength : -1,
-		urlMd5 : util.md5(url),
+		urlMd5 : util.md5(url+extractSignature),
 		time: 0,
 		data: "",
 		header: {},
