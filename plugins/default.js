@@ -113,13 +113,6 @@ exports.extractData = function (body, options) {
 	if (options.lineFormatter !== "") {
 		var lineFormatter = require(__dirname + "/" + options.lineFormatter + ".js");
 	}
-	
-	// TODO: Need to allow access to lineFormatter in window object so
-	// || options.lineFormatter !== "" is not needed.
-	//if (options.unsafeEval) {
-	if (options.unsafeEval || options.lineFormatter !== "") {
-		return eval(options.extractData);
-	}
 
 	var window
 	var $;
@@ -137,7 +130,8 @@ exports.extractData = function (body, options) {
 			document: window.document,
 			out: body,
 			body: body,
-			lineRegExp: new RegExp(options.lineRegExp)
+			lineRegExp: new RegExp(options.lineRegExp),
+			lineFormatter: lineFormatter
 		});
 	} catch(e) {
 		logger.d("Error in trying to eval options.extractData: ", e, options.extractData);
