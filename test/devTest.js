@@ -21,7 +21,7 @@ function(cb){
 	suite("Should be success for a valid URL", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "sync?source=http://www.google.com",
-			timeout: 1000
+			timeout: 10000
 		}, function(err, res, body){
 			// Add info to runner.results
 			testInfo("err", err);
@@ -55,7 +55,7 @@ function(cb){
 	suite("Should handle an invalid URL gracefully", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "sync/?source=http://www.notexist.forever",
-			timeout: 1000
+			timeout: 10000
 		}, function(err, res, body){
 			// Add info to runner.results
 			testInfo("err", err);
@@ -89,7 +89,7 @@ function(cb){
 	suite("Should not crash with an invalid URL and includeData=true", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "sync?source=http://www.notexist.forever&includeData=true",
-			timeout: 1000
+			timeout: 10000
 		}, function(err, res, body){
 			// Add info to runner.results
 			testInfo("err", err);
@@ -123,7 +123,7 @@ function(cb){
 	suite("Should not crash with an 404 URL and return=stream", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "sync?source=http://www.google.com/404&return=stream",
-			timeout: 1000
+			timeout: 10000
 		}, function(err, res, body){
 			// Add info to runner.results
 			testInfo("err", err);
@@ -148,7 +148,7 @@ function(cb){
 	suite("Should not halt with an invalid domain name and return=stream", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "sync?source=http://www.notexist.forever&return=stream",
-			timeout: 1000
+			timeout: 10000
 		}, function(err, res, body){
 			// Add info to runner.results
 			testInfo("err", err);
@@ -173,7 +173,7 @@ function(cb){
 	suite("Should not return only partial data with return=stream", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "sync?source=http://www.google.com&return=stream&forceUpdate=true",
-			timeout: 1000
+			timeout: 10000
 		}, function(err, res, body){
 			// Add info to runner.results
 			testInfo("err", err);
@@ -260,7 +260,7 @@ function(cb){
 	suite("Request an inexist file in zip with return=json", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "sync?source="+server+"test/data/test.zip/INEXIST.txt&return=json&forceUpdate=true",
-			timeout: 1000
+			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
 			testInfo("res", res);
@@ -289,7 +289,7 @@ function(cb){
 	suite("Request an inexist file in zip with return=stream", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "sync?source="+server+"test/data/test.zip/INEXIST.txt&return=stream&forceUpdate=true",
-			timeout: 1000
+			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
 			testInfo("res", res);
@@ -317,7 +317,7 @@ function(cb){
 	suite("request with extractData", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "sync?source=http://www.google.com&extractData=$(\"a\").text()&return=stream&forceUpdate=true",
-			timeout: 1000
+			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
 			testInfo("res", res);
@@ -345,7 +345,7 @@ function(cb){
 	suite("request with more than 1 URLs", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "sync?source=http://www.google.com\nhttp://www.yahoo.com&extractData=$(\"a\").text()&return=stream&forceUpdate=true",
-			timeout: 1000
+			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
 			testInfo("res", res);
@@ -374,7 +374,7 @@ function(cb){
 	suite("request with prefix", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "sync?prefix=http://www.google.com/&source=webhp\nintl/en/about/&extractData=$(\"a\").text()&return=stream&forceUpdate=true",
-			timeout: 1000
+			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
 			testInfo("res", res);
@@ -403,7 +403,7 @@ function(cb){
 	suite("request with template and timeRange", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "sync?template=http://datacache.org/dc/demo/file$Y$m$d.txt&timeRange=1999-01-01/1999-01-03",
-			timeout: 1000
+			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
 			testInfo("res", res);
@@ -434,7 +434,7 @@ function(cb){
 	suite("request with template and indexRange", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "sync?template=http://datacache.org/dc/demo/file%d.txt&indexRange=1/2",
-			timeout: 1000
+			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
 			testInfo("res", res);
@@ -465,7 +465,7 @@ function(cb){
 	suite("request with lineRegExp", function(test, testInfo, suiteDone){
 		request({
 			uri: server + "sync?source=http://localhost:8000/test/data/stream.txt&return=json&lineRegExp=^[0-9].*&includeData=true&forceUpdate=true",
-			timeout: 1000
+			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
 			testInfo("res", res);
