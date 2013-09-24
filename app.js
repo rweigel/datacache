@@ -528,7 +528,7 @@ function parseOptions(req) {
 	options.return         = req.query.return              || req.body.return              || "json";
 	options.dir            = req.query.dir                 || req.body.dir                 || "/cache/";
 
-	options.plugin         = req.query.plugin        || req.body.plugin        || "default";
+	options.plugin         = req.query.plugin        || req.body.plugin        || "";
 	options.lineRegExp     = req.query.lineRegExp    || req.body.lineRegExp    || ".";	
 	options.lineFormatter  = req.query.lineFormatter || req.body.lineFormatter || "";
 	
