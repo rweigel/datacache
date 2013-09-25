@@ -540,7 +540,7 @@ function parseOptions(req) {
 		options.extractData = '(body.toString().split("\\n").map(function(line){if (line.search(lineRegExp) != -1) {return lineFormatter.formatLine(line,options);}}).join("\\n")+"\\n").replace(/^\\n+/,"").replace(/\\n\\n+/g,"\\n")';
 	}
 
-	if (req.query.lineRegExp || req.body.lineRegExp || req.query.extractData || req.body.extractData) {
+	if (req.query.extractData || req.body.extractData || req.query.LineFilter || req.body.LineFilter) {
 		options.unsafeEval = false;
 	} else {
 		options.unsafeEval = true;
