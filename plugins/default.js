@@ -96,10 +96,9 @@ exports.process = function (work, callback) {
 exports.extractDataBinary = function (body, options) {return "";};
 
 exports.extractSignature = function (options) {
-	var version = "1.0.0" 
 	if (options.lineFormatter !== "") {
+	    var lineFormatter = require(__dirname + "/" + options.lineFormatter + ".js");
 		return lineFormatter.extractSignature(options);
-		//return lineFormatter.extractSignature(options)+version.split(".")[0];
 	} else {
 		return "";
 	}
@@ -109,16 +108,13 @@ exports.extractData = function (body, options) {
 
 	var lineRegExp = options.lineRegExp;
 
-	//console.log("lineformatter: " + options.lineFormatter)
 	if (options.lineFormatter !== "") {
 		var lineFormatter = require(__dirname + "/" + options.lineFormatter + ".js");
 	}
 	
-	// TODO: Need to allow access to lineFormatter in window object so
-	// || options.lineFormatter !== "" is not needed.
-	//if (options.unsafeEval) {
-	if (options.unsafeEval || options.lineFormatter !== "") {
-		return eval(options.extractData);
+	if (options.unsafeEval) {
+	    //console.log("Using unsafe eval");
+	    return eval(options.extractData);
 	}
 
 	var window
@@ -132,14 +128,18 @@ exports.extractData = function (body, options) {
 
 	//console.log("lineRegExp: " + options.lineRegExp)
 	try {
+	        //console.log("Using safe eval");
 		return localeval(options.extractData, {
 			$: $,
 			document: window.document,
 			out: body,
 			body: body,
-			lineRegExp: new RegExp(options.lineRegExp)
+		        lineRegExp: new RegExp(options.lineRegExp),
+		    lineFormatter: lineFormatter,
+		    options: options
 		});
 	} catch(e) {
+		console.log("Error in trying to eval options.extractData: ", e, options.extractData);
 		logger.d("Error in trying to eval options.extractData: ", e, options.extractData);
 		return "Error occurred while extracting data\n";
 	}
