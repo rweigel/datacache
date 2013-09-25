@@ -1,6 +1,4 @@
 cache/
-cache
-log
 test/data-stream/
 node_modules/
 *.log
