@@ -110,7 +110,20 @@ tests[j].md5  = "4dcc638a9d40bdf4f4c1c6d38ecfa979";
 
 j = j+1;
 tests[j]      = {};
-tests[j].url  = server + "sync?source=http://datacache.org/dc/demo/file1.txt&return=stream&lineFormatter=formattedTime&lineRegExp=^[0-9]&timeformat=DD-MM-YYYY,HH:mm:ss.SSS&timecols=1,2&streamFilterReadColumns=1,2,3,4,5&forceUpdate=true&forceWrite=true&streamFilterReadPosition=360&streamFilterReadLines=1";
+tests[j].url  = server + "sync?source=http://datacache.org/dc/demo/file1.txt&return=stream&lineFormatter=formattedTime&lineRegExp=^[0-9]&timeformat=DD-MM-YYYY,HH:mm:ss.SSS&timecolumns=1,2&streamFilterReadColumns=1,2,3,4,5&forceUpdate=true&forceWrite=true&streamFilterReadPosition=360&streamFilterReadLines=1&outformat=1";
 tests[j].n    = n || 50;
-tests[j].md5  = "6e6f9f545e1e4a9db5e3bea91609b4e5";
+tests[j].md5  = "6268ce43522b7aed0430f60ce70cc336";
+
+j = j+1;
+tests[j]      = {};
+tests[j].url  = server + "sync?source=http://datacache.org/dc/demo/file1.txt&return=stream&lineFormatter=formattedTime&lineRegExp=^[0-9]&timeformat=DD-MM-YYYY,HH:mm:ss.SSS&timecolumns=1,2&streamFilterReadColumns=1,2,3,4,5,6&forceUpdate=true&forceWrite=true&streamFilterReadPosition=360&streamFilterReadLines=1&outformat=0";
+tests[j].n    = n || 50;
+tests[j].md5  = "755c81782ceb9bf9a391daee92ee2396";
+
+j = j+1;
+tests[j]      = {};
+tests[j].url  = server + "sync?source=http://datacache.org/dc/demo/file1.txt&return=stream&lineFormatter=formattedTime&lineRegExp=^[0-9]&timeformat=DD-MM-YYYY,HH:mm:ss.SSS&timecolumns=1,2&streamFilterReadColumns=1,2,3,4,5,6&forceUpdate=true&forceWrite=true&streamFilterReadPosition=360&streamFilterReadLines=1&outformat=0";
+tests[j].n    = n || 50;
+tests[j].md5  = "755c81782ceb9bf9a391daee92ee2396";
+
 

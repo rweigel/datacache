@@ -39,7 +39,7 @@ function runtest(j) {
 		if (sync) {
 			checkmd5(j,0,true,all);
 		} else {
-			for (k = 0;k < tests[j].n;k++) {
+			for (k = 1;k < tests[j].n+1;k++) {
 				checkmd5(j,k,false,all);
 			}
 		}		
@@ -57,8 +57,8 @@ function checkmd5(j,k,sync,all) {
 			console.log(k + " " + stdout.substring(0,32));
 			
 			if (tests[j].md5 !== stdout.substring(0,32)) {
-				console.log("Error")
-				//diff(fname,"data-stream/out." + j + ".0");
+				console.log("Error.  Response changed from last request.")
+				diff("data-stream/out." + j + ".0","data-stream/out." + j + "." + k);
 			}
 			if (sync == true && k < tests[j].n-1) {					
 				checkmd5(j,k+1,true,all);
@@ -94,7 +94,9 @@ function command(j,k) {
 }
 function diff(f1,f2) {
 		child = exec('diff ' + f1 + ' ' + f2, function (error, stdout, stderr) {
-			console.log("difference between " + f1 + " and " + f2 + ": ");
-			console.log(stdout);
+			if (stdout.length > 0) {
+				console.log("difference between " + f1 + " and " + f2 + ": ");
+				console.log(stdout);
+			}
 		});
 }

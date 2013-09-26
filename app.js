@@ -22,8 +22,8 @@ xutil = require('util');
 
 var expandtemplate = require("tsdset").expandtemplate;
 
-var debug = false;
-var debugstream = false;
+var debug = true;
+var debugstream = true;
 
 // Locking notes:
 // Each time a file is being streamed, a stream counter is incremented for the file.
@@ -74,7 +74,7 @@ var port = process.argv[2] || 8000;
 		old.call(app, route, function(req, res){
 			var d = domain.create();
 			d.on('error', function(err){
-				res.send(500, "Internal Servel Error.");
+				res.send(500, "");
 
 				//TODO: needs a better error handling, like let other works in the queue finish before closing the server. 
 
@@ -193,7 +193,7 @@ app.post("/async", function (req, res) {
 function handleRequest(req, res) {
 	var options = parseOptions(req);
 	var source  = parseSource(req);
-	options.id  = Math.random().toString().substring(1,5) 
+	options.id  = Math.random().toString().substring(1) 
 
 	// Compress response if headers accept it and streamGzip is not requested.
 	if (!options.streamGzip) 	
@@ -205,8 +205,8 @@ function handleRequest(req, res) {
 	    return;
 	}
 	//console.log('sync called');
-	if (debug) console.log(options.id + " handleRequest called with source="+source)
 	if (debug || debugstream) console.log(options.id + " handleRequest called with source="+source);
+
 	if (options.return === "stream") {
 		stream(source,options,res);
 	} else {
@@ -282,26 +282,41 @@ function streaminfo(results) {
 
 function syncsummary(source,options,res) {
 		
+	
 		scheduler.addURLs(source, options, function (results) {
 			// TODO: If forceUpdate=true and all updates failed, give error
 			// with message that no updates could be performed.
 			if (options.return === "json") {
 				res.contentType('application/json');
-				//console.log(results)
 				res.send(results);
+			} else if (options.return === "urilistflat") {
+				res.contentType("text/plain");
+				var ret = [];
+				for (var j = 0; j < results.length; j++) {
+					ret[j] = results[j].url;
+				}
+				res.send(ret.join("\n"));
+			} else if (options.return === "urilist") {
+				res.contentType("text/json");
+				var ret = [];
+				for (var j = 0; j < results.length; j++) {
+					ret[j] = results[j].url;
+				}
+				res.send(JSON.stringify(ret));
 			} else if (options.return === "xml") {
 				res.contentType("text/xml");
 				var ret = '<array>';
-				for (j = 0; j < results.length; j++) {
+				for (var j = 0; j < results.length; j++) {
 					ret = ret + whiskers.render("<element><url>{url}</url><urlMd5>{urlMd5}</urlMd5><dataLength>{dataLength}</dataLength><error>{error}</error></element>", results[j]);
 				}
 				ret = ret + "</array>";
-				res.send(results);
+				res.send(ret);
 			} else if (options.return === "jsons") {
 				res.contentType('application/json');
 				res.send(JSON.stringify(results));			
 			} else {
 				console.log("Unknown option");
+				res.send("");
 			}
 		});
 }
@@ -376,10 +391,13 @@ function stream(source, options, res) {
 		var lines  = '';
 		var lr = 0; // Lines read.
 		var k = 1;  // Lines kept.
-
+		var done = false;
+		
 		function readline(fname) {	
 			lineReader.eachLine(fname, function(line, last) {
 
+				if (done) return "";
+				
 				var stopline = options.streamFilterReadLines;
 				if (options.streamFilterReadLines == 0) {
 					stopline = Infinity;
@@ -391,11 +409,12 @@ function stream(source, options, res) {
 					if (lr == stopline) {	
 						if (debugstream) console.log("readline: Callback");
 						readcallback("",lines);
-						lines = "";			  	
+						lines = "";
+						done = true;
 					}
-					if (debugstream) console.log("Lines: ");
-					if (debugstream) console.log("lr = " + lr);
-					if (debugstream) console.log(line);
+					//if (debugstream) console.log("Lines: ");
+					//if (debugstream) console.log("lr = " + lr);
+					//if (debugstream) console.log(line);
 
 					if (options.streamFilterReadColumns !== "0") {
 						var outcolumns = options.streamFilterReadColumns.split(/,/);
@@ -413,7 +432,7 @@ function stream(source, options, res) {
 					lr = lr + 1;
 				}
 				k = k+1;
-			}).then(function () {readcallback("",lines)});
+			}).then(function () {if (!done) readcallback("",lines)});
 		}
 		
 		function readcallback(err, data) {
@@ -615,9 +634,11 @@ function parseSource(req) {
 		}
 		if (indexRange) {
 			options.type  = "sprintf";
+			console.log(indexRange)
 			options.start = indexRange.split("/")[0];
 			options.stop  = indexRange.split("/")[1];
 			options.debug = debug;
+			if (debug) console.log(options);
 			sourcet = sourcet.concat(expandtemplate(options));
 		}
 	}
