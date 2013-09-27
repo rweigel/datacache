@@ -22,7 +22,7 @@ exports.formatLine = function (line, options) {
 	var timecolumns = options.req.query.timecolumns || 1;
 	var outformat   = options.req.query.outformat || "0";
 
-	timeformat       = timeformat.replace("yyyy","YYYY").replace("yy","YY").replace("DD",'dd');
+	timeformat       = timeformat.replace("yyyy","YYYY").replace("yy","YY").replace("DD",'dd').replace("S","SSS").replace("SS","SSS");
 	var timeformata  = timeformat.split(/,/);
 	var timecolumnsa = timecolumns.split(/,/);
 
