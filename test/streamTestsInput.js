@@ -1,27 +1,5 @@
 // Testing streamOrder, streamFilterReadLines, and streamFilterReadBytes 
 
-////////////////////////////////////////////////////////////////////////////
-// Simulated server
-// First two files are served without delay from 
-// Next three files are served with random delay between 0 and 100 ms.
-var n = 50;
-var prefix = "http://datacache.org/dc/test/data-stream/bou201308";
-
-// Mirror of real server.
-var n = 50;
-var prefix = "http://mag.gmu.edu/tmp/magweb.cr.usgs.gov/data/magnetometer/BOU/OneMinute/bou201308";
-
-// Real server
-var n = 10;
-var prefix = "http://magweb.cr.usgs.gov/data/magnetometer/BOU/OneMinute/bou201308";
-
-// Simulated server
-// First two files are served without delay from 
-// Next three files are served with random delay between 0 and 100 ms.
-var n = 20;
-var prefix = server + "test/data-stream/bou201308";
-////////////////////////////////////////////////////////////////////////////
-
 var args      = server + "sync?return=stream&forceUpdate=true&forceWrite=true&lineRegExp=^[0-9]";
 
 // Base test.
