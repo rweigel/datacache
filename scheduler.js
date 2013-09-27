@@ -107,8 +107,12 @@ function run() {
 		})		
 	}
 	if (worksQueue.length > 0) {
-	    logger.d("scheduler: delaying")
-	    setImmediate(run);
+	    logger.d("scheduler: delaying");
+	    if (typeof(setImmediate) !== "undefined") {
+	    	setImmediate(run);
+	    } else {
+	    	process.nextTick(run);
+	    }
 	}
 }
 
