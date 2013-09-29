@@ -24,7 +24,7 @@
     "localeval": "~13.6.10"
   },
   "scripts": {
-    "test": "node test/main.js"
+    "test": "./test/test.sh"
   },
   "devDependencies": {}
 }

@@ -496,5 +496,8 @@ function(cb){
 function(){
 	logger.i("\n" + simpleReporter(runner.results));
 	logger.i("Dev Tests finished.");
+	if(runner.results.failedSuitesCount > 0){
+		process.exit(1);
+	}
 }
 ]);
