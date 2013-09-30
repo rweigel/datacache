@@ -13,8 +13,6 @@ var request = require("request"),
 	whiskers = require("whiskers"),
 	domain = require("domain");
 
-//var jsdom = require("jsdom");
-
 var lineReader = require('line-reader');
 var zlib = require('zlib');
 var qs = require('querystring');
