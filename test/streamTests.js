@@ -32,7 +32,7 @@ if (process.argv.length == 2) {
 
 function runsuite(j) {
 	console.log("Executing " + testsuite[j])
-	var child = spawn("/usr/bin/node",testsuite[j].split(" "),{cwd:process.env.PWD});
+	var child = spawn("node",testsuite[j].split(" "),{cwd:process.env.PWD});
 	child.stdout.on('data',function (data) {console.log(data.toString().replace(/\n$/,""))});
 	child.stderr.on('data',function (data) {console.log(data.toString())});
 	child.stdout.on('close',function () {
