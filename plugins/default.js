@@ -134,7 +134,7 @@ exports.extractData = function (body, options) {
 			document: window.document,
 			out: body,
 			body: body,
-		        lineRegExp: new RegExp(options.lineRegExp),
+	        lineRegExp: new RegExp(options.lineRegExp),
 		    lineFormatter: lineFormatter,
 		    options: options
 		});

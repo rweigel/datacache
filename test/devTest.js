@@ -20,7 +20,7 @@ async.series([
 function(cb){
 	suite("Should be success for a valid URL", function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source=http://www.google.com",
+			uri: server + "sync?source=http://localhost:8000",
 			timeout: 10000
 		}, function(err, res, body){
 			// Add info to runner.results
@@ -122,7 +122,7 @@ function(cb){
 function(cb){
 	suite("Should not crash with an 404 URL and return=stream", function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source=http://www.google.com/404&return=stream",
+			uri: server + "sync?source=http://localhost:8000/404&return=stream",
 			timeout: 10000
 		}, function(err, res, body){
 			// Add info to runner.results
@@ -172,7 +172,7 @@ function(cb){
 function(cb){
 	suite("Should not return only partial data with return=stream", function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source=http://www.google.com&return=stream&forceUpdate=true",
+			uri: server + "sync?source="+server+"test/data/google.html&return=stream&forceUpdate=true",
 			timeout: 10000
 		}, function(err, res, body){
 			// Add info to runner.results
@@ -316,7 +316,7 @@ function(cb){
 function(cb){
 	suite("request with extractData", function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source=http://www.google.com&extractData=$(\"a\").text()&return=stream&forceUpdate=true",
+			uri: server + "sync?source="+server+"test/data/google.html&extractData=$(\"p\").text()&return=stream&forceUpdate=true",
 			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
@@ -333,7 +333,7 @@ function(cb){
 			});
 
 			test("response should have the correct content", function(){
-				assert(body.indexOf("Search")==0);
+				assert(body.indexOf("google")==0);
 			});
 
 			suiteDone();
@@ -344,7 +344,7 @@ function(cb){
 function(cb){
 	suite("request with more than 1 URLs", function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source=http://www.google.com\nhttp://www.yahoo.com&extractData=$(\"a\").text()&return=stream&forceUpdate=true",
+			uri: server + "sync?source="+server+"test/data/google.html\n"+server+"test/data/yahoo.html&extractData=$(\"p\").text()&return=stream&forceUpdate=true",
 			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
@@ -361,8 +361,8 @@ function(cb){
 			});
 
 			test("response should have the correct content", function(){
-				assert(body.indexOf("Google") > -1, "should have content from google");
-				assert(body.indexOf("Yahoo") > -1, "should have content from Yahoo");
+				assert(body.indexOf("google") > -1, "should have content from google");
+				assert(body.indexOf("yahoo") > -1, "should have content from Yahoo");
 			});
 
 			suiteDone();
@@ -373,7 +373,7 @@ function(cb){
 function(cb){
 	suite("request with prefix", function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?prefix=http://www.google.com/&source=webhp\nintl/en/about/&extractData=$(\"a\").text()&return=stream&forceUpdate=true",
+			uri: server + "sync?prefix="+server+"&source=test/data/google.html&extractData=$(\"p\").text()&return=stream&forceUpdate=true",
 			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
@@ -390,8 +390,7 @@ function(cb){
 			});
 
 			test("response should have the correct content", function(){
-				assert(body.indexOf("Google") > -1, "should have content from google");
-				assert(body.indexOf("philosophy") > -1, "should have content from google's about page");
+				assert(body.indexOf("google") > -1, "should have content from google");
 			});
 
 			suiteDone();
@@ -402,7 +401,7 @@ function(cb){
 function(cb){
 	suite("request with template and timeRange", function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?template=http://datacache.org/dc/demo/file$Y$m$d.txt&timeRange=1999-01-01/1999-01-03",
+			uri: server + "sync?template="+server+"test/data/file$Y$m$d.txt&timeRange=1999-01-01/1999-01-03",
 			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
@@ -421,8 +420,8 @@ function(cb){
 			test("response should have the correct content", function(){
 				var result = JSON.parse(body);
 				assert(result.length === 2);
-				assert(result[0].url === "http://datacache.org/dc/demo/file19990101.txt");
-				assert(result[1].url === "http://datacache.org/dc/demo/file19990102.txt");
+				assert(result[0].url === server+"test/data/file19990101.txt");
+				assert(result[1].url === server+"test/data/file19990102.txt");
 			});
 
 			suiteDone();
@@ -433,7 +432,7 @@ function(cb){
 function(cb){
 	suite("request with template and indexRange", function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?template=http://datacache.org/dc/demo/file%d.txt&indexRange=1/2",
+			uri: server + "sync?template="+server+"test/data/file%d.txt&indexRange=1/2",
 			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
@@ -452,8 +451,8 @@ function(cb){
 			test("response should have the correct content", function(){
 				var result = JSON.parse(body);
 				assert(result.length === 2);
-				assert(result[0].url === "http://datacache.org/dc/demo/file1.txt");
-				assert(result[1].url === "http://datacache.org/dc/demo/file2.txt");
+				assert(result[0].url === server+"test/data/file1.txt");
+				assert(result[1].url === server+"test/data/file2.txt");
 			});
 
 			suiteDone();
@@ -464,7 +463,7 @@ function(cb){
 function(cb){
 	suite("request with lineRegExp", function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source=http://localhost:8000/test/data/stream.txt&return=json&lineRegExp=^[0-9].*&includeData=true&forceUpdate=true",
+			uri: server + "sync?source="+server+"test/data/stream.txt&return=json&lineRegExp=^[0-9].*&includeData=true&forceUpdate=true",
 			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
@@ -496,5 +495,8 @@ function(cb){
 function(){
 	logger.i("\n" + simpleReporter(runner.results));
 	logger.i("Dev Tests finished.");
+	if(runner.results.failedSuitesCount > 0){
+		process.exit(1);
+	}
 }
 ]);
