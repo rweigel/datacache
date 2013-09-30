@@ -13,6 +13,7 @@ var request = require("request"),
 	whiskers = require("whiskers"),
 	domain = require("domain");
 
+var mkdirp  = require("mkdirp");
 var lineReader = require('line-reader');
 var zlib = require('zlib');
 var qs = require('querystring');
@@ -55,8 +56,9 @@ var util = require("./util.js");
 var logger = require("./logger.js");
 app.use(express.limit('4mb')); // Max POST size
 
-// Create cache dir if it does not exist.
+// Create cache and log dirs if they do not exist.
 if (!fs.existsSync(__dirname+"/cache")) {fs.mkdirSync(__dirname+"/cache");}
+if (!fs.existsSync(__dirname+"/log")) {fs.mkdirSync(__dirname+"/log");}
 if (!fs.existsSync(__dirname+"/cache/locks")) {fs.mkdirSync(__dirname+"/cache/locks");}
 
 // Get port number from command line option.
