@@ -3,15 +3,17 @@
 // Production server
 // Both servers using data from original data source 
 
+var N = 10;
+
 var testsuite = [
-                 "streamTests.js true 0 false 10 http://localhost:8000/ 1", 
-                 "streamTests.js false 0 false 10 http://localhost:8000/ 1",
-                 "streamTests.js true 0 false 10 http://localhost:8000/ 2",
-                 "streamTests.js false 0 false 10 http://localhost:8000/ 2",
-                 "streamTests.js true 0 true 10 http://datacache.org/dc/ 1",
-                 "streamTests.js false 0 true 10 http://datacache.org/dc/ 1",
-                 "streamTests.js true 0 true 10 http://datacache.org/dc/ 2",
-                 "streamTests.js false 0 true 10 http://datacache.org/dc/ 2"
+                 "streamTests.js true 0 false " + N + " http://localhost:8000/ 1", 
+                 "streamTests.js false 0 false " + N + " http://localhost:8000/ 1",
+                 "streamTests.js true 0 false " + N + " http://localhost:8000/ 2",
+                 "streamTests.js false 0 false " + N + " http://localhost:8000/ 2",
+                 "streamTests.js true 0 true " + N + " http://datacache.org/dc/ 1",
+                 "streamTests.js false 0 true " + N + " http://datacache.org/dc/ 1",
+                 "streamTests.js true 0 true " + N + " http://datacache.org/dc/ 2",
+                 "streamTests.js false 0 true " + N + " http://datacache.org/dc/ 2"
                  ];
 
 var fs      = require("fs");
@@ -27,7 +29,7 @@ var assertNot = runner.assertNot;
 
 if (process.argv.length == 2) {
 	runsuite(0);
-	return
+	return;
 }
 
 function runsuite(j) {
@@ -143,8 +145,9 @@ function command(j,k) {
 function diff(f1,f2) {
 		child = exec('diff ' + f1 + ' ' + f2, function (error, stdout, stderr) {
 			if (stdout.length > 0) {
-				console.log("difference between " + f1 + " and " + f2 + ": ");
-				console.log(stdout);
+				console.log("Writing to stdout");
+				console.error("difference between " + f1 + " and " + f2 + ":");
+				console.error(stdout);
 			}
 		});
 }

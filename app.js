@@ -21,9 +21,6 @@ xutil = require('util');
 
 var expandtemplate = require("tsdset").expandtemplate;
 
-var debug = true;
-var debugstream = true;
-
 // Locking notes:
 // Each time a file is being streamed, a stream counter is incremented for the file.
 // If the stream counter is non-zero, forceUpdate=true will not work as expected (and
@@ -63,6 +60,8 @@ if (!fs.existsSync(__dirname+"/cache/locks")) {fs.mkdirSync(__dirname+"/cache/lo
 
 // Get port number from command line option.
 var port = process.argv[2] || 8000;
+var debug = false;
+var debugstream = false;
 
 // Middleware
 
