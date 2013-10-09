@@ -53,18 +53,19 @@ var util = require("./util.js");
 var logger = require("./logger.js");
 app.use(express.limit('4mb')); // Max POST size
 
-// Create cache and log dirs if they do not exist.
+// Create cache dir if it does not exist.
 if (!fs.existsSync(__dirname+"/cache")) {fs.mkdirSync(__dirname+"/cache");}
-if (!fs.existsSync(__dirname+"/log")) {fs.mkdirSync(__dirname+"/log");}
 if (!fs.existsSync(__dirname+"/cache/locks")) {fs.mkdirSync(__dirname+"/cache/locks");}
+if (!fs.existsSync(__dirname+"/log")) {fs.mkdirSync(__dirname+"/log");}
 
 // Get port number from command line option.
-var port = process.argv[2] || 8000;
-var debug = false;
-var debugstream = false;
+var port          = process.argv[2] || 8000;
+var debugapp      = process.argv[3] || false;
+var debugstream   = process.argv[4] || false;
+var debugplugin   = process.argv[5] || false;
+var debugtemplate = process.argv[6] || false;
 
 // Middleware
-
 /* wrap app.VERB to handle exceptions: send 500 back to the client before crashing*/
 ["get", "post", "put"].forEach(function(verb){
 	var old = app[verb];
@@ -203,8 +204,8 @@ function handleRequest(req, res) {
 	    fs.readFile(__dirname+"/sync.htm", "utf8", function (err, data) {res.send(data);});
 	    return;
 	}
-	//console.log('sync called');
-	if (debug || debugstream) console.log(options.id + " handleRequest called with source="+source);
+
+	if (options.debugapp || options.debugstream) console.log(options.id + " handleRequest called with source="+source);
 
 	if (options.return === "stream") {
 		stream(source,options,res);
@@ -214,12 +215,12 @@ function handleRequest(req, res) {
 }
 
 app.get("/sync", function (req,res) {
-	if (debug) console.log("GET")
+	if (debugapp) console.log("GET")
 	handleRequest(req,res);
 });
 
 app.post("/sync", function (req, res) {
-	if (debug) console.log("POST")
+	if (debugapp) console.log("POST")
 	handleRequest(req,res);
 });
 
@@ -325,7 +326,6 @@ function syncsummary(source,options,res) {
 var reader = require ("buffered-reader");
 
 exports.stream = stream;
-stream.streamdebug   = debugstream;
 stream.streaming = {};
 
 function stream(source, options, res) {
@@ -340,12 +340,12 @@ function stream(source, options, res) {
 	reqstatus[rnd].dt       = 0;
 
 	var N = source.length;
-	if (debugstream) console.log(options.id+' stream called with ' + N + ' urls and options.streamOrder = '+options.streamOrder);
+	if (options.debugstream) console.log(options.id+' stream called with ' + N + ' urls and options.streamOrder = '+options.streamOrder);
 	if (options.streamOrder) {
 	    scheduler.addURL(source[0], options, function (work) {processwork(work,true)});
 	} else {
 	    for (var jj=0;jj<N;jj++) {
-	    		if (debugstream) console.log("Adding to scheduler: " + source[jj]);
+	    		if (options.debugstream) console.log("Adding to scheduler: " + source[jj]);
 			scheduler.addURL(source[jj], options, function (work) {processwork(work)});
 	    }
 	}
@@ -358,7 +358,7 @@ function stream(source, options, res) {
 			return res.end();
 		}
 
-		if (debugstream) console.log(rnd+" Stream locking " + fname.replace(__dirname,""));
+		if (options.debugstream) console.log(rnd+" Stream locking " + fname.replace(__dirname,""));
 
 		if (!stream.streaming[fname]) {
 			stream.streaming[fname] = 1;
@@ -367,21 +367,21 @@ function stream(source, options, res) {
 		}
 		
 		if (options.streamFilterReadBytes > 0) {
-		    if (debugstream) console.log(rnd+" Reading Bytes of "+ fname.replace(__dirname,""));
-		    if (debugstream) console.log(rnd+" Stream lock status " + stream.streaming[fname]);
+		    if (options.debugstream) console.log(rnd+" Reading Bytes of "+ fname.replace(__dirname,""));
+		    if (options.debugstream) console.log(rnd+" Stream lock status " + stream.streaming[fname]);
 			var buffer = new Buffer(options.streamFilterReadBytes);
-			if (debugstream) console.log(rnd+" fs.exist: " + fs.existsSync(fname + ".data"));
+			if (options.debugstream) console.log(rnd+" fs.exist: " + fs.existsSync(fname + ".data"));
 			fs.open(fname + ".data", 'r', function (err,fd) {
 				logger.d("processwork: ", "error:", err, "fd:", fd, fd==undefined,  "readbytes:", options.streamFilterReadBytes, "readPosition:", options.streamFilterReadPosition);
 			    fs.read(fd, buffer, 0, options.streamFilterReadBytes, options.streamFilterReadPosition-1, 
 			    		function (err, bytesRead, buffer) {readcallback(err,buffer);fs.close(fd);})});
 		} else if ( options.streamFilterReadLines > 0 || options.streamFilterReadColumns !== "0" ) {
-		    if (debugstream) console.log(rnd+" Reading Lines of "+ fname.replace(__dirname,""));
-			if (debugstream) console.log(rnd+" fs.exist: " + fs.existsSync(fname + ".data"));
+		    if (options.debugstream) console.log(rnd+" Reading Lines of "+ fname.replace(__dirname,""));
+			if (options.debugstream) console.log(rnd+" fs.exist: " + fs.existsSync(fname + ".data"));
 			readline(fname + ".data");
 
 		} else {	
-		    if (debugstream) console.log(rnd+" Reading File");	
+		    if (options.debugstream) console.log(rnd+" Reading File");	
 			// Should be no encoding if streamFilterBinary was given.
 			fs.readFile(fname + ".data", "utf8", readcallback);
 		}
@@ -406,14 +406,14 @@ function stream(source, options, res) {
 				//console.log("here")
 				if (k >= options.streamFilterReadPosition) {				  		
 					if (lr == stopline) {	
-						if (debugstream) console.log("readline: Callback");
+						if (options.debugstream) console.log("readline: Callback");
 						readcallback("",lines);
 						lines = "";
 						done = true;
 					}
-					//if (debugstream) console.log("Lines: ");
-					//if (debugstream) console.log("lr = " + lr);
-					//if (debugstream) console.log(line);
+					//if (options.debugstream) console.log("Lines: ");
+					//if (options.debugstream) console.log("lr = " + lr);
+					//if (options.debugstream) console.log(line);
 
 					if (options.streamFilterReadColumns !== "0") {
 						var outcolumns = options.streamFilterReadColumns.split(/,/);
@@ -436,13 +436,13 @@ function stream(source, options, res) {
 		
 		function readcallback(err, data) {
 		
-			if (debugstream) {
+			if (options.debugstream) {
 				console.log(rnd+" readcallback() called.  Un-stream locking " + fname.replace(__dirname,""));
 		    }		    
 		    stream.streaming[fname] = stream.streaming[fname] - 1;
 
 			function finished() {
-				if (debugstream) console.log(rnd+ " Incremening Nx from " + reqstatus[rnd].Nx + " to " + (reqstatus[rnd].Nx+1));
+				if (options.debugstream) console.log(rnd+ " Incremening Nx from " + reqstatus[rnd].Nx + " to " + (reqstatus[rnd].Nx+1));
 				reqstatus[rnd].Nx = reqstatus[rnd].Nx + 1;
 
 				if ((reqstatus[rnd].Nx < N) && (inorder)) {
@@ -450,19 +450,19 @@ function stream(source, options, res) {
 				}
 
 				if (N == reqstatus[rnd].Nx) {
-					if (debugstream) console.log(rnd+" N == reqstatus[rnd].Nx; Sending res.end().");
+					if (options.debugstream) console.log(rnd+" N == reqstatus[rnd].Nx; Sending res.end().");
 					res.end();
 				}
 			}
 								
 			if (err) {
-				if (debugstream) console.log(rnd+" readcallback was passed err: " + err);
+				if (options.debugstream) console.log(rnd+" readcallback was passed err: " + err);
 				return res.end();
 			}
 
 			if (!options.streamGzip) {
 				if (options.streamFilter === "") {
-					if (debugstream) console.log(rnd+" Writing response");
+					if (options.debugstream) console.log(rnd+" Writing response");
 					res.write(data);
 				} else {	
 					try {
@@ -490,8 +490,8 @@ function stream(source, options, res) {
 				if (options.streamFilter === "") {
 					zlib.gzip(data, function (err, buffer) {
 						reqstatus[rnd].dt = new Date()-tic;
-						if (debugstream) console.log(rnd+' gzip callback event');
-						if (debugstream) console.log(rnd+ " Writing compressed buffer");
+						if (options.debugstream) console.log(rnd+' gzip callback event');
+						if (options.debugstream) console.log(rnd+ " Writing compressed buffer");
 						res.write(buffer);
 						reqstatus[rnd].gzipping=reqstatus[rnd].gzipping-1;
 						finished();
@@ -499,7 +499,7 @@ function stream(source, options, res) {
 				} else {
 					// Not implemented.
 					var com = "data = " + data + "." + options.streamFilter;
-					//if (debugstream) console.log("Evaluating " + com);
+					//if (options.debugstream) console.log("Evaluating " + com);
 					try {
 						//eval(com);
 					} catch (err) {
@@ -549,6 +549,11 @@ function parseOptions(req) {
 	options.plugin         = req.query.plugin        || req.body.plugin        || "";
 	options.lineRegExp     = req.query.lineRegExp    || req.body.lineRegExp    || ".";	
 	options.lineFormatter  = req.query.lineFormatter || req.body.lineFormatter || "";
+
+	options.debugapp       = req.query.debugapp      || req.body.debugapp      || debugapp;
+	options.debugstream    = req.query.debugstream   || req.body.debugstream   || debugstream;
+	options.debugplugin    = req.query.debugplugin   || req.body.debugplugin   || debugplugin;
+	options.debugtemplate  = req.query.debugtemplate || req.body.debugtemplate || debugtemplate;
 	
 	if (options.lineFormatter === "") {
 		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){return line.search(lineRegExp)!=-1;}";
@@ -591,20 +596,22 @@ function parseOptions(req) {
 	    }
 	}
 	
-	if (debug) console.log(options);
+	if (debugapp) console.log(options);
 	
 	return options;
 }
 
 function parseSource(req) {
 
+	options = parseOptions(req);
+	
     var source = req.body.source || req.query.source || "";
     var prefix = req.body.prefix || req.query.prefix;
 
     var template   = req.body.template || req.query.template;
     
-    if (debug) console.log("template: " + template);
-    if (debug) console.log("source: " + source);
+    if (debugapp) console.log("template: " + template);
+    if (debugapp) console.log("source: " + source);
 
     var timeRange  = req.body.timeRange  || req.query.timeRange;
 	var indexRange = req.body.indexRange || req.query.indexRange;
@@ -617,16 +624,16 @@ function parseSource(req) {
 	    var options          = {};
 	    options.template = template;
 		options.check    = false;
-		options.debug    = debug;
+		options.debug    = options.debugtemplate;
 		options.side     = "server";
 		if (timeRange) {
 			options.type  = "strftime";
 			options.start = timeRange.split("/")[0];
 			options.stop  = timeRange.split("/")[1];
-			options.debug = debug;
-			if (debug) console.log(options);
+			options.debug = options.debugtemplate;
+			if (options.debugtemplate) console.log(options);
 			sourcet = expandtemplate(options);
-			if (debug) {
+			if (options.debugtemplate) {
 				console.log("sourcet = ");
 			    console.log(sourcet);
 			}
@@ -636,8 +643,8 @@ function parseSource(req) {
 			console.log(indexRange)
 			options.start = indexRange.split("/")[0];
 			options.stop  = indexRange.split("/")[1];
-			options.debug = debug;
-			if (debug) console.log(options);
+			options.debug = options.debugtemplate;
+			if (options.debugtemplate) console.log(options);
 			sourcet = sourcet.concat(expandtemplate(options));
 		}
 	}
@@ -646,8 +653,8 @@ function parseSource(req) {
 		source = source.trim().replace("\r", "").split(/[\r\n]+/).filter(function (line) {return line.trim() != "";});
 	}
 	
-	if (debug) console.log(sourcet);
-	if (debug) console.log(source);
+	if (options.debugapp) console.log(sourcet);
+	if (options.debugapp) console.log(source);
 
 	if ((sourcet.length > 0) && (source.length > 0)) {
 		source = source.concat(sourcet);
@@ -659,7 +666,7 @@ function parseSource(req) {
 	if (prefix)		    			
 		for (i = 0; i < source.length; i++) {source[i] = prefix + source[i];}
 
-	if (debug)
+	if (options.debugapp)
 	    console.log(source);
 	
 	return source;

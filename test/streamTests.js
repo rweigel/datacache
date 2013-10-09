@@ -3,13 +3,14 @@
 // Production server
 // Both servers using data from original data source 
 
-var N = 10;
+var N    = 10;
+var port = 7999;
 
 var testsuite = [
-                 "streamTests.js true 0 false " + N + " http://localhost:8000/ 1", 
-                 "streamTests.js false 0 false " + N + " http://localhost:8000/ 1",
-                 "streamTests.js true 0 false " + N + " http://localhost:8000/ 2",
-                 "streamTests.js false 0 false " + N + " http://localhost:8000/ 2",
+                 "streamTests.js true 0 false " + N + " http://localhost:"+port+"/ 1", 
+                 "streamTests.js false 0 false " + N + " http://localhost:"+port+"/ 1",
+                 "streamTests.js true 0 false " + N + " http://localhost:"+port+"/ 2",
+                 "streamTests.js false 0 false " + N + " http://localhost:"+port+"/ 2",
                  "streamTests.js true 0 true " + N + " http://datacache.org/dc/ 1",
                  "streamTests.js false 0 true " + N + " http://datacache.org/dc/ 1",
                  "streamTests.js true 0 true " + N + " http://datacache.org/dc/ 2",
@@ -27,6 +28,7 @@ var runner    = require("./lib/testRunner")();
 var suite     = runner.suite;
 var assertNot = runner.assertNot;
 
+console.log(port)
 if (process.argv.length == 2) {
 	runsuite(0);
 	return;
@@ -52,7 +54,7 @@ var sync    = s2b(process.argv[2] || "true");  				   // Do runs for test sequen
 var tn      = s2i(process.argv[3] || "0");     				   // Start test Number
 var all     = s2b(process.argv[4] || "true");  				   // Run all tests after start number
 var n       = s2i(process.argv[5] || "5");     				   // Number of runs per test
-var server  = process.argv[6]     || "http://localhost:8000/"; // DataCache server to test
+var server  = process.argv[6]     || "http://localhost:"+port+"/"; // DataCache server to test
 var server2 = s2i(process.argv[7] || "1");                     // Remote server to get data from
 
 ////////////////////////////////////////////////////////////////////////////

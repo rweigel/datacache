@@ -7,7 +7,7 @@ var cronJob = require("cron").CronJob,
 
 var logger = require("./lib/logger")();
 
-var port  = process.argv[2] || 8000;
+var server = process.argv[2] || "http://localhost:8000/";
 var server = "http://localhost:"+port+"/";
 
 logger.i("Dev Tests started.");

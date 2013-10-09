@@ -16,13 +16,16 @@ exports.extractSignature = function (options) {
 
 exports.formatLine = function (line, options) {
 
-	var debug = true;
+	var debug = options.debugplugin;
 	
 	var timeformat  = options.req.query.timeformat || "YYYY-MM-DDZHH:mm:ss.SSSZ";
 	var timecolumns = options.req.query.timecolumns || 1;
 	var outformat   = options.req.query.outformat || "0";
 
-	timeformat       = timeformat.replace("yyyy","YYYY").replace("yy","YY").replace("DD",'dd').replace("S","SSS").replace("SS","SSS");
+	timeformat       = timeformat.replace("yyyy","YYYY").replace("yy","YY").replace("DD",'dd').replace("S","SSS").replace("SS","SSS")
+	if (debug) console.log(timeformat);
+	if (debug) console.log(timecolumns);
+
 	var timeformata  = timeformat.split(/,/);
 	var timecolumnsa = timecolumns.split(/,/);
 
