@@ -4,7 +4,7 @@
 // Both servers using data from original data source 
 
 var N    = 10;
-var port = 7999;
+var port = 8000;
 
 var testsuite = [
                  "streamTests.js true 0 false " + N + " http://localhost:"+port+"/ 1", 
