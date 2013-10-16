@@ -168,20 +168,33 @@ function work2result(work) {
 
 }
 
-function newWork(url, options, callback){
-
+function getPlugin(options) {
 	var plugin;
 	if(options.plugin){
 		plugin = plugins.find(function (d) {
 			return d.name === options.plugin;
 		}) || defaultPlugin;
 	} else {
-		plugin = plugins.find(function(d){ return d.match(url);}) || defaultPlugin;
+		plugin = plugins.find(function(d){return d.match(url);}) || defaultPlugin;
 	}
+	return plugin;
+}
+exports.getPlugin = getPlugin;
 
+function newWork(url, options, callback){
+
+	plugin = getPlugin(options)
+	//TODO: Check if plugin changed on disk.  If so, re-load it.
+	
 	var extractSignature = "";
 	if (plugin.extractSignature) extractSignature = plugin.extractSignature(options);
+	if (options.debugapp && extractSignature !== "") console.log("plugin extractSignature: " + extractSignature);
 
+	// TODO:  If extractSignature was provided, the plugin modifies the returned data.  For example if a time range was specified, it
+	// subsets the returned file.  Because the urlMd5 depends on the signature, the original file will be re-downloaded each time the signature
+	// changes.  This could be avoided by creating work.urlMd5base which is the md5 of the base file.  If a request comes in and urlMd5.out does not exist,
+	// scheduler should check to see if urlMd5base.out exists.
+	
 	var work = {
 		id: util.getId(),
 		plugin : plugin,
@@ -190,6 +203,7 @@ function newWork(url, options, callback){
 		dataMd5 : "",
 		dataLength : -1,
 		urlMd5 : util.md5(url+extractSignature),
+		urlMd5base: util.md5(url),
 		time: 0,
 		data: "",
 		header: {},

@@ -4,9 +4,28 @@ exports.match = function(url){
 	return url.split("/")[2].toLowerCase()==="xwdc.kugi.kyoto-u.ac.jp";
 }
 
-exports.extractData = function(data0){
+exports.extractSignature = function(options) {
+	return options.req.query.timeRange;
+}
 
-	 
+exports.columnTranslator = function(col) {
+	if (col > 1) {
+		return col-1;
+	} else {
+		return col
+	}
+}
+
+exports.timeFormat = function() {
+	return "YYYY-MM-DDTHH:mm:ss.SSSZ";
+}
+
+exports.timeColumns = function() {
+	return "1";
+}
+
+exports.extractData = function(data0,options){
+
 	//var stations = ["Boulder","Chambon-la-fore","College","Fredericksburg","Kergulen Island","Learmonth","Planetary","Wingst"];
 	//console.log(stations.length)
 	var stations = ["Beijing","Belsk","Boulder","Cape Chelyuskin","Chambon-la-foret","College","Dixon Island","Fredericksburg","Gottingen","Kergulen Island","Krenkel","Learmonth","St. Petersburg","Magadan","Moscow","Murmansk","Novosibirsk","P. Tunguska","Petropavlovsk","Planetary","Tiksi Bay","Wingst"];
@@ -71,22 +90,36 @@ exports.extractData = function(data0){
 	}
 		
 
+	var startdate = options.req.query.timeRange.split("/")[0];
+	var stopdate  = options.req.query.timeRange.split("/")[1];
+
+	var startms = new Date(startdate);
+	var stopms  = new Date(stopdate);
+	
+	var timestamp = "";
+	var ms = new Date();
 	var line = "";
 	for (var k = 0;k < Ap.length;k++) {
-		line = line + MODY[k] + " 01:30 ";
-		for (i = 0;i < 8;i++) {
-			for (j = 0;j < stations_available.length;j++) {
-				line = line + " " + K[k][j][i] + " " + Ap[k][j][i];			
-			}
-			if (i < 7) { 
-				line = line + "\n" + MODY[k] + " " + (((i+1)*3+1)+"").replace(/^([0-9])$/,"0$1") + ":30 ";
-			} else {
-				line = line + "\n";
+		timestamp = MODY[k] + "T01:30:00.000";
+		ms = new Date(timestamp);
+		if (ms >= startms && ms <= stopms) {
+			line = line + MODY[k] + "T01:30:00.000 ";
+			for (i = 0;i < 8;i++) {
+				for (j = 0;j < stations_available.length;j++) {
+					line = line + " " + K[k][j][i] + " " + Ap[k][j][i];			
+				}
+				if (i < 7) { 
+					line = line + "\n" + MODY[k] + "T" + (((i+1)*3+1)+"").replace(/^([0-9])$/,"0$1") + ":30:00.000 ";
+				} else {
+					line = line + "\n";
+				}
 			}
 		}
-	}
+		if (line !== "" && ms >= stopms) break;
 		
-	return line
+	}
+
+	return line;
 	
 };
 

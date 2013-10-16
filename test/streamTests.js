@@ -4,14 +4,16 @@
 // Both servers using data from original data source 
 
 var N    = 10;
-var port = 8000;
+var port = 7999;
 
 var testsuite = [
-                 "streamTests.js true 0 false " + N + " http://localhost:"+port+"/ 1", 
-                 "streamTests.js false 0 false " + N + " http://localhost:"+port+"/ 1",
-                 "streamTests.js true 0 false " + N + " http://localhost:"+port+"/ 2",
-                 "streamTests.js false 0 false " + N + " http://localhost:"+port+"/ 2",
-                 "streamTests.js true 0 true " + N + " http://datacache.org/dc/ 1",
+                 "streamTests.js true 0 true " + N + " http://localhost:"+port+"/ 1", 
+                 "streamTests.js false 0 true " + N + " http://localhost:"+port+"/ 1",
+                 "streamTests.js true 0 true " + N + " http://localhost:"+port+"/ 2",
+                 "streamTests.js false 0 true " + N + " http://localhost:"+port+"/ 2"
+                 ];
+
+var testsuite2 = ["streamTests.js true 0 true " + N + " http://datacache.org/dc/ 1",
                  "streamTests.js false 0 true " + N + " http://datacache.org/dc/ 1",
                  "streamTests.js true 0 true " + N + " http://datacache.org/dc/ 2",
                  "streamTests.js false 0 true " + N + " http://datacache.org/dc/ 2"

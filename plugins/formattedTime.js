@@ -18,13 +18,28 @@ exports.formatLine = function (line, options) {
 
 	var debug = options.debugplugin;
 	
-	var timeformat  = options.req.query.timeformat || "YYYY-MM-DDZHH:mm:ss.SSSZ";
+	var timeformat  = options.req.query.timeformat  || "YYYY-MM-DDTHH:mm:ss.SSSZ";
 	var timecolumns = options.req.query.timecolumns || 1;
-	var outformat   = options.req.query.outformat || "0";
+	var outformat   = options.req.query.outformat   || "0";
+	//console.log(options.plugin)
+	//console.log(options)
+	
+	var scheduler = require("../scheduler.js");
+	
+	if (options.plugin) {
+		var plugin = scheduler.getPlugin(options);
+		if (plugin.timeFormat) {
+			var timeformat = plugin.timeFormat();
+			if (debug) console.log("formattedTime: Plugin has time format of "+timeformat);
+		}
+		if (plugin.timeColumns) {
+			var timecolumns = plugin.timeColumns();
+		}
+	} 
 
-	timeformat       = timeformat.replace("yyyy","YYYY").replace("yy","YY").replace("DD",'dd').replace("S","SSS").replace("SS","SSS")
-	if (debug) console.log(timeformat);
-	if (debug) console.log(timecolumns);
+	timeformat = timeformat.replace("yyyy","YYYY").replace("yy","YY").replace("dd",'DD').replace("S","SSS").replace("SS","SSS")
+	if (debug) console.log("timeformat: " + timeformat);
+	if (debug) console.log("timecolumns: " + timecolumns);
 
 	var timeformata  = timeformat.split(/,/);
 	var timecolumnsa = timecolumns.split(/,/);
@@ -45,16 +60,16 @@ exports.formatLine = function (line, options) {
 	if (outformat === "0") {
 		var timestamp = timev.join(" ");
 	}
-
+	//console.log(d)
 	if (outformat === "1") {
-		d[1] = ((""+d[1]).length == 1) ? "0"+(d[1]+1) : (d[1]+1);
+		d[1] = ((""+(d[1]+1)).length == 1) ? "0"+(d[1]+1) : (d[1]+1);
 		d[2] = ((""+d[2]).length == 1) ? "0"+d[2] : d[2];
 		d[3] = ((""+d[3]).length == 1) ? "0"+d[3] : d[3];
 		d[4] = ((""+d[4]).length == 1) ? "0"+d[4] : d[4];
 		d[5] = ((""+d[5]).length == 1) ? "0"+d[5] : d[5];
-		d[6] = ((""+d[6]).length == 1) ? "00"+d[6] : d[6];
+		d[6] = ((""+d[6]).length == 1) ? "0"+d[6] : d[6];
 		d[6] = ((""+d[6]).length == 2) ? "0"+d[6] : d[6];
-	
+		
 		if (debug) console.log("Formatted date: " + d)
 		var timestamp = d[0]+"-"+d[1]+"-"+d[2]+"T"+d[3]+":"+d[4]+":"+d[5]+"."+d[6]+"Z";
 
@@ -69,4 +84,3 @@ exports.formatLine = function (line, options) {
 	return line;
 
 }
-//}

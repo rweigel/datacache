@@ -58,12 +58,15 @@ if (!fs.existsSync(__dirname+"/cache")) {fs.mkdirSync(__dirname+"/cache");}
 if (!fs.existsSync(__dirname+"/cache/locks")) {fs.mkdirSync(__dirname+"/cache/locks");}
 if (!fs.existsSync(__dirname+"/log")) {fs.mkdirSync(__dirname+"/log");}
 
+function s2b(str) {if (str === "true") {return true} else {return false}}
+function s2i(str) {return parseInt(str)}
+
 // Get port number from command line option.
 var port          = process.argv[2] || 8000;
-var debugapp      = process.argv[3] || false;
-var debugstream   = process.argv[4] || false;
-var debugplugin   = process.argv[5] || false;
-var debugtemplate = process.argv[6] || false;
+var debugapp      = s2b(process.argv[3] || "false");
+var debugstream   = s2b(process.argv[4] || "false");
+var debugplugin   = s2b(process.argv[5] || "false");
+var debugtemplate = s2b(process.argv[6] || "false");
 
 // Middleware
 /* wrap app.VERB to handle exceptions: send 500 back to the client before crashing*/
@@ -282,7 +285,6 @@ function streaminfo(results) {
 
 function syncsummary(source,options,res) {
 		
-	
 		scheduler.addURLs(source, options, function (results) {
 			// TODO: If forceUpdate=true and all updates failed, give error
 			// with message that no updates could be performed.
@@ -329,6 +331,10 @@ exports.stream = stream;
 stream.streaming = {};
 
 function stream(source, options, res) {
+
+	if (options.lineFormatter !== "") {
+		var lineFormatter = require(__dirname + "/plugins/" + options.lineFormatter + ".js");
+	}
 
 	var rnd        = options.id;		
 	var reqstatus  = {};
@@ -391,6 +397,27 @@ function stream(source, options, res) {
 		var lr = 0; // Lines read.
 		var k = 1;  // Lines kept.
 		var done = false;
+		//console.log("New column: " + work.plugin.columnTranslator(1))
+		var outcolumnsStr = options.streamFilterReadColumns.split(/,/);
+		var outcolumns = [];
+		
+		if (work.plugin.columnTranslator) {
+			// The plugin may have changed the number of columns by reformatting time.
+			for (var z = 0;z < outcolumnsStr.length; z++) {
+				outcolumns[z] = work.plugin.columnTranslator(parseInt(outcolumnsStr[z]));
+			}
+		} else {
+			for (var z = 0;z < outcolumnsStr.length; z++) {
+				outcolumns[z] = parseInt(outcolumnsStr[z]);
+			}
+		}
+
+		function onlyUnique(value, index, self) { 
+		    return self.indexOf(value) === index;
+		}
+		// Remove non-unique columns (plugin may define all time columns to be the first column). 
+		outcolumns = outcolumns.filter(onlyUnique);
+		
 		
 		function readline(fname) {	
 			lineReader.eachLine(fname, function(line, last) {
@@ -401,9 +428,7 @@ function stream(source, options, res) {
 				if (options.streamFilterReadLines == 0) {
 					stopline = Infinity;
 				}
-				//var startline = options.streamFilterReadPosition;
-				//if (startline == 0) {startline = 1}
-				//console.log("here")
+
 				if (k >= options.streamFilterReadPosition) {				  		
 					if (lr == stopline) {	
 						if (options.debugstream) console.log("readline: Callback");
@@ -411,22 +436,19 @@ function stream(source, options, res) {
 						lines = "";
 						done = true;
 					}
-					//if (options.debugstream) console.log("Lines: ");
-					//if (options.debugstream) console.log("lr = " + lr);
-					//if (options.debugstream) console.log(line);
-
 					if (options.streamFilterReadColumns !== "0") {
-						var outcolumns = options.streamFilterReadColumns.split(/,/);
-						//console.log(outcolumns)
-						linea = line.split(" ");
-						//console.log(linea)
+						linea = line.split(/\s+/g);
 						line = "";
 						for (var z = 0;z < outcolumns.length; z++) {
-							line = line + linea[parseInt(outcolumns[z])-1] + " ";
+							line = line + linea[outcolumns[z]-1] + " ";
 						}
 					}
 
 					line = line.substring(0,line.length-1);
+					if (options.streamFilterTimeFormat !== "0") {
+						line = lineFormatter.formatLine(line,options);
+					}
+					
 					lines = lines + line + "\n";
 					lr = lr + 1;
 				}
@@ -528,9 +550,6 @@ function parseOptions(req) {
 
  	var options = {};
         
-	function s2b(str) {if (str === "true") {return true} else {return false}}
-	function s2i(str) {return parseInt(str)}
-
 	// TODO: Copy req.body to req.query.
 	options.req = {};
 	options.req.query      = req.query;
@@ -559,8 +578,8 @@ function parseOptions(req) {
 		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){return line.search(lineRegExp)!=-1;}";
 		options.extractData = req.query.extractData  || req.body.extractData   || 'body.toString().split("\\n").filter('+options.lineFilter+').join("\\n") +"\\n"';	
 	} else {
-		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){if (line.search(lineRegExp) != -1) return lineFormatter.formatLine(line,options);}"
-		options.extractData = '(body.toString().split("\\n").map(function(line){if (line.search(lineRegExp) != -1) {return lineFormatter.formatLine(line,options);}}).join("\\n")+"\\n").replace(/^\\n+/,"").replace(/\\n\\n+/g,"\\n")';
+		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){if (line.search(options.lineRegExp) != -1) return lineFormatter.formatLine(line,options);}"
+		options.extractData = '(body.toString().split("\\n").map(function(line){if (line.search(options.lineRegExp) != -1) {return lineFormatter.formatLine(line,options);}}).join("\\n")+"\\n").replace(/^\\n+/,"").replace(/\\n\\n+/g,"\\n")';
 	}
 
 	if (req.query.extractData || req.body.extractData || req.query.LineFilter || req.body.LineFilter) {
@@ -586,7 +605,8 @@ function parseOptions(req) {
 	options.streamFilterReadLines    = s2i(req.query.streamFilterReadLines)    || s2i(req.body.streamFilterReadLines)    || 0;
 	options.streamFilterReadPosition = s2i(req.query.streamFilterReadPosition) || s2i(req.body.streamFilterReadPosition) || 1;
 	options.streamFilterReadColumns  = req.query.streamFilterReadColumns       || req.body.streamFilterReadColumns       || "0";
-	
+	options.streamFilterTimeFormat   = req.query.streamFilterTimeFormat        || req.body.streamFilterTimeFormat        || "1";
+
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
 			options.dir = '/'+options.dir;

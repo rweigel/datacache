@@ -16,6 +16,8 @@ exports.preprocess = function (work, callback) {callback(false, work)};
 
 exports.process = function (work, callback) {
 
+	// TODO: If work.urlMd5base exists, set work.body to be urlMd5base.out, work.dataBinary to be urlMd5base.bin, etc. and return.
+	
 	if (work.url.match(/^http/)) {
 		var headers = work.options.acceptGzip ? {"accept-encoding" : "gzip, deflate"} : {};
 		util.get(work.url, function (error, response, body) {
