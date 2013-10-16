@@ -168,7 +168,7 @@ function work2result(work) {
 
 }
 
-function getPlugin(options) {
+function getPlugin(options,url) {
 	var plugin;
 	if(options.plugin){
 		plugin = plugins.find(function (d) {
@@ -183,7 +183,7 @@ exports.getPlugin = getPlugin;
 
 function newWork(url, options, callback){
 
-	plugin = getPlugin(options)
+	plugin = getPlugin(options,url)
 	//TODO: Check if plugin changed on disk.  If so, re-load it.
 	
 	var extractSignature = "";
