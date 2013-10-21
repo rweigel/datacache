@@ -5,7 +5,7 @@ exports.match = function(url){
 }
 
 exports.extractSignature = function(options) {
-	return options.req.query.timeRange;
+	return options.timeRange;
 }
 
 exports.columnTranslator = function(col) {
@@ -90,26 +90,26 @@ exports.extractData = function(data0,options){
 	}
 		
 
-	var startdate = options.req.query.timeRange.split("/")[0];
-	var stopdate  = options.req.query.timeRange.split("/")[1];
+	var startdate = options.timeRange.split("/")[0];
+	var stopdate  = options.timeRange.split("/")[1];
 
-	var startms = new Date(startdate);
-	var stopms  = new Date(stopdate);
-	
+	var startms = new Date(startdate).getTime();
+	var stopms  = new Date(stopdate).getTime();
+
 	var timestamp = "";
-	var ms = new Date();
+	var ms = new Date().getTime();
 	var line = "";
 	for (var k = 0;k < Ap.length;k++) {
-		timestamp = MODY[k] + "T01:30:00.000";
-		ms = new Date(timestamp);
+		timestamp = MODY[k] + "T01:30:00.000Z";
+		ms = new Date(timestamp).getTime();
 		if (ms >= startms && ms <= stopms) {
-			line = line + MODY[k] + "T01:30:00.000 ";
+			line = line + MODY[k] + "T01:30:00.000Z ";
 			for (i = 0;i < 8;i++) {
 				for (j = 0;j < stations_available.length;j++) {
 					line = line + " " + K[k][j][i] + " " + Ap[k][j][i];			
 				}
 				if (i < 7) { 
-					line = line + "\n" + MODY[k] + "T" + (((i+1)*3+1)+"").replace(/^([0-9])$/,"0$1") + ":30:00.000 ";
+					line = line + "\n" + MODY[k] + "T" + (((i+1)*3+1)+"").replace(/^([0-9])$/,"0$1") + ":30:00.000Z ";
 				} else {
 					line = line + "\n";
 				}

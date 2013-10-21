@@ -168,7 +168,7 @@ function work2result(work) {
 
 }
 
-function getPlugin(options) {
+function getPlugin(options,url) {
 	var plugin;
 	if(options.plugin){
 		plugin = plugins.find(function (d) {
@@ -183,10 +183,11 @@ exports.getPlugin = getPlugin;
 
 function newWork(url, options, callback){
 
-	plugin = getPlugin(options)
-	//TODO: Check if plugin changed on disk.  If so, re-load it.
-	
 	var extractSignature = "";
+
+	//TODO: Check if plugin changed on disk.  If so, re-load it.
+	plugin = getPlugin(options,url);
+	
 	if (plugin.extractSignature) extractSignature = plugin.extractSignature(options);
 	if (options.debugapp && extractSignature !== "") console.log("plugin extractSignature: " + extractSignature);
 

@@ -20,6 +20,7 @@ var qs = require('querystring');
 xutil = require('util');
 
 var expandtemplate = require("tsdset").expandtemplate;
+var expandISO8601Duration = require("tsdset").expandISO8601Duration;
 
 // Locking notes:
 // Each time a file is being streamed, a stream counter is incremented for the file.
@@ -332,9 +333,9 @@ stream.streaming = {};
 
 function stream(source, options, res) {
 
-	if (options.lineFormatter !== "") {
-		var lineFormatter = require(__dirname + "/plugins/" + options.lineFormatter + ".js");
-	}
+	//if (options.streamFilterLineFormatter !== "") {
+		var lineFormatter = require(__dirname + "/plugins/formattedTime.js");
+	//}
 
 	var rnd        = options.id;		
 	var reqstatus  = {};
@@ -381,11 +382,10 @@ function stream(source, options, res) {
 				logger.d("processwork: ", "error:", err, "fd:", fd, fd==undefined,  "readbytes:", options.streamFilterReadBytes, "readPosition:", options.streamFilterReadPosition);
 			    fs.read(fd, buffer, 0, options.streamFilterReadBytes, options.streamFilterReadPosition-1, 
 			    		function (err, bytesRead, buffer) {readcallback(err,buffer);fs.close(fd);})});
-		} else if ( options.streamFilterReadLines > 0 || options.streamFilterReadColumns !== "0" ) {
+		} else if (options.streamFilterReadLines > 0 || options.streamFilterReadColumns !== "0" ) {
 		    if (options.debugstream) console.log(rnd+" Reading Lines of "+ fname.replace(__dirname,""));
 			if (options.debugstream) console.log(rnd+" fs.exist: " + fs.existsSync(fname + ".data"));
 			readline(fname + ".data");
-
 		} else {	
 		    if (options.debugstream) console.log(rnd+" Reading File");	
 			// Should be no encoding if streamFilterBinary was given.
@@ -394,8 +394,11 @@ function stream(source, options, res) {
 
 		var line   = '';
 		var lines  = '';
-		var lr = 0; // Lines read.
-		var k = 1;  // Lines kept.
+		var linesx = ''; // Modified kept lines.
+		var linesa = ''; // Accumulated lines.
+
+		var lr = 0; // Lines kept.
+		var k = 1;  // Lines read.
 		var done = false;
 		//console.log("New column: " + work.plugin.columnTranslator(1))
 		var outcolumnsStr = options.streamFilterReadColumns.split(/,/);
@@ -418,6 +421,10 @@ function stream(source, options, res) {
 		// Remove non-unique columns (plugin may define all time columns to be the first column). 
 		outcolumns = outcolumns.filter(onlyUnique);
 		
+		if (options.streamFilterComputeFunction) {
+			console.log("Reading filter")
+			var math = require("./filters/"+options.streamFilterComputeFunction+".js");
+		}
 		
 		function readline(fname) {	
 			lineReader.eachLine(fname, function(line, last) {
@@ -441,19 +448,53 @@ function stream(source, options, res) {
 						line = "";
 						for (var z = 0;z < outcolumns.length; z++) {
 							line = line + linea[outcolumns[z]-1] + " ";
-						}
+						}							
 					}
 
 					line = line.substring(0,line.length-1);
+					
 					if (options.streamFilterTimeFormat !== "0") {
 						line = lineFormatter.formatLine(line,options);
 					}
-					
-					lines = lines + line + "\n";
+
+					// TODO: Only return data if in time range given.
+					//if (options.streamFilterTimeRange !== "") {
+					//	line = lineFormatter.formatLine(line,options);
+					//}
+
+					if (!line.match("undefined")) {
+						if (!last) {
+							lines = lines + line + "\n";
+							linesa = linesa + line + "\n";
+						} else {
+							lines = lines + line;
+							linesa = linesa + line;
+						}
+					}
+
 					lr = lr + 1;
+
+					if (options.streamFilterComputeFunction) {
+						if (lr % options.streamFilterComputeWindow == 0) {
+							//console.log(linesa)
+							linesx = linesx + math.mean(linesa.replace(/\n$/,""));
+							//console.log(linesx)
+							linesa = '';
+						}
+					}
+					
 				}
 				k = k+1;
-			}).then(function () {if (!done) readcallback("",lines)});
+			}).then(function () {
+				if (!done) {
+					if (options.streamFilterComputeFunction && linesx !== '') {
+						readcallback("",linesx);
+					} else {
+						readcallback("",lines);
+					}
+				}
+				
+			});
 		}
 		
 		function readcallback(err, data) {
@@ -582,7 +623,7 @@ function parseOptions(req) {
 		options.extractData = '(body.toString().split("\\n").map(function(line){if (line.search(options.lineRegExp) != -1) {return lineFormatter.formatLine(line,options);}}).join("\\n")+"\\n").replace(/^\\n+/,"").replace(/\\n\\n+/g,"\\n")';
 	}
 
-	if (req.query.extractData || req.body.extractData || req.query.LineFilter || req.body.LineFilter) {
+	if (req.query.extractData || req.body.extractData || req.query.lineFilter || req.body.lineFilter) {
 		options.unsafeEval = false;
 	} else {
 		options.unsafeEval = true;
@@ -601,11 +642,19 @@ function parseOptions(req) {
 	//options.respectHeaders = s2b(req.query.respectHeaders) || s2b(req.body.respectHeaders) || true;
 	//options.streamFilterBinary   = req.query.streamFilterBinary        || req.body.streamFilterBinary        || "";
 
-	options.streamFilterReadBytes    = s2i(req.query.streamFilterReadBytes)    || s2i(req.body.streamFilterReadBytes)    || 0;
-	options.streamFilterReadLines    = s2i(req.query.streamFilterReadLines)    || s2i(req.body.streamFilterReadLines)    || 0;
-	options.streamFilterReadPosition = s2i(req.query.streamFilterReadPosition) || s2i(req.body.streamFilterReadPosition) || 1;
-	options.streamFilterReadColumns  = req.query.streamFilterReadColumns       || req.body.streamFilterReadColumns       || "0";
-	options.streamFilterTimeFormat   = req.query.streamFilterTimeFormat        || req.body.streamFilterTimeFormat        || "1";
+	options.streamFilterReadBytes       = s2i(req.query.streamFilterReadBytes)     || s2i(req.body.streamFilterReadBytes)    || 0;
+	options.streamFilterReadLines       = s2i(req.query.streamFilterReadLines)     || s2i(req.body.streamFilterReadLines)    || 0;
+	options.streamFilterReadPosition    = s2i(req.query.streamFilterReadPosition)  || s2i(req.body.streamFilterReadPosition) || 1;
+	options.streamFilterReadColumns     = req.query.streamFilterReadColumns        || req.body.streamFilterReadColumns       || "0";
+	options.streamFilterTimeFormat      = req.query.streamFilterTimeFormat         || req.body.streamFilterTimeFormat        || "0";
+	options.streamFilterComputeWindow   = s2i(req.query.streamFilterComputeWindow  || req.query.streamFilterComputeWindow    || "1"); 
+	options.streamFilterComputeFunction = req.query.streamFilterComputeFunction    || req.query.streamFilterComputeFunction  || ""; 
+
+    var timeRange  = req.body.timeRange  || req.query.timeRange || "";
+
+    if (timeRange) {
+    	options.timeRange = expandISO8601Duration(timeRange.split("/")[0]) + "/" + expandISO8601Duration(timeRange.split("/")[1]);
+    }
 
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
@@ -622,6 +671,7 @@ function parseOptions(req) {
 }
 
 function parseSource(req) {
+
 
 	options = parseOptions(req);
 	

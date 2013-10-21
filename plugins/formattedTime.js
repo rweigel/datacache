@@ -17,9 +17,9 @@ exports.extractSignature = function (options) {
 exports.formatLine = function (line, options) {
 
 	var debug = options.debugplugin;
-	
+
 	var timeformat  = options.req.query.timeformat  || "YYYY-MM-DDTHH:mm:ss.SSSZ";
-	var timecolumns = options.req.query.timecolumns || 1;
+	var timecolumns = options.req.query.timecolumns || "1";
 	var outformat   = options.req.query.outformat   || "0";
 	//console.log(options.plugin)
 	//console.log(options)
@@ -41,7 +41,7 @@ exports.formatLine = function (line, options) {
 	if (debug) console.log("timeformat: " + timeformat);
 	if (debug) console.log("timecolumns: " + timecolumns);
 
-	var timeformata  = timeformat.split(/,/);
+	var timeformata  = timeformat.split(/,|\s+/);
 	var timecolumnsa = timecolumns.split(/,/);
 
 	// Assumes time is in continuous columns and before any data column that is to be kept.
