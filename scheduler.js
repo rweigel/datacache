@@ -183,7 +183,7 @@ exports.getPlugin = getPlugin;
 
 function newWork(url, options, callback){
 
-	var extractSignature = "";
+	plugin = getPlugin(options,url)
 
 	//TODO: Check if plugin changed on disk.  If so, re-load it.
 	plugin = getPlugin(options,url);
