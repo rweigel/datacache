@@ -60,7 +60,7 @@ exports.process = function (work, callback) {
 		conn.on("ready", function(){
 				conn.get(filepath, function(err, stream){
 					if(err){
-						callback(true, work);
+						work.error=err;callback(true, work);conn.end();
 					} else{
 						var buff = "";
 						stream.on("data", function(data){
@@ -128,10 +128,10 @@ exports.extractData = function (body, options) {
 		logger.d("Error when trying to parse data as html, probably it is not in valid html format.");
 	}
 
-	//console.log("lineRegExp: " + options.lineRegExp)
+	console.log("lineRegExp: " + options.lineRegExp)
 	try {
-	        //console.log("Using safe eval");
-		return localeval(options.extractData, {
+	    //console.log("Using safe eval");
+		return localeval(options.extractData.replace(/jQuery/g,"\$"), {
 			$: $,
 			document: window.document,
 			out: body,

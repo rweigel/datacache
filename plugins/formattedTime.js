@@ -4,7 +4,7 @@ var moment = require('moment');
 exports.extractSignature = function (options) {
 	var version = "1.0.0";
 
-	var xoptions = ""+options.req.query.timeformat+options.req.query.timecolumns+options.req.query.outformat;
+	var xoptions = ""+options.req.query.timeformat+options.timeRangeExpanded+options.req.query.timecolumns+options.req.query.outformat;
 	//console.log(options.req.query.outformat)
 
 	xoptions = xoptions.replace(/undefined/g,"");
@@ -14,15 +14,39 @@ exports.extractSignature = function (options) {
 
 //var strfmtime = require(__dirname + "/sprintf-0.7-beta1.js");
 
+exports.columnTranslator = function(col,options) {
+	var No = options.req.query.timecolumns.split(",").length;
+	var outformat = options.streamFilterTimeFormat;
+
+	if (outformat == "0") {
+		return col;
+	}
+	if (outformat == "1") {
+		if (col > No) {
+			return col-No+1;
+		} else {
+			return 1;
+		}
+	}
+	if (outformat == "2") {
+		if (col > No) {
+			return col-No+6;
+		} else {
+			return 1;
+		}
+	}
+}
+
 exports.formatLine = function (line, options) {
 
 	var debug = options.debugplugin;
 
-	var timeformat  = options.req.query.timeformat  || "YYYY-MM-DDTHH:mm:ss.SSSZ";
-	var timecolumns = options.req.query.timecolumns || "1";
-	var outformat   = options.req.query.outformat   || "0";
+	//var debug = true;
+	var timeformat  = options.req.query.timeformat   || "YYYY-MM-DDTHH:mm:ss.SSSZ";
+	var timecolumns = options.req.query.timecolumns  || "1";
+	var outformat   = options.streamFilterTimeFormat || "0";
 	//console.log(options.plugin)
-	//console.log(options)
+	//console.log("here")
 	
 	var scheduler = require("../scheduler.js");
 	
@@ -44,10 +68,11 @@ exports.formatLine = function (line, options) {
 	var timeformata  = timeformat.split(/,|\s+/);
 	var timecolumnsa = timecolumns.split(/,/);
 
+	if (debug) console.log("line "+line)
 	// Assumes time is in continuous columns and before any data column that is to be kept.
 	timev      = line.split(/\s+/).slice(parseInt(timecolumnsa[0])-1,parseInt(timecolumnsa[timecolumnsa.length-1]));
 	datav      = line.split(/\s+/).slice(parseInt(timecolumnsa[timecolumnsa.length-1]));
-
+	if (debug) console.log(datav)
 	if (debug) {
 		console.log("line: " + line);
 		console.log("timeformat array: " + timeformata.join(","));

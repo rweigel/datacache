@@ -1,7 +1,7 @@
 exports.name = "supermag";
 
 exports.match = function(url){
-	return url.split("/")[2].toLowerCase()==="supermag.jhuapl.edu";
+	return url.split("/")[2].toLowerCase()==="xsupermag.jhuapl.edu";
 }
 
 function pause(i) {
@@ -24,6 +24,7 @@ exports.extractDataBinary = function (data) {
 	var arr = data
 	    .toString()
 	    .replace(re2," $2 $3 $4")
+    	.replace(/[0-9](\n[A-Z])/g,'$1')  // Removes last element which is number of records that follow timestamp.
 	    .split("\n")
 	    .filter(function(line){return line.search(re1)!=-1;})
 	    .join("\n")
@@ -37,18 +38,24 @@ exports.extractDataBinary = function (data) {
 }
 }
 exports.extractData = function (data) {
-    // Time stamp line
-    var re1 = /^([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)/;
+
+	// Time stamp line
+    var re1 = /^([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)/;
 
     // Data line
     var re2 = /\n([a-zA-Z]+)\s+([\d-]+)\s([\d-]+)\s([\d-]+)/g;
 
+    //console.log(data.toString().replace(/1980/g,"xx"))
     // First combine timestamp and data line and remove station string.
-    // Then split on newlines and keep data lines.
-    return data.toString()
-    			.replace(/[ \t]+/g,' ')
+    // Then split on newlines, remove last line, and keep data lines.
+    
+    return data
+    		.toString()
+    		.replace(/[ \t]+/g,' ')
+    		.replace(/[0-9](\n[A-Z])/g,'$1') // Removes last element which is number of records that follow timestamp.
 			.replace(re2," $2 $3 $4")
 			.split("\n")
-			.filter(function (line) {return line.search(re1)!=-1})
+			.filter(function (line) {return line.search(re1)!=-1}) // Removes lines that don't match re1
+			.slice(0,-1) // Removes last line (API returns extra data line)
 			.join("\n") + "\n";
 };

@@ -17,9 +17,10 @@ var runner = require("./lib/testRunner")(),
 
 async.series([
 function(cb){
-	suite("Should be success for a valid URL", function(test, testInfo, suiteDone){
+	var uri = server + "sync?source=http://localhost:8000/";
+	suite("should be success for a valid URL: "+uri, function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source=http://localhost:8000",
+			uri: uri,
 			timeout: 10000
 		}, function(err, res, body){
 			// Add info to runner.results
@@ -51,9 +52,10 @@ function(cb){
 	})
 },
 function(cb){
-	suite("Should handle an invalid URL gracefully", function(test, testInfo, suiteDone){
+	var uri = server + "sync/?source=http://www.notexist.forever";
+	suite("should handle an invalid URL gracefully: "+uri, function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync/?source=http://www.notexist.forever",
+			uri: uri,
 			timeout: 10000
 		}, function(err, res, body){
 			// Add info to runner.results
@@ -85,9 +87,10 @@ function(cb){
 	})
 },
 function(cb){
-	suite("Should not crash with an invalid URL and includeData=true", function(test, testInfo, suiteDone){
+	var uri = server + "sync?source=http://www.notexist.forever&includeData=true";
+	suite("should not crash with an invalid URL and includeData=true: "+uri, function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source=http://www.notexist.forever&includeData=true",
+			uri: uri,
 			timeout: 10000
 		}, function(err, res, body){
 			// Add info to runner.results
@@ -119,9 +122,10 @@ function(cb){
 	})
 },
 function(cb){
-	suite("Should not crash with an 404 URL and return=stream", function(test, testInfo, suiteDone){
+	var uri = server + "sync?source=http://localhost:8000/404&return=stream";
+	suite("should not crash with an 404 URL and return=stream: "+uri, function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source=http://localhost:8000/404&return=stream",
+			uri: uri,
 			timeout: 10000
 		}, function(err, res, body){
 			// Add info to runner.results
@@ -144,9 +148,10 @@ function(cb){
 	})
 },
 function(cb){
-	suite("Should not halt with an invalid domain name and return=stream", function(test, testInfo, suiteDone){
+	var uri = server + "sync?source=http://www.notexist.forever&return=stream";
+	suite("should not halt with an invalid domain name and return=stream: "+uri, function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source=http://www.notexist.forever&return=stream",
+			uri: uri,
 			timeout: 10000
 		}, function(err, res, body){
 			// Add info to runner.results
@@ -169,9 +174,10 @@ function(cb){
 	})
 },
 function(cb){
-	suite("Should not return only partial data with return=stream", function(test, testInfo, suiteDone){
+	var uri = server + "sync?source="+server+"test/data/google.html&return=stream&forceUpdate=true";
+	suite("should not return only partial data with return=stream: "+uri, function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source="+server+"test/data/google.html&return=stream&forceUpdate=true",
+			uri: uri,
 			timeout: 10000
 		}, function(err, res, body){
 			// Add info to runner.results
@@ -199,9 +205,10 @@ function(cb){
 	})
 },
 function(cb){
-	suite("Request a file in zip with return=json", function(test, testInfo, suiteDone){
+	var uri = server + "sync?source="+server+"test/data/test.zip/ephx_00_161.txt&return=json&forceUpdate=true";
+	suite("request a file in zip with return=json: "+uri, function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source="+server+"test/data/test.zip/ephx_00_161.txt&return=json&forceUpdate=true",
+			uri: uri,
 			timeout: 5000
 		}, function(err, res, body){
 			testInfo("err", err);
@@ -228,9 +235,10 @@ function(cb){
 	})
 },
 function(cb){
-	suite("Request a file in zip with return=stream", function(test, testInfo, suiteDone){
+	var uri = server + "sync?source="+server+"test/data/test.zip/ephx_00_161.txt&return=stream&forceUpdate=true";
+	suite("request a file in zip with return=stream: "+uri, function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source="+server+"test/data/test.zip/ephx_00_161.txt&return=stream&forceUpdate=true",
+			uri: uri,
 			timeout: 5000
 		}, function(err, res, body){
 			testInfo("err", err);
@@ -256,9 +264,10 @@ function(cb){
 	})
 },
 function(cb){
-	suite("Request an inexist file in zip with return=json", function(test, testInfo, suiteDone){
+	var uri = server + "sync?source="+server+"test/data/test.zip/INEXIST.txt&return=json&forceUpdate=true";
+	suite("request an inexist file in zip with return=json: "+uri, function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source="+server+"test/data/test.zip/INEXIST.txt&return=json&forceUpdate=true",
+			uri: uri,
 			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
@@ -285,9 +294,10 @@ function(cb){
 	})
 },
 function(cb){
-	suite("Request an inexist file in zip with return=stream", function(test, testInfo, suiteDone){
+	var uri = server + "sync?source="+server+"test/data/test.zip/INEXIST.txt&return=stream&forceUpdate=true";
+	suite("request an inexist file in zip with return=stream: "+uri, function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source="+server+"test/data/test.zip/INEXIST.txt&return=stream&forceUpdate=true",
+			uri: uri,
 			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
@@ -313,15 +323,15 @@ function(cb){
 	})
 },
 function(cb){
-	suite("request with extractData", function(test, testInfo, suiteDone){
+	var uri = server + "sync?source="+server+"test/data/google.html&extractData=$(\"p\").text()&return=stream&forceUpdate=true&forceWrite=true";
+	suite("request with extractData: "+uri, function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source="+server+"test/data/google.html&extractData=$(\"p\").text()&return=stream&forceUpdate=true",
+			uri: uri,
 			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
 			testInfo("res", res);
 			testInfo("body", body);
-
 			test("request should succeed", function(){
 				assert( !err );
 			});
@@ -330,7 +340,7 @@ function(cb){
 				assert(res);
 				assert.equal(res.statusCode, 200);
 			});
-
+			
 			test("response should have the correct content", function(){
 				assert(body.indexOf("google")==0);
 			});
@@ -341,9 +351,10 @@ function(cb){
 	})
 },
 function(cb){
-	suite("request with more than 1 URLs", function(test, testInfo, suiteDone){
+	var uri = server + "sync?source="+server+"test/data/google.html\n"+server+"test/data/yahoo.html&extractData=$(\"p\").text()&return=stream&forceUpdate=true";
+	suite("request with more than 1 URLs: "+uri, function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source="+server+"test/data/google.html\n"+server+"test/data/yahoo.html&extractData=$(\"p\").text()&return=stream&forceUpdate=true",
+			uri: uri,
 			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
@@ -370,9 +381,10 @@ function(cb){
 	})
 },
 function(cb){
-	suite("request with prefix", function(test, testInfo, suiteDone){
+	var uri = server + "sync?prefix="+server+"&source=test/data/google.html&extractData=$(\"p\").text()&return=stream&forceUpdate=true";
+	suite("request with prefix: "+uri, function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?prefix="+server+"&source=test/data/google.html&extractData=$(\"p\").text()&return=stream&forceUpdate=true",
+			uri: uri,
 			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
@@ -398,9 +410,10 @@ function(cb){
 	})
 },
 function(cb){
-	suite("request with template and timeRange", function(test, testInfo, suiteDone){
+	var uri = server + "sync?template="+server+"test/data/file$Y$m$d.txt&timeRange=1999-01-01/1999-01-03";
+	suite("request with template and timeRange: "+uri, function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?template="+server+"test/data/file$Y$m$d.txt&timeRange=1999-01-01/1999-01-03",
+			uri: uri,
 			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
@@ -429,9 +442,10 @@ function(cb){
 	})
 },
 function(cb){
-	suite("request with template and indexRange", function(test, testInfo, suiteDone){
+	var uri = server + "sync?template="+server+"test/data/file%d.txt&indexRange=1/2";
+	suite("request with template and indexRange: "+uri, function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?template="+server+"test/data/file%d.txt&indexRange=1/2",
+			uri: uri,
 			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
@@ -460,9 +474,10 @@ function(cb){
 	})
 },
 function(cb){
-	suite("request with lineRegExp", function(test, testInfo, suiteDone){
+	var uri = server + "sync?source="+server+"test/data/stream.txt&return=json&lineRegExp=^[0-9].*&includeData=true&forceUpdate=true";
+	suite("request with lineRegExp: "+uri, function(test, testInfo, suiteDone){
 		request({
-			uri: server + "sync?source="+server+"test/data/stream.txt&return=json&lineRegExp=^[0-9].*&includeData=true&forceUpdate=true",
+			uri: uri,
 			timeout: 10000
 		}, function(err, res, body){
 			testInfo("err", err);
@@ -470,7 +485,7 @@ function(cb){
 			testInfo("body", body);
 
 			test("request should succeed", function(){
-				console.log(err);
+				if (err) console.log(err);
 				assert( !err );
 			});
 
@@ -480,7 +495,6 @@ function(cb){
 			});
 
 			test("response should have the correct content", function(){
-				console.log("body", body)
 				assert(body.indexOf("1 2 3") > -1);
 				assert(body.indexOf("a b c") == -1);
 				assert(body.indexOf("4 5 6") > -1);

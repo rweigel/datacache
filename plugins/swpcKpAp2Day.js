@@ -5,15 +5,7 @@ exports.match = function(url){
 }
 
 exports.extractSignature = function(options) {
-	return options.timeRange;
-}
-
-exports.columnTranslator = function(col) {
-	if (col > 1) {
-		return col-1;
-	} else {
-		return col
-	}
+	return options.timeRangeExpanded;
 }
 
 exports.timeFormat = function() {
@@ -89,13 +81,16 @@ exports.extractData = function(data0,options){
 		return "\n";
 	}
 		
-
-	var startdate = options.timeRange.split("/")[0];
-	var stopdate  = options.timeRange.split("/")[1];
+	var startdate = options.timeRangeExpanded.split("/")[0];
+	var stopdate  = options.timeRangeExpanded.split("/")[1];
 
 	var startms = new Date(startdate).getTime();
 	var stopms  = new Date(stopdate).getTime();
 
+	//console.log(startms)
+	//console.log(stopms)
+
+	
 	var timestamp = "";
 	var ms = new Date().getTime();
 	var line = "";
@@ -103,6 +98,7 @@ exports.extractData = function(data0,options){
 		timestamp = MODY[k] + "T01:30:00.000Z";
 		ms = new Date(timestamp).getTime();
 		if (ms >= startms && ms <= stopms) {
+			//console.log(ms)
 			line = line + MODY[k] + "T01:30:00.000Z ";
 			for (i = 0;i < 8;i++) {
 				for (j = 0;j < stations_available.length;j++) {
