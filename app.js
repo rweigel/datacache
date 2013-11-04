@@ -807,9 +807,9 @@ function parseOptions(req) {
 
     options.timeRange          = req.body.timeRange  || req.query.timeRange || "";
 
-	if (options.timeRange)
+	if (options.timeRange !== "") {
 		options.timeRangeExpanded  = expandISO8601Duration(options.timeRange,{debug:debugtemplate})
-
+	}
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
 			options.dir = '/'+options.dir;
