@@ -653,7 +653,7 @@ function parseOptions(req) {
     var timeRange  = req.body.timeRange  || req.query.timeRange || "";
 
     if (timeRange) {
-    	options.timeRange = expandISO8601Duration(timeRange.split("/")[0]) + "/" + expandISO8601Duration(timeRange.split("/")[1]);
+    		options.timeRange = expandISO8601Duration(timeRange.split("/")[0]) + "/" + expandISO8601Duration(timeRange.split("/")[1]);
     }
 
 	if (options.dir) {
