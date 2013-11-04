@@ -805,16 +805,10 @@ function parseOptions(req) {
 	options.streamFilterComputeWindow   = s2i(req.query.streamFilterComputeWindow  || req.query.streamFilterComputeWindow    || "1"); 
 	options.streamFilterComputeFunction = req.query.streamFilterComputeFunction    || req.query.streamFilterComputeFunction  || ""; 
 
-<<<<<<< HEAD
-    var timeRange  = req.body.timeRange  || req.query.timeRange || "";
-
-    if (timeRange) {
-    		options.timeRange = expandISO8601Duration(timeRange.split("/")[0]) + "/" + expandISO8601Duration(timeRange.split("/")[1]);
-    }
-=======
     options.timeRange          = req.body.timeRange  || req.query.timeRange || "";
-	options.timeRangeExpanded  = expandISO8601Duration(options.timeRange,{debug:debugtemplate})
->>>>>>> 94ad7942c7efadfd13a8010b2f395595185c1e62
+
+	if (options.timeRange)
+		options.timeRangeExpanded  = expandISO8601Duration(options.timeRange,{debug:debugtemplate})
 
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
