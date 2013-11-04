@@ -17,7 +17,7 @@ var runner = require("./lib/testRunner")(),
 
 async.series([
 function(cb){
-	var uri = server + "sync?source=http://localhost:8000/";
+	var uri = server + "sync?source=http://localhost:8000/&forceUpdate=true&forceWrite=true";
 	suite("should be success for a valid URL: "+uri, function(test, testInfo, suiteDone){
 		request({
 			uri: uri,
@@ -43,7 +43,7 @@ function(cb){
 					json = JSON.parse(body);
 				} catch(e){}
 				assert(json);
-				assert.equal(json[0].error, false);
+				assert(!json[0].error);
 			});
 
 			suiteDone();
@@ -52,7 +52,7 @@ function(cb){
 	})
 },
 function(cb){
-	var uri = server + "sync/?source=http://www.notexist.forever";
+	var uri = server + "sync/?source=http://www.notexist.forever&forceUpdate=true&forceWrite=true";
 	suite("should handle an invalid URL gracefully: "+uri, function(test, testInfo, suiteDone){
 		request({
 			uri: uri,
@@ -78,7 +78,11 @@ function(cb){
 					json = JSON.parse(body);
 				} catch(e){}
 				assert(json);
-				assert(json[0].error);
+				if (body.match("http://finder.cox.net")) {
+					assert(false);
+				} else {
+					assert(json[0].error);
+				}
 			});
 
 			suiteDone();
@@ -87,7 +91,7 @@ function(cb){
 	})
 },
 function(cb){
-	var uri = server + "sync?source=http://www.notexist.forever&includeData=true";
+	var uri = server + "sync?source=http://www.notexist.forever&includeData=true&forceUpdate=true&forceWrite=true";
 	suite("should not crash with an invalid URL and includeData=true: "+uri, function(test, testInfo, suiteDone){
 		request({
 			uri: uri,
@@ -122,7 +126,7 @@ function(cb){
 	})
 },
 function(cb){
-	var uri = server + "sync?source=http://localhost:8000/404&return=stream";
+	var uri = server + "sync?source=http://localhost:8000/404&return=stream&forceUpdate=true&forceWrite=true";
 	suite("should not crash with an 404 URL and return=stream: "+uri, function(test, testInfo, suiteDone){
 		request({
 			uri: uri,
@@ -148,7 +152,7 @@ function(cb){
 	})
 },
 function(cb){
-	var uri = server + "sync?source=http://www.notexist.forever&return=stream";
+	var uri = server + "sync?source=http://www.notexist.forever&return=stream&forceUpdate=true&forceWrite=true";
 	suite("should not halt with an invalid domain name and return=stream: "+uri, function(test, testInfo, suiteDone){
 		request({
 			uri: uri,
@@ -174,7 +178,7 @@ function(cb){
 	})
 },
 function(cb){
-	var uri = server + "sync?source="+server+"test/data/google.html&return=stream&forceUpdate=true";
+	var uri = server + "sync?source="+server+"test/data/google.html&return=stream&forceUpdate=true&forceWrite=true";
 	suite("should not return only partial data with return=stream: "+uri, function(test, testInfo, suiteDone){
 		request({
 			uri: uri,
@@ -205,7 +209,7 @@ function(cb){
 	})
 },
 function(cb){
-	var uri = server + "sync?source="+server+"test/data/test.zip/ephx_00_161.txt&return=json&forceUpdate=true";
+	var uri = server + "sync?source="+server+"test/data/test.zip/ephx_00_161.txt&return=json&forceUpdate=true&forceWrite=true";
 	suite("request a file in zip with return=json: "+uri, function(test, testInfo, suiteDone){
 		request({
 			uri: uri,
@@ -235,7 +239,7 @@ function(cb){
 	})
 },
 function(cb){
-	var uri = server + "sync?source="+server+"test/data/test.zip/ephx_00_161.txt&return=stream&forceUpdate=true";
+	var uri = server + "sync?source="+server+"test/data/test.zip/ephx_00_161.txt&return=stream&forceUpdate=true&forceWrite=true";
 	suite("request a file in zip with return=stream: "+uri, function(test, testInfo, suiteDone){
 		request({
 			uri: uri,
@@ -264,7 +268,7 @@ function(cb){
 	})
 },
 function(cb){
-	var uri = server + "sync?source="+server+"test/data/test.zip/INEXIST.txt&return=json&forceUpdate=true";
+	var uri = server + "sync?source="+server+"test/data/test.zip/INEXIST.txt&return=json&forceUpdate=true&forceWrite=true";
 	suite("request an inexist file in zip with return=json: "+uri, function(test, testInfo, suiteDone){
 		request({
 			uri: uri,
@@ -294,7 +298,7 @@ function(cb){
 	})
 },
 function(cb){
-	var uri = server + "sync?source="+server+"test/data/test.zip/INEXIST.txt&return=stream&forceUpdate=true";
+	var uri = server + "sync?source="+server+"test/data/test.zip/INEXIST.txt&return=stream&forceUpdate=true&forceWrite=true";
 	suite("request an inexist file in zip with return=stream: "+uri, function(test, testInfo, suiteDone){
 		request({
 			uri: uri,
@@ -351,7 +355,7 @@ function(cb){
 	})
 },
 function(cb){
-	var uri = server + "sync?source="+server+"test/data/google.html\n"+server+"test/data/yahoo.html&extractData=$(\"p\").text()&return=stream&forceUpdate=true";
+	var uri = server + "sync?source="+server+"test/data/google.html\n"+server+"test/data/yahoo.html&extractData=$(\"p\").text()&return=stream&forceUpdate=true&forceWrite=true";
 	suite("request with more than 1 URLs: "+uri, function(test, testInfo, suiteDone){
 		request({
 			uri: uri,
@@ -381,7 +385,7 @@ function(cb){
 	})
 },
 function(cb){
-	var uri = server + "sync?prefix="+server+"&source=test/data/google.html&extractData=$(\"p\").text()&return=stream&forceUpdate=true";
+	var uri = server + "sync?prefix="+server+"&source=test/data/google.html&extractData=$(\"p\").text()&return=stream&forceUpdate=true&forceWrite=true";
 	suite("request with prefix: "+uri, function(test, testInfo, suiteDone){
 		request({
 			uri: uri,
@@ -410,7 +414,7 @@ function(cb){
 	})
 },
 function(cb){
-	var uri = server + "sync?template="+server+"test/data/file$Y$m$d.txt&timeRange=1999-01-01/1999-01-03";
+	var uri = server + "sync?template="+server+"test/data/file$Y$m$d.txt&timeRange=1999-01-01/1999-01-03&forceUpdate=true&forceWrite=true";
 	suite("request with template and timeRange: "+uri, function(test, testInfo, suiteDone){
 		request({
 			uri: uri,
@@ -474,7 +478,7 @@ function(cb){
 	})
 },
 function(cb){
-	var uri = server + "sync?source="+server+"test/data/stream.txt&return=json&lineRegExp=^[0-9].*&includeData=true&forceUpdate=true";
+	var uri = server + "sync?source="+server+"test/data/stream.txt&return=json&lineRegExp=^[0-9].*&includeData=true&forceUpdate=true&forceWrite=true";
 	suite("request with lineRegExp: "+uri, function(test, testInfo, suiteDone){
 		request({
 			uri: uri,
