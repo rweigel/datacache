@@ -3,20 +3,29 @@
 // Production server
 // Both servers using data from original data source 
 
-var N    = 10;
 var port = 7999;
 
+function s2b(str) {if (str === "true") {return true} else {return false}}
+function s2i(str) {return parseInt(str)}
+
+var sync    = s2b(process.argv[2] || "true");  				   // Do runs for test sequentially
+var tn      = s2i(process.argv[3] || "0");     				   // Start test Number
+var all     = s2b(process.argv[4] || "true");  				   // Run all tests after start number
+var n       = s2i(process.argv[5] || "5");     				   // Number of runs per test
+var server  = process.argv[6]     || "http://localhost:"+port+"/"; // DataCache server to test
+var server2 = s2i(process.argv[7] || "1");                     // Remote server to get data from
+
 var testsuite = [
-                 "streamTests.js true 0 true " + N + " http://localhost:"+port+"/ 1", 
-                 "streamTests.js false 0 true " + N + " http://localhost:"+port+"/ 1",
-                 "streamTests.js true 0 true " + N + " http://localhost:"+port+"/ 2",
-                 "streamTests.js false 0 true " + N + " http://localhost:"+port+"/ 2"
+                 "streamTests.js true 0 true " + n + " http://localhost:"+port+"/ 1", 
+                 "streamTests.js false 0 true " + n + " http://localhost:"+port+"/ 1",
+                 "streamTests.js true 0 true " + n + " http://localhost:"+port+"/ 2",
+                 "streamTests.js false 0 true " + n + " http://localhost:"+port+"/ 2"
                  ];
 
-var testsuite2 = ["streamTests.js true 0 true " + N + " http://datacache.org/dc/ 1",
-                 "streamTests.js false 0 true " + N + " http://datacache.org/dc/ 1",
-                 "streamTests.js true 0 true " + N + " http://datacache.org/dc/ 2",
-                 "streamTests.js false 0 true " + N + " http://datacache.org/dc/ 2"
+var testsuite2 = ["streamTests.js true 0 true " + n + " http://datacache.org/dc/ 1",
+                 "streamTests.js false 0 true " + n + " http://datacache.org/dc/ 1",
+                 "streamTests.js true 0 true " + n + " http://datacache.org/dc/ 2",
+                 "streamTests.js false 0 true " + n + " http://datacache.org/dc/ 2"
                  ];
 
 var fs      = require("fs");
@@ -48,16 +57,6 @@ function runsuite(j) {
 	});
 	
 }
-
-function s2b(str) {if (str === "true") {return true} else {return false}}
-function s2i(str) {return parseInt(str)}
-
-var sync    = s2b(process.argv[2] || "true");  				   // Do runs for test sequentially
-var tn      = s2i(process.argv[3] || "0");     				   // Start test Number
-var all     = s2b(process.argv[4] || "true");  				   // Run all tests after start number
-var n       = s2i(process.argv[5] || "5");     				   // Number of runs per test
-var server  = process.argv[6]     || "http://localhost:"+port+"/"; // DataCache server to test
-var server2 = s2i(process.argv[7] || "1");                     // Remote server to get data from
 
 ////////////////////////////////////////////////////////////////////////////
 // Simulated server
@@ -107,7 +106,7 @@ function checkmd5(j,k,sync,all) {
 			console.log(k + " " + stdout.substring(0,32));
 			
 			if (tests[j].md5 !== stdout.substring(0,32)) {
-				console.log("Error.  Response changed from last request.")
+				console.log("Error.  Response md5 changed from last request.")
 				diff("data-stream/out." + j + ".0","data-stream/out." + j + "." + k);
 			}
 			if (sync == true && k < tests[j].n) {					

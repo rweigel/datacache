@@ -18,6 +18,8 @@ var lineReader = require('line-reader');
 var zlib = require('zlib');
 var qs = require('querystring');
 xutil = require('util');
+exec  = require('child_process').exec;
+spawn = require('child_process').spawn;
 
 var expandtemplate = require("tsdset").expandtemplate;
 var expandISO8601Duration = require("tsdset").expandISO8601Duration;
@@ -204,8 +206,9 @@ function handleRequest(req, res) {
 		app.use(express.compress()); 
 	
 	if (source.length === 0) {
-	    res.contentType("html");
-	    fs.readFile(__dirname+"/sync.htm", "utf8", function (err, data) {res.send(data);});
+	    //res.contentType("html");
+	    //fs.readFile(__dirname+"/sync.htm", "utf8", function (err, data) {res.send(data);});
+		res.end();
 	    return;
 	}
 
@@ -333,9 +336,9 @@ stream.streaming = {};
 
 function stream(source, options, res) {
 
-	//if (options.streamFilterLineFormatter !== "") {
-		var lineFormatter = require(__dirname + "/plugins/formattedTime.js");
-	//}
+	res.setHeader('Transfer-Encoding', 'chunked');
+
+	var lineFormatter = require(__dirname + "/plugins/formattedTime.js");
 
 	var rnd        = options.id;		
 	var reqstatus  = {};
@@ -345,6 +348,34 @@ function stream(source, options, res) {
 	reqstatus[rnd].Nd       = 0; // Number of drained reads
 	reqstatus[rnd].gzipping = 0;
 	reqstatus[rnd].dt       = 0;
+	
+	plugin = scheduler.getPlugin(options,source[0])
+	
+	extractSignature = source.join(",");
+	if (plugin.extractSignature) extractSignature = plugin.extractSignature(options);
+	if (options.debugapp) console.log("plugin extractSignature: " + extractSignature);
+
+	var streamsignature   = util.md5(extractSignature + options.streamFilterReadBytes  + options.streamFilterReadLines  + options.streamFilterReadPosition  + options.streamFilterReadColumns  + options.streamFilterTimeFormat + options.streamFilterComputeWindow + options.streamFilterComputeFunction +  + options.streamFilterTimeRangeExpanded);
+	var streamdir         = __dirname +"/cache/stream/"+source[0].split("/")[2]+"/"+streamsignature+"/";
+	var streamfilecat     = streamdir + streamsignature + ".stream.gz";
+	var streamfilecatlck  = streamfilecat.replace("stream.gz","lck");
+
+	if (options.debugstream) console.log("streamdir         : " + streamdir);
+	if (options.debugstream) console.log("streamfilecat     : " + streamfilecat);
+	if (options.debugstream) console.log("streamfilecatlck  : " + streamfilecatlck);
+
+
+	if (!fs.existsSync(streamfilecat)) {
+		if (options.debugstream) console.log("streamfilecat does not exist.")
+	}
+	if (fs.existsSync(streamfilecatlck)) {
+		if (options.debugstream) console.log("streamfilecatlck exists.");
+	}
+
+	if (fs.existsSync(streamfilecat) && !fs.existsSync(streamfilecatlck) && !options.forceWrite && !options.forceUpdate) {
+		streamcat();
+		return;
+	}
 
 	var N = source.length;
 	if (options.debugstream) console.log(options.id+' stream called with ' + N + ' urls and options.streamOrder = '+options.streamOrder);
@@ -352,14 +383,57 @@ function stream(source, options, res) {
 	    scheduler.addURL(source[0], options, function (work) {processwork(work,true)});
 	} else {
 	    for (var jj=0;jj<N;jj++) {
-	    		if (options.debugstream) console.log("Adding to scheduler: " + source[jj]);
+	    	if (options.debugstream) console.log("Adding to scheduler: " + source[jj]);
 			scheduler.addURL(source[jj], options, function (work) {processwork(work)});
 	    }
 	}
+
+	function streamcat() {
+					
+		res.setHeader('Content-Encoding', 'gzip');
+		res.setHeader('Content-disposition', streamfilecat.replace(/.*\/(.*)/,"$1"))
+
+		if (fs.existsSync(streamfilecatlck)) {
+			if (options.debugstream) console.log("Cached stream file is locked.")
+		} else {
+			if (options.debugstream) console.log("Streaming cached concatenated stream file: "+streamfilecat);
+			fs.writeFileSync(streamfilecatlck,"");
+			if (options.streamGzip == false) {
+				if (options.debugstream) console.log("and unzipping cached concatenated stream file: "+streamfilecat);
+				var streamer = fs.createReadStream(streamfilecat).pipe(zlib.createGunzip());
+			} else {
+				var streamer = fs.createReadStream(streamfilecat);
+			}
+			streamer.on('end',function() {
+				if (options.debugstream) console.log("Received streamer.on end event.");
+				if (options.debugstream) console.log("Removing " + streamfilecatlck)
+				fs.unlink(streamfilecatlck)
+				res.end();
+			});
+			streamer.pipe(res);
+			return;
+		}
 		
+	}
+
+	function finished(inorder) {
+		if (options.debugstream) console.log(rnd+ " Incremening Nx from " + reqstatus[rnd].Nx + " to " + (reqstatus[rnd].Nx+1));
+		reqstatus[rnd].Nx = reqstatus[rnd].Nx + 1;
+
+		if ((reqstatus[rnd].Nx < N) && (inorder)) {
+			scheduler.addURL(source[reqstatus[rnd].Nx], options, function (work) {processwork(work,true)});
+		}
+
+		if (N == reqstatus[rnd].Nx) {
+			if (options.debugstream) console.log(rnd+" N == reqstatus[rnd].Nx; Sending res.end().");
+			res.end();
+		}
+	}
+
 	function processwork(work,inorder) {
 		var fname = util.getCachePath(work);
 
+		// TODO: Check if part exists. 
 		if (work.error) {
 			console.log(rnd+ " Sending res.end() because of work.error: ", work.error);
 			return res.end();
@@ -372,7 +446,39 @@ function stream(source, options, res) {
 		} else {
 			stream.streaming[fname] = stream.streaming[fname] + 1;
 		}
-		
+
+		var streamfilepart = streamdir+streamsignature+"/"+reqstatus[rnd].Nx+".stream.gz";
+		var streamfilepartlck  = streamdir+streamsignature+"/"+reqstatus[rnd].Nx+".lck";
+
+		if (!fs.existsSync(streamfilepartlck) && !options.forceWrite && !options.forceUpdate) {
+			if (options.debugstream) console.log("Checking if stream part exists: " + streamfilepart);
+			if (fs.existsSync(streamfilepart)) {
+				if (options.debugstream) console.log("It does.  Locking it.")
+				fs.writeFileSync(streamfilepartlck,"");
+				if (options.streamGzip == false) {
+					if (options.debugstream) console.log("and unzipping first");
+					var streamer = fs.createReadStream(streamfilepart).pipe(zlib.createGunzip());
+				} else {
+					if (options.debugstream) console.log("and sending raw");
+					var streamer = fs.createReadStream(streamfilepart);
+				}
+				streamer.on('end',function() {
+					if (options.debugstream) console.log("Received streamer.on end event.");
+					if (options.debugstream) console.log("Removing " + streamfilepartlck);
+					fs.unlink(streamfilepartlck);
+					
+					if (options.debugstream) {
+						if (options.debugstream) console.log(rnd+" readcallback() called.  Un-stream locking " + fname.replace(__dirname,""));
+				    }		    
+				    stream.streaming[fname] = stream.streaming[fname] - 1;
+					finished(inorder);
+				});
+				if (options.debugstream) console.log("Streaming it.")
+				streamer.pipe(res);
+				return;
+			}
+		}
+
 		if (options.streamFilterReadBytes > 0) {
 		    if (options.debugstream) console.log(rnd+" Reading Bytes of "+ fname.replace(__dirname,""));
 		    if (options.debugstream) console.log(rnd+" Stream lock status " + stream.streaming[fname]);
@@ -399,30 +505,47 @@ function stream(source, options, res) {
 
 		var lr = 0; // Lines kept.
 		var k = 1;  // Lines read.
-		var done = false;
-		//console.log("New column: " + work.plugin.columnTranslator(1))
-		var outcolumnsStr = options.streamFilterReadColumns.split(/,/);
-		var outcolumns = [];
 		
-		if (work.plugin.columnTranslator) {
-			// The plugin may have changed the number of columns by reformatting time.
-			for (var z = 0;z < outcolumnsStr.length; z++) {
-				outcolumns[z] = work.plugin.columnTranslator(parseInt(outcolumnsStr[z]));
+		var done = false;
+		
+		if (options.streamFilterReadColumns !== "0") {
+			//console.log("New column: " + work.plugin.columnTranslator(1))
+			var outcolumnsStr = options.streamFilterReadColumns.split(/,/);
+			var outcolumns = [];
+			
+			if (debugstream) {console.log("outformat requested");console.log(options.streamFilterTimeFormat);}
+			if (debugstream) {console.log("timecolumns");console.log(options.req.query.timecolumns);}
+			if (debugstream) {console.log("columns requested");console.log(outcolumnsStr);}
+			if (work.plugin.columnTranslator) {
+				// The plugin may have changed the number of columns by reformatting time.
+				for (var z = 0;z < outcolumnsStr.length; z++) {
+					outcolumns[z] = work.plugin.columnTranslator(parseInt(outcolumnsStr[z]),options);
+				}		
+			} else {
+				for (var z = 0;z < outcolumnsStr.length; z++) {
+					outcolumns[z] = lineFormatter.columnTranslator(parseInt(outcolumnsStr[z]),options);
+				}
 			}
-		} else {
-			for (var z = 0;z < outcolumnsStr.length; z++) {
-				outcolumns[z] = parseInt(outcolumnsStr[z]);
+			if (debugstream) {console.log("columns translated");console.log(outcolumns);}
+	
+			function onlyUnique(value, index, self) { 
+			    return self.indexOf(value) === index;
 			}
+			
+			// Remove non-unique columns (plugin may define all time columns to be the first column). 
+			outcolumns = outcolumns.filter(onlyUnique);
+	
+			if (outcolumns[0] == 1 && options.streamFilterTimeFormat == "2") {
+				outcolumns.splice(0,1);
+				//for (var i=0;i<outcolumns.length;i++) {outcolumns[i] = 6+outcolumns[i];}
+				outcolumns = [1,2,3,4,5,6].concat(outcolumns);
+			}
+			
+			if (debugstream) {console.log("columns final");console.log(outcolumns);}
 		}
 
-		function onlyUnique(value, index, self) { 
-		    return self.indexOf(value) === index;
-		}
-		// Remove non-unique columns (plugin may define all time columns to be the first column). 
-		outcolumns = outcolumns.filter(onlyUnique);
-		
 		if (options.streamFilterComputeFunction) {
-			console.log("Reading filter")
+			if (options.debugstream) console.log("Reading filter")
 			var math = require("./filters/"+options.streamFilterComputeFunction+".js");
 		}
 		
@@ -443,33 +566,33 @@ function stream(source, options, res) {
 						lines = "";
 						done = true;
 					}
+					
 					if (options.streamFilterReadColumns !== "0") {
+						
+						if (options.debugstream) console.log("Before " + line)
+						line = lineFormatter.formatLine(line,options);
+						if (options.debugstream) console.log("After " + line)
 						linea = line.split(/\s+/g);
 						line = "";
+						if (options.debugstream) console.log(linea)
+						if (options.debugstream) console.log(outcolumns)
 						for (var z = 0;z < outcolumns.length; z++) {
 							line = line + linea[outcolumns[z]-1] + " ";
 						}							
+						if (options.debugstream) console.log(line)
+
 					}
 
 					line = line.substring(0,line.length-1);
 					
-					if (options.streamFilterTimeFormat !== "0") {
-						line = lineFormatter.formatLine(line,options);
-					}
-
 					// TODO: Only return data if in time range given.
 					//if (options.streamFilterTimeRange !== "") {
 					//	line = lineFormatter.formatLine(line,options);
 					//}
 
 					if (!line.match("undefined")) {
-						if (!last) {
-							lines = lines + line + "\n";
-							linesa = linesa + line + "\n";
-						} else {
-							lines = lines + line;
-							linesa = linesa + line;
-						}
+						lines = lines + line + "\n";
+						linesa = linesa + line + "\n";
 					}
 
 					lr = lr + 1;
@@ -488,100 +611,131 @@ function stream(source, options, res) {
 			}).then(function () {
 				if (!done) {
 					if (options.streamFilterComputeFunction && linesx !== '') {
-						readcallback("",linesx);
+						readcallback("",linesx);//.replace(/\n$/,""));
 					} else {
-						readcallback("",lines);
+						readcallback("",lines);//.replace(/\n$/,""));
 					}
 				}
 				
 			});
 		}
 		
-		function readcallback(err, data) {
-		
+		function readcallback(err, data, cachepart) {
+
+			if (arguments.length < 3) cachepart = true;
+			
+			function cachestream(streamfilepart,data) {
+				console.log("Creating " + streamdir+streamsignature);
+
+				mkdirp(streamdir+streamsignature, function (err) {
+					if (err) console.log(err)
+					console.log("Created " + streamdir+streamsignature);
+
+					// TODO: Check if 0.stream.lck,etc. exists.
+					fs.writeFile(streamfilepart+".lck","",function (err) {
+						console.log("Wrote   "+streamfilepart+".lck");
+						console.log("Writing " + streamfilepart);
+						fs.writeFile(streamfilepart,data,function (err) {
+							console.log("Wrote   "+streamfilepart);
+							fs.unlink(streamfilepart+".lck",function () { 
+								if (reqstatus[rnd].Nx == N) {
+									var streamfile = streamdir.replace(streamsignature,"") + streamsignature + ".stream.gz";
+									console.log("Reading " + streamdir+streamsignature);
+									var files = fs.readdirSync(streamdir+streamsignature);
+									var files2 = [];
+									for (var z = 0;z<files.length;z++) {
+										files2[z] = ""+z+".stream.gz";
+									}
+									console.log(files2)
+									//TODO: Check if streamsignature.lck exists.
+									if (files.length > 1) {
+										console.log("Concatenating " + files2.length + " stream parts into ../" + streamsignature + ".stream.gz");
+										var com = "cd " + streamdir + streamsignature + "; touch ../" + streamsignature + ".lck" + ";cat " + files2.join(" ") + " > ../" + streamsignature + ".stream.gz; rm ../"+streamsignature+".lck";
+										console.log("Evaluating: " + com);
+										child = exec(com,function (error, stdout, stderr) {
+											console.log("Concatenation finished.");
+										});
+									} else {
+										var com = "cd " + streamdir + streamsignature + "; touch ../" + streamsignature + ".lck" + ";ln -s " + streamsignature + files2[0] + " ../" + streamsignature + ".stream.gz; rm ../"+streamsignature+".lck";
+										console.log("Evaluating " + com);
+										child = exec(com,function (error, stdout, stderr) {
+											console.log("Evaluated  " + com);
+											if (error) console.log(error)
+											console.log("Symlink finished.");
+										});									
+									}
+
+								}
+							})
+
+						});
+					});
+				});
+
+			}
+			
 			if (options.debugstream) {
 				console.log(rnd+" readcallback() called.  Un-stream locking " + fname.replace(__dirname,""));
 		    }		    
 		    stream.streaming[fname] = stream.streaming[fname] - 1;
 
-			function finished() {
-				if (options.debugstream) console.log(rnd+ " Incremening Nx from " + reqstatus[rnd].Nx + " to " + (reqstatus[rnd].Nx+1));
-				reqstatus[rnd].Nx = reqstatus[rnd].Nx + 1;
-
-				if ((reqstatus[rnd].Nx < N) && (inorder)) {
-					scheduler.addURL(source[reqstatus[rnd].Nx], options, function (work) {processwork(work,true)});
-				}
-
-				if (N == reqstatus[rnd].Nx) {
-					if (options.debugstream) console.log(rnd+" N == reqstatus[rnd].Nx; Sending res.end().");
-					res.end();
-				}
-			}
 								
 			if (err) {
 				if (options.debugstream) console.log(rnd+" readcallback was passed err: " + err);
 				return res.end();
 			}
 
-			if (!options.streamGzip) {
-				if (options.streamFilter === "") {
-					if (options.debugstream) console.log(rnd+" Writing response");
-					res.write(data);
-				} else {	
-					try {
-						//console.log(typeof(data));
-						//console.log(data[0]);
-						// This assumes the filter applies to ASCII.
-						eval("res.write(data.toString()."+options.streamFilter+")");
-					} catch (err) {
-						console.log(rnd+" Error when evaluating " + options.streamFilter);
-						console.log(err);
-						console.log(rnd+" Sending res.end()");
-						res.end();
-					}							
-										
-				}
+			var streamfilepart = streamdir+streamsignature+"/"+reqstatus[rnd].Nx+".stream.gz";
 
-				finished();
-				
-			}
-						
-			if (options.streamGzip) {												
-				reqstatus[rnd].gzipping = reqstatus[rnd].gzipping + 1;
-				var tic = new Date();
-				zlib.createGzip({level:1});
-				if (options.streamFilter === "") {
+			if (options.streamFilter === "") {
+				if (options.debugstream) console.log(rnd+" Writing response.");
+				if (!options.streamGzip) {
+					console.log("Sending uncompressed data of length = "+data.length)
+					res.write(data);
+					finished(inorder);
+					zlib.createGzip({level:1});
 					zlib.gzip(data, function (err, buffer) {
-						reqstatus[rnd].dt = new Date()-tic;
-						if (options.debugstream) console.log(rnd+' gzip callback event');
-						if (options.debugstream) console.log(rnd+ " Writing compressed buffer");
-						res.write(buffer);
-						reqstatus[rnd].gzipping=reqstatus[rnd].gzipping-1;
-						finished();
+						if (err) console.log(err);
+						if (cachepart) cachestream(streamfilepart,buffer);
 					});
 				} else {
-					// Not implemented.
-					var com = "data = " + data + "." + options.streamFilter;
-					//if (options.debugstream) console.log("Evaluating " + com);
-					try {
-						//eval(com);
-					} catch (err) {
-						//console.log(err);
-						//res.send("500",err);
-					}
-					zlib.gzip(data, function (err,buffer) {
-						reqstatus[rnd].dt = new Date()-tic;
-						console.log(rnd+' gzip callback event');
-						console.log(rnd+" Writing compressed buffer");
+					console.log("Compressing.")
+					zlib.createGzip({level:1});
+					zlib.gzip(data, function (err, buffer) {
+						if (err) console.log(err);
+						console.log("Compression finished. Sending buffer of length "+buffer.length)
 						res.write(buffer);
-						reqstatus[rnd].gzipping=reqstatus[rnd].gzipping-1;
+						if (cachepart) cachestream(streamfilepart,buffer);
+						finished(inorder);
 					});
 				}
-			}						
 
+			} else {	
+				try {
+					eval("data = data.toString()."+options.streamFilter);
+					if (!options.streamGzip) {
+						res.write(data);
+						if (cachepart) cachestream(streamfilepart,data)
+						finished(inorder);
+					} else {
+						zlib.createGzip({level:1});
+						zlib.gzip(data, function (err, buffer) {
+							reqstatus[rnd].dt = new Date()-tic;
+							if (options.debugstream) console.log(rnd+' gzip callback event');
+							if (options.debugstream) console.log(rnd+ " Writing compressed buffer");
+							res.write(buffer);
+							reqstatus[rnd].gzipping=reqstatus[rnd].gzipping-1;
+							if (cachepart) cachestream(streamfilepart,buffer)
+							finished(inorder);
+						});
+					}
+				} catch (err) {
+					console.log(rnd+" Error when evaluating " + options.streamFilter);
+					finished(inorder);
+				}
+			}
 
 		}
-
 
 	}
 
@@ -605,6 +759,7 @@ function parseOptions(req) {
 	options.includeVers    = s2b(req.query.includeVers)    || s2b(req.body.includeVers)    || false;
 	options.return         = req.query.return              || req.body.return              || "json";
 	options.dir            = req.query.dir                 || req.body.dir                 || "/cache/";
+    options.prefix         = req.body.prefix 			   || req.query.prefix			   || "";
 
 	options.plugin         = req.query.plugin        || req.body.plugin        || "";
 	options.lineRegExp     = req.query.lineRegExp    || req.body.lineRegExp    || ".";	
@@ -650,11 +805,8 @@ function parseOptions(req) {
 	options.streamFilterComputeWindow   = s2i(req.query.streamFilterComputeWindow  || req.query.streamFilterComputeWindow    || "1"); 
 	options.streamFilterComputeFunction = req.query.streamFilterComputeFunction    || req.query.streamFilterComputeFunction  || ""; 
 
-    var timeRange  = req.body.timeRange  || req.query.timeRange || "";
-
-    if (timeRange) {
-    	options.timeRange = expandISO8601Duration(timeRange.split("/")[0]) + "/" + expandISO8601Duration(timeRange.split("/")[1]);
-    }
+    options.timeRange          = req.body.timeRange  || req.query.timeRange || "";
+	options.timeRangeExpanded  = expandISO8601Duration(options.timeRange,{debug:debugtemplate})
 
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
@@ -665,7 +817,10 @@ function parseOptions(req) {
 	    }
 	}
 	
-	if (debugapp) console.log(options);
+	if (debugapp) {
+		console.log("\noptions after parseOptions:")
+		console.log(options);
+	}
 	
 	return options;
 }
@@ -675,14 +830,10 @@ function parseSource(req) {
 
 	options = parseOptions(req);
 	
-    var source = req.body.source || req.query.source || "";
-    var prefix = req.body.prefix || req.query.prefix;
+    var source     = req.body.source || req.query.source || "";
+    var prefix     = req.body.prefix || req.query.prefix;
 
     var template   = req.body.template || req.query.template;
-    
-    if (debugapp) console.log("template: " + template);
-    if (debugapp) console.log("source: " + source);
-
     var timeRange  = req.body.timeRange  || req.query.timeRange;
 	var indexRange = req.body.indexRange || req.query.indexRange;
         
@@ -690,39 +841,45 @@ function parseSource(req) {
 	
 	var sourcet = [];
 	
-	if (template) {	
-	    var options          = {};
-	    options.template = template;
-		options.check    = false;
-		options.debug    = options.debugtemplate;
-		options.side     = "server";
+    var opts          = {};
+
+    if (template) {	
+	    opts.template = template;
+		opts.check    = false;
+		opts.debug    = opts.debugtemplate;
+		opts.side     = "server";	
 		if (timeRange) {
-			options.type  = "strftime";
-			options.start = timeRange.split("/")[0];
-			options.stop  = timeRange.split("/")[1];
-			options.debug = options.debugtemplate;
-			if (options.debugtemplate) console.log(options);
-			sourcet = expandtemplate(options);
-			if (options.debugtemplate) {
+			opts.type       = "strftime";
+			opts.timeRange  = timeRange;
+			opts.indexRange = null;
+			opts.debug      =  opts.debugtemplate;
+			sourcet = expandtemplate(opts);
+			if (opts.debugtemplate) {
 				console.log("sourcet = ");
 			    console.log(sourcet);
 			}
+
 		}
 		if (indexRange) {
-			options.type  = "sprintf";
-			console.log(indexRange)
-			options.start = indexRange.split("/")[0];
-			options.stop  = indexRange.split("/")[1];
-			options.debug = options.debugtemplate;
-			if (options.debugtemplate) console.log(options);
-			sourcet = sourcet.concat(expandtemplate(options));
+			opts.type       = "sprintf";
+			opts.timeRange  = null;
+			opts.indexRange = indexRange;
+			opts.template   = template;
+			opts.debug      = opts.debugtemplate;
+			sourcet         = sourcet.concat(expandtemplate(opts));
 		}
 	}
 
+    if (debugapp) console.log(sourcet)
 	if (source) {
 		source = source.trim().replace("\r", "").split(/[\r\n]+/).filter(function (line) {return line.trim() != "";});
 	}
 	
+	if (options.debugtemplate) {
+		console.log("\noptions after parseSource:")
+		console.log(options);
+	}
+
 	if (options.debugapp) console.log(sourcet);
 	if (options.debugapp) console.log(source);
 

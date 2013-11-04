@@ -4,12 +4,12 @@ exports.match = function(url){
 	return url.split("/")[2].toLowerCase()==="xwdc.kugi.kyoto-u.ac.jp";
 }
 
-exports.extractData = function(data){
+exports.extractData = function(data,options){
 
 	
 	//console.log(typeof data)
 	var monthyear = data.toString().split("\n").filter(function(line){return line.search(/JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER/)!=-1;})[0].replace(/\s/g,"");
-	var yearmonth = monthyear.replace(/(.*)([0-9][0-9][0-9][0-9])/,"$2-$1-01 00:30:00.00000Z")
+	var yearmonth = monthyear.replace(/(.*)([0-9][0-9][0-9][0-9])/,"$2-$1-01T00:30:00.00000Z")
 					.replace("JANUARY","01")
 					.replace("FEBRUARY","02")
 					.replace("MARCH","03")
@@ -26,16 +26,28 @@ exports.extractData = function(data){
 	var time = new Date(yearmonth);
 	var i = 0;
 	var data = data.toString().split("\n").filter(function(line){return line.search(/^[0-9]|^ [0-9]/)!=-1;}).join("\n").replace(/^ [0-9]|\n [0-9]|\n[0-9][0-9]/g,'').replace(/9999/g," 9999");
+
+	var startdate = options.timeRange.split("/")[0];
+	var stopdate  = options.timeRange.split("/")[1];
+
+	var startms = new Date(startdate).getTime();
+	var stopms  = new Date(stopdate).getTime();
+
 	var result = data
-		.trim()
-		.split(/\s+/)
-		.map(function(number){
-			time = add60min(time);
-			return time.toISOString().replace(/T/," ").replace(/Z/,"") + " " + number;
-		});
+					.trim()
+					.split(/\s+/)
+					.map(function(number){
+						time = add60min(time);
+						ms = new Date(time).getTime();
+						if (ms >= startms && ms <= stopms) {
+							return time.toISOString() + " " + number;
+						} else {
+							return "";
+						}
+					})
+					.filter(function(n){return n});	// Remove empty array elements.
 
 	function add60min(date){
-		//console.log(date);
 		md = new Date(date.getTime() + 60*60000*i);
 		i = 1;
 		return md

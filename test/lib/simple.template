@@ -11,4 +11,3 @@ Details:\n\n
 {{/each}}
 Test results:\n 
  {{passedSuitesCount}} suites passed, {{failedSuitesCount}} suites failed.\n
-Details:\n\n
