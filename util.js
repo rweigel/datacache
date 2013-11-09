@@ -9,7 +9,8 @@ var FtpClient  = require("ftp");
 var TIMEOUT = 20000;
 var MAXCONNECTION = 1000;
 
-var app = require("./app.js");
+var app    = require("./app.js");
+var stream = require("./stream.js");
 
 // Download a resource via http or ftp
 function download(url, callback){
@@ -267,7 +268,7 @@ var writeCache = function(work, callback){
   	// No other process should be writing to cache directory, so no need to check lock
   	// before writing.
 //	if (!memLock[work.id]) {
-	if (!memLock[work.id] && (app.stream.streaming[filename] == 0 || typeof(app.stream.streaming[filename]) === "undefined")) {
+	if (!memLock[work.id] && (stream.stream.streaming[filename] == 0 || typeof(stream.stream.streaming[filename]) === "undefined")) {
 	    // If memLock[result.url] is undefined or 0, no writing is on-going.
 	    memLock[work.id] = 6;
 	    work.writeStartTime = new Date();
@@ -298,14 +299,14 @@ var writeCache = function(work, callback){
 				      writeFiles();
 				  } else {
 				  	  // If this fails, another process has moved it to the archive directory.
-				  	  if (app.stream.streamdebug) console.log(work.options.id+" Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1"));
+				  	  if (work.streamdebug) console.log(work.options.id+" Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1"));
 					  //dataMd5old = md5(fs.readFileSync(filename+".data"));
 					  if (1) {
 					  try {
 					      dataMd5old = md5(fs.readFileSync(filename+".data"));
 					  } catch (e) {
 					  		debugger
-					  	  if (app.stream.streamdebug) console.log(work.options.id+" Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1" + " failed."));
+					  	  if (work.streamdebug) console.log(work.options.id+" Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1" + " failed."));
 						  dataMd5old = "";
 					  }
 					  }
@@ -326,10 +327,10 @@ var writeCache = function(work, callback){
 	    function writeFiles() {
 			//fs.writeFileSync(filename+".lck","");
 			//fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".lck",work.dir);
-			if (app.stream.streamdebug) console.log(work.options.id + " Attempting write of: "+filename.replace(/.*\/(.*)/,"$1")+".data");
-			if (app.stream.streamdebug) console.log(work.options.id + " fs.exists: " + fs.existsSync(filename+".data"));
-			if (app.stream.streaming[filename] > 0) {
-				if (app.stream.streamdebug) {
+			if (work.streamdebug) console.log(work.options.id + " Attempting write of: "+filename.replace(/.*\/(.*)/,"$1")+".data");
+			if (work.streamdebug) console.log(work.options.id + " fs.exists: " + fs.existsSync(filename+".data"));
+			if (stream.stream.streaming[filename] > 0) {
+				if (work.streamdebug) {
 					console.log(work.options.id + " " + filename.replace(/.*\/(.*)/,"$1") + " A stream lock was found.  Aborting write.");
 					console.log(work.options.id + " " + "Presumably, an update was recently performed.  forceUpdate=true may have unexpected results.");
 				}
@@ -353,7 +354,7 @@ var writeCache = function(work, callback){
 			try {
 				fs.renameSync(filename+".data"  , filename+"/"+dataMd5old+".data");			
 			} catch (e) {
-				if (app.stream.streamdebug) {
+				if (work.streamdebug) {
 					console.log(work.options.id  + " Could not move " + filename.replace(/.*\/(.*)/,"$1") + ".  forceUpdate=true may have unexpected results.");
 					console.log(work.options.id  + " It was probably moved by another request.");
 				}
@@ -362,10 +363,10 @@ var writeCache = function(work, callback){
 		function renameFiles(callback) {
 			var newdir = filename + "/";
 			mkdirp(newdir, function (err) {
-					if (app.stream.streamdebug) console.log(work.options.id  + " Created directory " + newdir);
+					if (work.streamdebug) console.log(work.options.id  + " Created directory " + newdir);
 					//console.log("filename: " + filename);
 					if (err) {console.log(err);}
-					if (app.stream.streamdebug)
+					if (work.streamdebug)
 						console.log(work.options.id  + " Tring to move files to: " + newdir);
 					tryrename(filename+".data");					
 					tryrename(filename+".bin");					
