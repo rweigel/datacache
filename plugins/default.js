@@ -58,6 +58,13 @@ exports.process = function (work, callback) {
 		logger.d("host: " + host);
 		logger.d("connect func: " + conn.connect);
 		conn.on("ready", function(){
+				
+				// TODO: Write .header file.
+				//conn.list(filepath, function(err,list) {
+				//	console.log(err);
+				//	console.log(list);
+				//})
+			
 				conn.get(filepath, function(err, stream){
 					if(err){
 						work.error=err;callback(true, work);conn.end();

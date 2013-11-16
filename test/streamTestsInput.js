@@ -88,19 +88,19 @@ tests[j].md5  = "4dcc638a9d40bdf4f4c1c6d38ecfa979";
 
 j = j+1;
 tests[j]      = {};
-tests[j].url  = server + "sync?source=http://datacache.org/dc/demo/file1.txt&return=stream&lineRegExp=^[0-9]&timeformat=DD-MM-YYYY,HH:mm:ss.SSS&timecolumns=1,2&streamFilterReadColumns=1,2,3,4,5,6&forceUpdate=true&forceWrite=true&streamFilterReadPosition=360&streamFilterReadLines=1&streamFilterTimeFormat=1";
+tests[j].url  = server + "sync?source="+server+"demo/file1.txt&return=stream&lineRegExp=^[0-9]&timeformat=DD-MM-YYYY,HH:mm:ss.SSS&timecolumns=1,2&streamFilterReadColumns=1,2,3,4,5,6&forceUpdate=true&forceWrite=true&streamFilterReadPosition=360&streamFilterReadLines=1&streamFilterTimeFormat=1";
 tests[j].n    = n || 50;
 tests[j].md5  = "6e6f9f545e1e4a9db5e3bea91609b4e5";
 
 j = j+1;
 tests[j]      = {};
-tests[j].url  = server + "sync?source=http://datacache.org/dc/demo/file1.txt&return=stream&lineRegExp=^[0-9]&timeformat=DD-MM-YYYY,HH:mm:ss.SSS&timecolumns=1,2&streamFilterReadColumns=1,2,3,4,5,6&forceUpdate=true&forceWrite=true&streamFilterReadPosition=360&streamFilterReadLines=1&streamFilterTimeFormat=0";
+tests[j].url  = server + "sync?source="+server+"demo/file1.txt&return=stream&lineRegExp=^[0-9]&timeformat=DD-MM-YYYY,HH:mm:ss.SSS&timecolumns=1,2&streamFilterReadColumns=1,2,3,4,5,6&forceUpdate=true&forceWrite=true&streamFilterReadPosition=360&streamFilterReadLines=1&streamFilterTimeFormat=0";
 tests[j].n    = n || 50;
 tests[j].md5  = "755c81782ceb9bf9a391daee92ee2396";
 
 j = j+1;
 tests[j]      = {};
-tests[j].url  = server + "sync?source=http://datacache.org/dc/demo/file1.txt&return=stream&lineRegExp=^[0-9]&timeformat=DD-MM-YYYY,HH:mm:ss.SSS&timecolumns=1,2&streamFilterReadColumns=1,2,3,4,5,6&forceUpdate=false&forceWrite=false&streamFilterReadPosition=360&streamFilterReadLines=1&streamFilterTimeFormat=0";
+tests[j].url  = server + "sync?source="+server+"demo/file1.txt&return=stream&lineRegExp=^[0-9]&timeformat=DD-MM-YYYY,HH:mm:ss.SSS&timecolumns=1,2&streamFilterReadColumns=1,2,3,4,5,6&forceUpdate=false&forceWrite=false&streamFilterReadPosition=360&streamFilterReadLines=1&streamFilterTimeFormat=0";
 tests[j].n    = n || 50;
 tests[j].md5  = "755c81782ceb9bf9a391daee92ee2396";
 

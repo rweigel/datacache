@@ -17,7 +17,7 @@ var runner = require("./lib/testRunner")(),
 
 async.series([
 function(cb){
-	var uri = server + "sync?source=http://localhost:8000/&forceUpdate=true&forceWrite=true";
+	var uri = server + "sync?source="+server+"&forceUpdate=true&forceWrite=true";
 	suite("should be success for a valid URL: "+uri, function(test, testInfo, suiteDone){
 		request({
 			uri: uri,

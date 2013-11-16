@@ -3,7 +3,7 @@
 // Production server
 // Both servers using data from original data source 
 
-var port = 8000;
+var port = 7999;
 
 function s2b(str) {if (str === "true") {return true} else {return false}}
 function s2i(str) {return parseInt(str)}

@@ -68,7 +68,8 @@ function run() {
 		work.cacheCheckStartTime = new Date();
 		util.isCached(work, function (work) {
 			work.cacheCheckFinishedTime = new Date();
-			if (!work.foundInCache || work.options.forceUpdate) {
+			if (!work.foundInCache || work.options.forceUpdate || (work.options.respectHeaders && work.isExpired)) {
+				
 			    work.preprocess(function (err, work) {
 				    work.processStartTime = new Date();
 				    work.process(function (err, work) {
@@ -212,6 +213,7 @@ function newWork(url, options, callback){
 		lstat: {},
 		versions: [],
 		isFromCache : false,
+		isExpired : false,
 		isFinished : false,
 		foundInCache: false,
 		error : false,

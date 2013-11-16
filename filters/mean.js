@@ -1,8 +1,3 @@
-//streamFilterComputeWindow=PT1S or 10
-//streamFilterCompute=mean
-//streamFilterCompute=N
-//streamFilterCompute=min,max,mean,N
-
 exports.filterSignature = function(options) {
 	return options.streamFilterComputeWindow + "mean";
 }

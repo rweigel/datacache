@@ -5,7 +5,7 @@ exports.match = function(url){
 }
 
 exports.extractData = function(data,options){
-
+    
 	
 	//console.log(typeof data)
 	var monthyear = data.toString().split("\n").filter(function(line){return line.search(/JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER/)!=-1;})[0].replace(/\s/g,"");
@@ -27,8 +27,13 @@ exports.extractData = function(data,options){
 	var i = 0;
 	var data = data.toString().split("\n").filter(function(line){return line.search(/^[0-9]|^ [0-9]/)!=-1;}).join("\n").replace(/^ [0-9]|\n [0-9]|\n[0-9][0-9]/g,'').replace(/9999/g," 9999");
 
-	var startdate = options.timeRange.split("/")[0];
-	var stopdate  = options.timeRange.split("/")[1];
+	console.log(data);
+
+	var startdate = options.timeRangeExpanded.split("/")[0];
+	var stopdate  = options.timeRangeExpanded.split("/")[1];
+
+	console.log(startdate);
+	console.log(stopdate);
 
 	var startms = new Date(startdate).getTime();
 	var stopms  = new Date(stopdate).getTime();

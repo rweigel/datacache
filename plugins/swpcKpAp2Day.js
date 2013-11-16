@@ -5,7 +5,7 @@ exports.match = function(url){
 }
 
 exports.extractSignature = function(options) {
-	return options.timeRangeExpanded;
+	return "";
 }
 
 exports.timeFormat = function() {

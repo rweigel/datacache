@@ -5,12 +5,15 @@ var request = require("request");
 var mkdirp  = require("mkdirp");
 var logger  = require("./logger.js");
 var FtpClient  = require("ftp");
+var url     = require('url');
+var http    = require('http');
+http.globalAgent.maxSockets = 100;  // Most Apache servers have this set at 100.	
+
 
 var TIMEOUT = 20000;
 var MAXCONNECTION = 1000;
 
-var app    = require("./app.js");
-var stream = require("./stream.js");
+var app = require("./stream.js");
 
 // Download a resource via http or ftp
 function download(url, callback){
@@ -126,6 +129,68 @@ var getId = (function () {
 })();
 exports.getId = getId;
 
+var head = function head(work,callback) {
+	
+		if (work.url.match("^ftp")) {
+			// TODO: Read .header file.
+			if (work.options.debugcache) console.log("Head check of FTP is not implemented.")
+			callback(work);
+			return;
+		}
+		
+		var options = {method: 'HEAD', host: url.parse(work.url).hostname, port: 80, path: url.parse(work.url).pathname};
+		
+		if (work.options.debugcache) console.log("Doing head check of: " + work.url);
+		var req = http.request(options, function(res) {
+				
+				var fname = getCachePath(work);
+
+				if (fs.existsSync(fname+".header")) {
+					var header = fs.readFileSync(fname+".header").toString();
+					var headers = header.split("\n");
+					for (var j = 0;j<headers.length;j++) {
+						var headersplit = headers[j].split(":");
+						if (headersplit[0].match(/last-modified/i)) {
+							headersplit.shift();
+							break;
+						}
+					}
+
+					if (j==headers.length) {
+						if (work.options.debugcache) console.log("No last-modified in cached header.");
+						callback(work);
+						return;
+					}
+					
+					var lmcache = headersplit.join(":")
+					if (work.options.debugcache) console.log("last-modified of cache:   " + lmcache);
+					var mslmcache = new Date(lmcache).getTime();
+					work.lastModified = lmcache;
+					var  lmnow = res.headers["last-modified"];
+					if (lmnow) {
+						if (work.options.debugcache) console.log("last-modified of response: " + lmnow);
+						var mslmnow = new Date(lmnow).getTime();
+						if (mslmnow > mslmcache) {
+							if (work.options.debugcache) console.log("Cache has expired.");
+							work.isExpired = true;
+						} else {
+							if (work.options.debugcache) console.log("Cache has not expired.");
+						}
+					} else {
+						if (work.options.debugcache) console.log("No last-modified in response header.");
+					}
+				} else {
+					if (work.options.debugcache) console.log("No cached header file.");
+				}
+				callback(work);
+			});
+		req.on('end',function () {if (work.options.debugcache) console.log("Finished HEAD check of " + urlo);});
+		req.on('error', function(e) {callback(e);});
+		req.end();
+	
+}
+exports.head = head;
+
 var isCached = function isCached(work, callback) {
     fs.exists(getCachePath(work) + ".data", function (exist) {
 	    if (exist) {
@@ -133,11 +198,10 @@ var isCached = function isCached(work, callback) {
 			work.dir = getCacheDir(work,true);
 	    }
 	    if (work.options.respectHeaders) {
+	    	head(work,callback)
+	    } else {
+	    	callback(work);
 	    }
-	    if (work.options.includeVers) {
-	    		// TODO: Get list of files named md5data./*.data.
-	    }
-	    callback(work);
 	});
 }
 exports.isCached = isCached;
@@ -268,7 +332,7 @@ var writeCache = function(work, callback){
   	// No other process should be writing to cache directory, so no need to check lock
   	// before writing.
 //	if (!memLock[work.id]) {
-	if (!memLock[work.id] && (stream.stream.streaming[filename] == 0 || typeof(stream.stream.streaming[filename]) === "undefined")) {
+	if (!memLock[work.id] && (app.stream.streaming[filename] == 0 || typeof(app.stream.streaming[filename]) === "undefined")) {
 	    // If memLock[result.url] is undefined or 0, no writing is on-going.
 	    memLock[work.id] = 6;
 	    work.writeStartTime = new Date();
@@ -299,19 +363,16 @@ var writeCache = function(work, callback){
 				      writeFiles();
 				  } else {
 				  	  // If this fails, another process has moved it to the archive directory.
-				  	  if (work.streamdebug) console.log(work.options.id+" Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1"));
+				  	  if (app.stream.streamdebug) console.log(work.options.id+" Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1"));
 					  //dataMd5old = md5(fs.readFileSync(filename+".data"));
-					  if (1) {
 					  try {
-					      dataMd5old = md5(fs.readFileSync(filename+".data"));
+						  dataMd5old = md5(fs.readFileSync(filename+".data"));
 					  } catch (e) {
-					  		debugger
-					  	  if (work.streamdebug) console.log(work.options.id+" Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1" + " failed."));
+						  debugger
+						  if (app.stream.streamdebug) console.log(work.options.id+" Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1" + " failed."));
 						  dataMd5old = "";
 					  }
-					  }
-				      //console.log(work.dataMd5 + " " + dataMd5old);
-				      if ( (work.dataMd5 != dataMd5old) || work.options.forceWrite) {
+				      if ( (work.dataMd5 != dataMd5old) || work.options.forceWrite || (work.options.respectHeaders && work.isExpired)) {
 						if (keepversions(work.url) && (work.dataMd5 != dataMd5old)) {
 						    renameFiles(writeFiles);
 						} else {
@@ -327,10 +388,10 @@ var writeCache = function(work, callback){
 	    function writeFiles() {
 			//fs.writeFileSync(filename+".lck","");
 			//fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".lck",work.dir);
-			if (work.streamdebug) console.log(work.options.id + " Attempting write of: "+filename.replace(/.*\/(.*)/,"$1")+".data");
-			if (work.streamdebug) console.log(work.options.id + " fs.exists: " + fs.existsSync(filename+".data"));
-			if (stream.stream.streaming[filename] > 0) {
-				if (work.streamdebug) {
+			if (app.stream.streamdebug) console.log(work.options.id + " Attempting write of: "+filename.replace(/.*\/(.*)/,"$1")+".data");
+			if (app.stream.streamdebug) console.log(work.options.id + " fs.exists: " + fs.existsSync(filename+".data"));
+			if (app.stream.streaming[filename] > 0) {
+				if (app.stream.streamdebug) {
 					console.log(work.options.id + " " + filename.replace(/.*\/(.*)/,"$1") + " A stream lock was found.  Aborting write.");
 					console.log(work.options.id + " " + "Presumably, an update was recently performed.  forceUpdate=true may have unexpected results.");
 				}
@@ -354,7 +415,7 @@ var writeCache = function(work, callback){
 			try {
 				fs.renameSync(filename+".data"  , filename+"/"+dataMd5old+".data");			
 			} catch (e) {
-				if (work.streamdebug) {
+				if (app.stream.streamdebug) {
 					console.log(work.options.id  + " Could not move " + filename.replace(/.*\/(.*)/,"$1") + ".  forceUpdate=true may have unexpected results.");
 					console.log(work.options.id  + " It was probably moved by another request.");
 				}
@@ -363,10 +424,10 @@ var writeCache = function(work, callback){
 		function renameFiles(callback) {
 			var newdir = filename + "/";
 			mkdirp(newdir, function (err) {
-					if (work.streamdebug) console.log(work.options.id  + " Created directory " + newdir);
+					if (app.stream.streamdebug) console.log(work.options.id  + " Created directory " + newdir);
 					//console.log("filename: " + filename);
 					if (err) {console.log(err);}
-					if (work.streamdebug)
+					if (app.stream.streamdebug)
 						console.log(work.options.id  + " Tring to move files to: " + newdir);
 					tryrename(filename+".data");					
 					tryrename(filename+".bin");					

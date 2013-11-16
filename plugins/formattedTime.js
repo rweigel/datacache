@@ -54,7 +54,7 @@ exports.formatLine = function (line, options) {
 		var plugin = scheduler.getPlugin(options);
 		if (plugin.timeFormat) {
 			var timeformat = plugin.timeFormat();
-			if (debug) console.log("formattedTime: Plugin has time format of "+timeformat);
+			if (debug) console.log("formattedTime: Plugin has time format of: "+timeformat);
 		}
 		if (plugin.timeColumns) {
 			var timecolumns = plugin.timeColumns();
@@ -68,7 +68,12 @@ exports.formatLine = function (line, options) {
 	var timeformata  = timeformat.split(/,|\s+/);
 	var timecolumnsa = timecolumns.split(/,/);
 
-	if (debug) console.log("line "+line)
+	if (debug) console.log("line: "+line);
+		       
+		       if (line === "") {
+			   if (debug) console.log("Empty line");
+			   return "";
+		       }
 	// Assumes time is in continuous columns and before any data column that is to be kept.
 	timev      = line.split(/\s+/).slice(parseInt(timecolumnsa[0])-1,parseInt(timecolumnsa[timecolumnsa.length-1]));
 	datav      = line.split(/\s+/).slice(parseInt(timecolumnsa[timecolumnsa.length-1]));
