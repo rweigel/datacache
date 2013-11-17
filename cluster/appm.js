@@ -1,3 +1,8 @@
+// Runs one datacache instance per CPU found on machine.  Each CPU has its
+// own cache directory.  No sharing of cache directories.  
+// TODO: Re-use locking code for single instance to allow sharing of cache
+// directories.
+
 var cluster = require('cluster');
 var http = require('http');
 var numCPUs = require('os').cpus().length;
@@ -6,10 +11,6 @@ var worker;
 var numReqs = 0;
 var fs = require("fs");
 
-// Runs one datacache instance per CPU found on machine.  Each CPU has its
-// own cache directory.  No sharing of cache directories.  
-// TODO: Re-use locking code for single instance to allow sharing of cache
-// directories.
 
 // Get port number from command line option.
 var port = process.argv[2] || 8000;
@@ -40,10 +41,10 @@ if (cluster.isMaster) {
 	for (var j=0;j<numCPUs-1;j++) {
 		var cachedir     = __dirname+"/cache-"+j;
 		var cachedirlock = __dirname+"/cache-"+j+".lck";
-		if (!fs.existsSync(cachedir) && fs.existsSync(cachedirlock)) {
+		if (!fs.existsSync(cachedir)) {
 			// No cachedir but cachedir.lck
-			console.log("Lock file found with no associated directory.  Deleting lock file.");
-			// Overwrite lock file.
+			console.log("No cache directory.  Creating an overwriting any existing lock file.");
+			// Overwrite lock file.			
 			fs.writeFileSync(cachedirlock, process.pid);
 			// Create cache directory.
 			fs.mkdirSync(cachedir);
