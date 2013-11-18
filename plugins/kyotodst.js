@@ -27,13 +27,13 @@ exports.extractData = function(data,options){
 	var i = 0;
 	var data = data.toString().split("\n").filter(function(line){return line.search(/^[0-9]|^ [0-9]/)!=-1;}).join("\n").replace(/^ [0-9]|\n [0-9]|\n[0-9][0-9]/g,'').replace(/9999/g," 9999");
 
-	console.log(data);
+	//console.log(data);
 
 	var startdate = options.timeRangeExpanded.split("/")[0];
 	var stopdate  = options.timeRangeExpanded.split("/")[1];
 
-	console.log(startdate);
-	console.log(stopdate);
+	//console.log(startdate);
+	//console.log(stopdate);
 
 	var startms = new Date(startdate).getTime();
 	var stopms  = new Date(stopdate).getTime();

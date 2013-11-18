@@ -232,9 +232,9 @@ function stream(source, options, res) {
 			if (options.debugstream) {console.log("columns final");console.log(outcolumns);}
 		}
 
-		if (options.streamFilterComputeFunction) {
+		if (options.streamFilterComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
 			if (options.debugstream) console.log("Reading filter")
-			var math = require("./filters/"+options.streamFilterComputeFunction+".js");
+			var stats = require("./filters/stats.js");
 		}
 		
 		function readline(fname) {	
@@ -285,11 +285,9 @@ function stream(source, options, res) {
 
 					lr = lr + 1;
 
-					if (options.streamFilterComputeFunction) {
+					if (options.streamFilterComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
 						if (lr % options.streamFilterComputeWindow == 0) {
-							//console.log(linesa)
-							linesx = linesx + math.mean(linesa.replace(/\n$/,""));
-							//console.log(linesx)
+							linesx = linesx + stats.stats(linesa.replace(/\n$/,""),options);
 							linesa = '';
 						}
 					}
@@ -299,9 +297,11 @@ function stream(source, options, res) {
 			}).then(function () {
 				if (!done) {
 					if (options.streamFilterComputeFunction && linesx !== '') {
-						readcallback("",linesx);//.replace(/\n$/,""));
+						if (options.debugstream) console.log("Last window not full.");
+						linesx = linesx + stats.stats(linesa.replace(/\n$/,""),options);
+						readcallback("",linesx);
 					} else {
-						readcallback("",lines);//.replace(/\n$/,""));
+						readcallback("",lines);
 					}
 				}
 				
@@ -313,43 +313,45 @@ function stream(source, options, res) {
 			if (arguments.length < 3) cachepart = true;
 			
 			function cachestream(streamfilepart,data) {
-				console.log("Creating " + streamdir+streamsignature);
+				if (options.debugstream) console.log("Creating " + streamdir+streamsignature);
 
 				mkdirp(streamdir+streamsignature, function (err) {
 					if (err) console.log(err)
-					console.log("Created " + streamdir+streamsignature);
+					if (options.debugstream) console.log("Created " + streamdir+streamsignature);
 
 					// TODO: Check if 0.stream.lck,etc. exists.
+					if (options.debugstream) console.log("Writing "+streamfilepart+".lck");
 					fs.writeFile(streamfilepart+".lck","",function (err) {
-						console.log("Wrote   "+streamfilepart+".lck");
-						console.log("Writing " + streamfilepart);
+						if (options.debugstream) console.log("Wrote   "+streamfilepart+".lck");
+						if (options.debugstream) console.log("Writing " + streamfilepart);
 						fs.writeFile(streamfilepart,data,function (err) {
-							console.log("Wrote   "+streamfilepart);
+							if (options.debugstream) console.log("Wrote   "+streamfilepart);
 							fs.unlink(streamfilepart+".lck",function () { 
 								if (reqstatus[rnd].Nx == N) {
 									var streamfile = streamdir.replace(streamsignature,"") + streamsignature + ".stream.gz";
-									console.log("Reading " + streamdir+streamsignature);
+									if (options.debugstream) console.log("Reading " + streamdir+streamsignature);
 									var files = fs.readdirSync(streamdir+streamsignature);
 									var files2 = [];
 									for (var z = 0;z<files.length;z++) {
 										files2[z] = ""+z+".stream.gz";
 									}
-									console.log(files2)
+									if (options.debugstream) console.log(files2)
+
 									//TODO: Check if streamsignature.lck exists.
 									if (files.length > 1) {
-										console.log("Concatenating " + files2.length + " stream parts into ../" + streamsignature + ".stream.gz");
+										if (options.debugstream) console.log("Concatenating " + files2.length + " stream parts into ../" + streamsignature + ".stream.gz");
 										var com = "cd " + streamdir + streamsignature + "; touch ../" + streamsignature + ".lck" + ";cat " + files2.join(" ") + " > ../" + streamsignature + ".stream.gz; rm ../"+streamsignature+".lck";
-										console.log("Evaluating: " + com);
+										if (options.debugstream) console.log("Evaluating: " + com);
 										child = exec(com,function (error, stdout, stderr) {
-											console.log("Concatenation finished.");
+											if (options.debugstream) console.log("Concatenation finished.");
 										});
 									} else {
 										var com = "cd " + streamdir + streamsignature + "; touch ../" + streamsignature + ".lck" + ";ln -s " + streamsignature + files2[0] + " ../" + streamsignature + ".stream.gz; rm ../"+streamsignature+".lck";
-										console.log("Evaluating " + com);
+										if (options.debugstream) console.log("Evaluating " + com);
 										child = exec(com,function (error, stdout, stderr) {
-											console.log("Evaluated  " + com);
+											if (options.debugstream) console.log("Evaluated  " + com);
 											if (error) console.log(error)
-											console.log("Symlink finished.");
+											if (options.debugstream) console.log("Symlink finished.");
 										});									
 									}
 
@@ -378,7 +380,7 @@ function stream(source, options, res) {
 			if (options.streamFilter === "") {
 				if (options.debugstream) console.log(rnd+" Writing response.");
 				if (!options.streamGzip) {
-					console.log("Sending uncompressed data of length = "+data.length)
+					if (options.debugstream) console.log("Sending uncompressed data of length = "+data.length)
 					res.write(data);
 					finished(inorder);
 					zlib.createGzip({level:1});
@@ -387,11 +389,11 @@ function stream(source, options, res) {
 						if (cachepart) cachestream(streamfilepart,buffer);
 					});
 				} else {
-					console.log("Compressing.")
+					if (options.debugstream) console.log("Compressing.")
 					zlib.createGzip({level:1});
 					zlib.gzip(data, function (err, buffer) {
 						if (err) console.log(err);
-						console.log("Compression finished. Sending buffer of length "+buffer.length)
+						if (options.debugstream) console.log("Compression finished. Sending buffer of length "+buffer.length)
 						res.write(buffer);
 						if (cachepart) cachestream(streamfilepart,buffer);
 						finished(inorder);

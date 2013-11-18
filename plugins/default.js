@@ -134,8 +134,7 @@ exports.extractData = function (body, options) {
 	} catch(e) {
 		logger.d("Error when trying to parse data as html, probably it is not in valid html format.");
 	}
-
-	console.log("lineRegExp: " + options.lineRegExp)
+	
 	try {
 	    //console.log("Using safe eval");
 		return localeval(options.extractData.replace(/jQuery/g,"\$"), {

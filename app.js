@@ -315,17 +315,17 @@ function parseOptions(req) {
 	options.req = {};
 	options.req.query      = req.query;
 	
-	options.forceUpdate    = s2b(req.query.forceUpdate)    || s2b(req.body.forceUpdate)    || false
-	options.forceWrite     = s2b(req.query.forceWrite)     || s2b(req.body.forceWrite)     || false
-	options.maxTries       = s2i(req.query.maxTries)       || s2i(req.body.maxTries)       || 2;
-	options.includeData    = s2b(req.query.includeData)    || s2b(req.body.includeData)    || false;
-	options.includeMeta    = s2b(req.query.includeMeta)    || s2b(req.body.includeMeta)    || false;
-	options.includeHeader  = s2b(req.query.includeHeader)  || s2b(req.body.includeHeader)  || false;
-	options.includeLstat   = s2b(req.query.includeLstat)   || s2b(req.body.includeLstat)   || false;
-	options.includeVers    = s2b(req.query.includeVers)    || s2b(req.body.includeVers)    || false;
-	options.return         = req.query.return              || req.body.return              || "json";
-	options.dir            = req.query.dir                 || req.body.dir                 || "/cache/";
-    options.prefix         = req.body.prefix 			   || req.query.prefix			   || "";
+	options.forceUpdate    = s2b(req.query.forceUpdate    || req.body.forceUpdate    || "false");
+	options.forceWrite     = s2b(req.query.forceWrite     || req.body.forceWrite     || "false");
+	options.maxTries       = s2i(req.query.maxTries       || req.body.maxTries       || "2");
+	options.includeData    = s2b(req.query.includeData    || req.body.includeData    || "false");
+	options.includeMeta    = s2b(req.query.includeMeta    || req.body.includeMeta    || "false");
+	options.includeHeader  = s2b(req.query.includeHeader  || req.body.includeHeader  || "false");
+	options.includeLstat   = s2b(req.query.includeLstat   || req.body.includeLstat   || "false");
+	options.includeVers    = s2b(req.query.includeVers    || req.body.includeVers    || "false");
+	options.return         =     req.query.return         || req.body.return         || "json";
+	options.dir            =     req.query.dir            || req.body.dir            || "/cache/";
+    options.prefix         =     req.body.prefix          || req.query.prefix        || "";
 
 	options.plugin         = req.query.plugin        || req.body.plugin        || "";
 	options.lineRegExp     = req.query.lineRegExp    || req.body.lineRegExp    || ".";	
@@ -350,32 +350,28 @@ function parseOptions(req) {
 		options.unsafeEval = true;
 	}
 
-	//console.log("lineRegExp: " + options.lineRegExp)
-	options.streamGzip     = s2b(req.query.streamGzip)     || s2b(req.body.streamGzip)     || false;
-	options.streamFilter   = req.query.streamFilter        || req.body.streamFilter        || "";
-
-	options.streamOrder    = req.query.streamOrder         || req.body.streamOrder         || "true";
-	options.streamOrder    = s2b(options.streamOrder);
-
-	options.acceptGzip     = req.query.acceptGzip         || req.body.acceptGzip          || "true";
-	options.acceptGzip     = s2b(options.acceptGzip);
+	options.streamGzip     = s2b(req.query.streamGzip   || req.body.streamGzip   || "false");
+	options.acceptGzip     = s2b(req.query.acceptGzip   || req.body.acceptGzip   || "true");
+	options.streamOrder    = s2b(req.query.streamOrder  || req.body.streamOrder  || "true");
+	options.streamFilter   =     req.query.streamFilter || req.body.streamFilter || "";
 
 	//options.respectHeaders = s2b(req.query.respectHeaders) || s2b(req.body.respectHeaders) || true;
 	//options.streamFilterBinary   = req.query.streamFilterBinary        || req.body.streamFilterBinary        || "";
 
-	options.streamFilterReadBytes       = s2i(req.query.streamFilterReadBytes)     || s2i(req.body.streamFilterReadBytes)    || 0;
-	options.streamFilterReadLines       = s2i(req.query.streamFilterReadLines)     || s2i(req.body.streamFilterReadLines)    || 0;
-	options.streamFilterReadPosition    = s2i(req.query.streamFilterReadPosition)  || s2i(req.body.streamFilterReadPosition) || 1;
-	options.streamFilterReadColumns     = req.query.streamFilterReadColumns        || req.body.streamFilterReadColumns       || "0";
-	options.streamFilterTimeFormat      = req.query.streamFilterTimeFormat         || req.body.streamFilterTimeFormat        || "0";
-	options.streamFilterComputeWindow   = s2i(req.query.streamFilterComputeWindow  || req.query.streamFilterComputeWindow    || "1"); 
-	options.streamFilterComputeFunction = req.query.streamFilterComputeFunction    || req.query.streamFilterComputeFunction  || ""; 
+	options.streamFilterReadBytes       = s2i(req.query.streamFilterReadBytes       || req.body.streamFilterReadBytes         || "0");
+	options.streamFilterReadLines       = s2i(req.query.streamFilterReadLines       || req.body.streamFilterReadLines         || "0");
+	options.streamFilterReadPosition    = s2i(req.query.streamFilterReadPosition    || req.body.streamFilterReadPosition      || "1");
+	options.streamFilterReadColumns     =     req.query.streamFilterReadColumns     || req.body.streamFilterReadColumns       || "0";
+	options.streamFilterExcludeColumnValues = req.query.streamFilterExcludeColumnValues  || req.body.streamFilterExcludeColumnValues    || "";
+	options.streamFilterTimeFormat      =     req.query.streamFilterTimeFormat      || req.body.streamFilterTimeFormat        || "0";
+	options.streamFilterComputeWindow   = s2i(req.query.streamFilterComputeWindow   || req.query.streamFilterComputeWindow    || "1"); 
+	options.streamFilterComputeFunction =     req.query.streamFilterComputeFunction || req.query.streamFilterComputeFunction  || ""; 
 
-    options.timeRange          = req.body.timeRange  || req.query.timeRange || "";
-
+    options.timeRange = req.body.timeRange || req.query.timeRange || "";
 	if (options.timeRange !== "") {
 		options.timeRangeExpanded  = expandISO8601Duration(options.timeRange,{debug:debugtemplate})
 	}
+	
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
 			options.dir = '/'+options.dir;
@@ -386,7 +382,7 @@ function parseOptions(req) {
 	}
 	
 	if (debugapp) {
-		console.log("\noptions after parseOptions:")
+		console.log("\noptions after parseOptions:");
 		console.log(options);
 	}
 	

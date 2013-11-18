@@ -1,3 +1,5 @@
+// To run a single test, use
+// node streamTests.js true 20 false 1 http://localhost:7999/
 
 // Local server
 // Production server
@@ -106,7 +108,7 @@ function checkmd5(j,k,sync,all) {
 			console.log(k + " " + stdout.substring(0,32));
 			
 			if (tests[j].md5 !== stdout.substring(0,32)) {
-				console.log("Error.  Response md5 changed from last request.")
+				console.log("Error.  Response md5 changed from reference response.  Diff:")
 				diff("data-stream/out." + j + ".0","data-stream/out." + j + "." + k);
 			}
 			if (sync == true && k < tests[j].n) {					

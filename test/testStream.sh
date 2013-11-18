@@ -1,6 +1,6 @@
 #!/usr/bin/sh
 
-node app.js &
+node app.js 7999 &
 
 PID=$!
 
