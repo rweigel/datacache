@@ -14,6 +14,7 @@ var request = require("request"),
 	domain = require("domain");
 
 var qs   = require('querystring');
+var mmm  = require('mmmagic');
 
 var expandtemplate        = require("tsdset").expandtemplate;
 var expandISO8601Duration = require("tsdset").expandISO8601Duration;
@@ -94,13 +95,6 @@ var debugtemplate = s2b(process.argv[6] || "false");
 app.use(express.methodOverride());
 app.use(express.bodyParser());
 
-app.use("/cache", express.directory(__dirname+"/cache"));
-app.use("/cache", express.static(__dirname + "/cache"));
-app.use("/demo",  express.directory(__dirname+"/demo"));
-app.use("/demo",  express.static(__dirname + "/demo"));
-app.use("/test/data", express.static(__dirname + "/test/data"));
-app.use("/test/data", express.directory(__dirname + "/test/data"));
-app.use("/asset", express.static(__dirname + "/asset"));
 
 // Rewrite /sync?return=report ... to /report ...
 app.use(function (req, res, next) {
@@ -226,6 +220,29 @@ app.get("/api/presets", function (req,res) {
 		}); // files.forEach()
 	}); // fs.readdir()
 });
+
+Magic = mmm.Magic;
+
+var magic = new Magic(mmm.MAGIC_MIME_TYPE);
+
+app.use(function(req, res, next){
+	magic.detectFile(__dirname + req.path, function(err, result) {
+		if (!err) {
+			res.contentType(result);
+		} else {
+			console.log(err)
+		}
+		next();
+	});
+})
+
+app.use("/cache", express.directory(__dirname+"/cache"));
+app.use("/cache", express.static(__dirname + "/cache"));
+app.use("/demo",  express.directory(__dirname+"/demo"));
+app.use("/demo",  express.static(__dirname + "/demo"));
+app.use("/test/data", express.static(__dirname + "/test/data"));
+app.use("/test/data", express.directory(__dirname + "/test/data"));
+app.use("/asset", express.static(__dirname + "/asset"));
 
 server.listen(port);
 var clients = [];
@@ -370,8 +387,10 @@ function parseOptions(req) {
     options.timeRange = req.body.timeRange || req.query.timeRange || "";
 	if (options.timeRange !== "") {
 		options.timeRangeExpanded  = expandISO8601Duration(options.timeRange,{debug:debugtemplate})
+	} else {
+		options.timeRangeExpanded  = options.timeRange;
 	}
-	
+
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
 			options.dir = '/'+options.dir;

@@ -10,10 +10,10 @@ var port = 7999;
 function s2b(str) {if (str === "true") {return true} else {return false}}
 function s2i(str) {return parseInt(str)}
 
-var sync    = s2b(process.argv[2] || "true");  				   // Do runs for test sequentially
-var tn      = s2i(process.argv[3] || "0");     				   // Start test Number
-var all     = s2b(process.argv[4] || "true");  				   // Run all tests after start number
-var n       = s2i(process.argv[5] || "5");     				   // Number of runs per test
+var sync    = s2b(process.argv[2] || "true");  				   	// Do runs for test sequentially
+var tn      = s2i(process.argv[3] || "0");     				   	// Start test Number
+var all     = s2b(process.argv[4] || "true");  				   	// Run all tests after start number
+var n       = s2i(process.argv[5] || "10");     				// Number of runs per test
 var server  = process.argv[6]     || "http://localhost:"+port+"/"; // DataCache server to test
 var server2 = s2i(process.argv[7] || "1");                     // Remote server to get data from
 

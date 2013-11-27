@@ -164,3 +164,27 @@ tests[j]      = {};
 tests[j].url  = server + "sync?source="+server+"test/data/filetoaverage1withNaN.txt&return=stream&lineRegExp=^[0-9]&timeformat=DD-MM-YYYY,HH:mm:ss.SSS&timecolumns=1,2&streamFilterReadColumns=1,2,3,4,5,6&forceUpdate=true&forceWrite=true&streamFilterTimeFormat=1&streamFilterComputeWindow=2&streamFilterComputeFunction=std&streamFilterExcludeColumnValues=99999,9999,999,99";
 tests[j].n    = n || 50;
 tests[j].md5  = "455059d55577eba3416476df4412e54b";
+
+j = j+1;
+tests[j]      = {};
+tests[j].url  = server + "sync?source="+server+"test/data/aae20040101vmin.min&return=stream&lineRegExp=^[0-9]";
+tests[j].n    = n || 50;
+tests[j].md5  = "c805a6125e2cfe15b365c12cd18901bb";
+
+j = j+1;
+tests[j]      = {};
+tests[j].url  = server + "sync?source="+server+"test/data/aae20040101vmin.min.gz&return=stream&lineRegExp=^[0-9]";
+tests[j].n    = n || 50;
+tests[j].md5  = "c805a6125e2cfe15b365c12cd18901bb";
+
+j = j+1;
+tests[j]      = {};
+tests[j].url  = server + "sync?source="+server+"test/data/aae20040101vmin.min%0A"+server+"test/data/aae20040102vmin.min&return=stream&lineRegExp=^[0-9]&streamGzip=true&forceUpdate=true&forceWrite=true";
+tests[j].n    = n || 50;
+tests[j].md5  = "6e777ce6fb02ce90170cce95996c9f3d";
+
+j = j+1;
+tests[j]      = {};
+tests[j].url  = server + "sync?source="+server+"test/data/aae20040101vmin.min%0A"+server+"test/data/aae20040102vmin.min&return=stream&lineRegExp=^[0-9]&streamGzip=true";
+tests[j].n    = n || 50;
+tests[j].md5  = "6e777ce6fb02ce90170cce95996c9f3d";

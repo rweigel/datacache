@@ -21,7 +21,8 @@
     "adm-zip": "~0.4.3",
     "jquery": "~1.8.3",
     "jsdom": "~0.8.3",
-    "localeval": "~13.6.10"
+    "localeval": "~13.6.10",
+    "mmmagic": "*"
   },
   "scripts": {
     "test": "sh test/test.sh"

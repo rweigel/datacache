@@ -4,6 +4,10 @@ exports.match = function(url){
 	return url.split("/")[2].toLowerCase()==="xwdc.kugi.kyoto-u.ac.jp";
 }
 
+exports.extractSignature = function(options) {
+	return options.timeRangeExpanded;  
+}
+
 exports.extractData = function(data,options){
     
 	

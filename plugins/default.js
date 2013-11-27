@@ -1,4 +1,6 @@
 var request = require("request");
+var zlib    = require('zlib');
+
 var util    = require("../util.js");
 
 var logger = require("../logger.js");
@@ -23,19 +25,32 @@ exports.process = function (work, callback) {
 		util.get(work.url, function (error, response, body) {
 			if (error || response.statusCode!==200){
 				work.error = "Can't fetch data";
+				console.log("Error")
 				callback(true, work);
 			} else {
-				work.body       = body || "";
-				work.dataBinary = work.extractDataBinary(work.body, "bin");
-				work.data       = work.extractData(work.body, work.options);
-				work.dataMd5    = util.md5(work.data);
-				work.dataJson   = work.extractDataJson(work.body, work.options);
-				work.datax      = work.extractRem(work.body, work.options);
-				work.meta       = work.extractMeta(work.body, work.options);
-				work.metaJson   = work.extractMetaJson(work.body, work.options);
-				work.header     = response.headers;
-				//console.log(work.header);
-				util.writeCache(work, function () {callback(false, work);});
+				
+				if (response.headers["content-type"] === "application/x-gzip") {
+					//console.log("Content-Type is application/x-gzip")
+					zlib.gunzip(body,cb);
+				} else {
+					//console.log("Content-Type is not application/x-gzip")
+					cb("",body);
+				}
+					
+				function cb(err,res) {
+					if (err) console.log(err);
+					work.body       = res || "";
+					work.data       = work.extractData(work.body, work.options);
+					work.dataMd5    = util.md5(work.data);
+					work.dataBinary = work.extractDataBinary(work.body, "bin");
+					work.dataJson   = work.extractDataJson(work.body, work.options);
+					work.datax      = work.extractRem(work.body, work.options);
+					work.meta       = work.extractMeta(work.body, work.options);
+					work.metaJson   = work.extractMetaJson(work.body, work.options);
+					work.header     = response.headers;
+	
+					util.writeCache(work, function () {callback(false, work);});
+				}
 			}
 		})
 		.on("end", function(data){
@@ -116,6 +131,9 @@ exports.extractSignature = function (options) {
 exports.extractData = function (body, options) {
 
 	var lineRegExp = options.lineRegExp;
+
+	//console.log(lineRegExp)
+	//if (lineRegExp === ".") return body.toString();
 
 	if (options.lineFormatter !== "") {
 		var lineFormatter = require(__dirname + "/" + options.lineFormatter + ".js");
