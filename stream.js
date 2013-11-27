@@ -113,7 +113,7 @@ function stream(source, options, res) {
 		reqstatus[rnd].Nx = reqstatus[rnd].Nx + 1;
 
 		if ((reqstatus[rnd].Nx < N) && (inorder)) {
-			console.log(rnd+ " Processing next URL.")
+			if (options.debugstream) console.log(rnd+ " Processing next URL.")
 			scheduler.addURL(source[reqstatus[rnd].Nx], options, function (work) {processwork(work,true)});
 		}
 
