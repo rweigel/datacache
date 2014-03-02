@@ -41,8 +41,8 @@ exports.formatLine = function (line, options) {
 
 	var debug = options.debugplugin;
 
-	//var debug = true;
-	var timeformat  = options.req.query.timeformat   || "YYYY-MM-DDTHH:mm:ss.SSSZ";
+	var debug = false;
+	var timeformat  = options.req.query.timeformat   || "$Y-$m-$dT$H:$M$SZ";//"YYYY-MM-DDTHH:mm:ss.SSSZ";
 	var timecolumns = options.req.query.timecolumns  || "1";
 	var outformat   = options.streamFilterTimeFormat || "0";
 	//console.log(options.plugin)
@@ -61,7 +61,8 @@ exports.formatLine = function (line, options) {
 		}
 	} 
 
-	timeformat = timeformat.replace("yyyy","YYYY").replace("yy","YY").replace("dd",'DD').replace("S","SSS").replace("SS","SSS")
+	//timeformat = timeformat.replace("yyyy","YYYY").replace("yy","YY").replace("dd",'DD').replace("S","SSS").replace("SS","SSS").replace("j","DDD");
+	timeformat = timeformat.replace("$Y","YYYY").replace("$m","MM").replace("$H","HH").replace("$M","mm").replace("$d",'DD').replace("$S","ss").replace("$j","DDD").replace("$(millis)","SSS");
 	if (debug) console.log("timeformat: " + timeformat);
 	if (debug) console.log("timecolumns: " + timecolumns);
 
@@ -70,36 +71,67 @@ exports.formatLine = function (line, options) {
 
 	if (debug) console.log("line: "+line);
 		       
-		       if (line === "") {
-			   if (debug) console.log("Empty line");
-			   return "";
-		       }
+	if (line === "") {
+		if (debug) console.log("Empty line");
+		return "";
+	}
+	
+	//line = line.replace(":"," ");
 	// Assumes time is in continuous columns and before any data column that is to be kept.
 	timev      = line.split(/\s+/).slice(parseInt(timecolumnsa[0])-1,parseInt(timecolumnsa[timecolumnsa.length-1]));
 	datav      = line.split(/\s+/).slice(parseInt(timecolumnsa[timecolumnsa.length-1]));
 	if (debug) console.log(datav)
 	if (debug) {
 		console.log("line: " + line);
-		console.log("timeformat array: " + timeformata.join(","));
+		console.log("XX---timeformat array: " + timeformata.join(","));
 		console.log("time array: " + timev.join(","))
 		console.log("data array: " + datav.join(","));
 	}
 	
-	d = moment(timev.join(" "),timeformat)._a;
+	var startdate = options.timeRangeExpanded.split("/")[0];
+	var stopdate  = options.timeRangeExpanded.split("/")[1];
 
+	//console.log(startdate);
+	//console.log(stopdate);
+
+	var startms = new Date(startdate).getTime();
+	var stopms  = new Date(stopdate).getTime();
+
+	tmp = moment(timev.join(" "),timeformat);
+	d  = tmp._a;
+
+	d[1] = ((""+(d[1]+1)).length == 1) ? "0"+(d[1]+1) : (d[1]+1);
+	d[2] = ((""+d[2]).length == 1) ? "0"+d[2] : d[2];
+	d[3] = ((""+d[3]).length == 1) ? "0"+d[3] : d[3];
+	d[4] = ((""+d[4]).length == 1) ? "0"+d[4] : d[4];
+	d[5] = ((""+d[5]).length == 1) ? "0"+d[5] : d[5];
+	d[6] = ((""+d[6]).length == 1) ? "0"+d[6] : d[6];
+	d[6] = ((""+d[6]).length == 2) ? "0"+d[6] : d[6];
+	
+	if (debug) console.log("Formatted date: " + d)
+	var timestamp = d[0]+"-"+d[1]+"-"+d[2]+"T"+d[3]+":"+d[4]+":"+d[5]+"."+d[6]+"Z";
+
+	var currms = new Date(timestamp).getTime();
+
+	if (currms < startms) {
+		//if (debug) 
+		//console.log("Time of " + tmp._d + " is less than requested start time " + startdate)
+		return "";
+	}
+	if (currms > stopms) {
+		//if (debug)
+		console.log("Time of " + tmp._d + " is greater than requested stop time " + stopdate)
+		return "END_OF_TIMERANGE";
+	}
+	//console.log("--------------")
+	//zz = moment([1997,238,23,48].join(" "),'YYYY,DDD,HH,mm')._a;
+	//console.log(zz);
+	//console.log("xxxxxxxxxxxxxx")
 	if (outformat === "0") {
 		var timestamp = timev.join(" ");
 	}
 	//console.log(d)
-	if (outformat === "1") {
-		d[1] = ((""+(d[1]+1)).length == 1) ? "0"+(d[1]+1) : (d[1]+1);
-		d[2] = ((""+d[2]).length == 1) ? "0"+d[2] : d[2];
-		d[3] = ((""+d[3]).length == 1) ? "0"+d[3] : d[3];
-		d[4] = ((""+d[4]).length == 1) ? "0"+d[4] : d[4];
-		d[5] = ((""+d[5]).length == 1) ? "0"+d[5] : d[5];
-		d[6] = ((""+d[6]).length == 1) ? "0"+d[6] : d[6];
-		d[6] = ((""+d[6]).length == 2) ? "0"+d[6] : d[6];
-		
+	if (outformat === "1") {		
 		if (debug) console.log("Formatted date: " + d)
 		var timestamp = d[0]+"-"+d[1]+"-"+d[2]+"T"+d[3]+":"+d[4]+":"+d[5]+"."+d[6]+"Z";
 

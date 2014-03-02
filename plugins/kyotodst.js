@@ -29,9 +29,7 @@ exports.extractData = function(data,options){
 
 	var time = new Date(yearmonth);
 	var i = 0;
-	var data = data.toString().split("\n").filter(function(line){return line.search(/^[0-9]|^ [0-9]/)!=-1;}).join("\n").replace(/^ [0-9]|\n [0-9]|\n[0-9][0-9]/g,'').replace(/9999/g," 9999");
-
-	//console.log(data);
+	var data = data.toString().split("\n").filter(function(line){return line.search(/^[0-9]|^ [0-9]/)!=-1;}).join("\n").replace(/^ [0-9]|\n [0-9]|\n[0-9][0-9]/g,'').replace(/\-([0-9][0-9][0-9])/g," -$1").replace(/([0-8])([0-9][0-9][0-9])/g,"$1 $2").replace(/9999/g," 9999");
 
 	var startdate = options.timeRangeExpanded.split("/")[0];
 	var stopdate  = options.timeRangeExpanded.split("/")[1];
@@ -42,9 +40,10 @@ exports.extractData = function(data,options){
 	var startms = new Date(startdate).getTime();
 	var stopms  = new Date(stopdate).getTime();
 
+	//console.log(data)
 	var result = data
 					.trim()
-					.split(/\s+/)
+					.split(/\s+/g)				
 					.map(function(number){
 						time = add60min(time);
 						ms = new Date(time).getTime();

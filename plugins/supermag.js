@@ -1,7 +1,7 @@
 exports.name = "supermag";
 
 exports.match = function(url){
-	return url.split("/")[2].toLowerCase()==="xsupermag.jhuapl.edu";
+	return url.split("/")[2].toLowerCase()==="supermag.jhuapl.edu";
 }
 
 function pause(i) {
@@ -44,7 +44,7 @@ exports.extractData = function (data) {
     var re1 = /^([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)/;
 
     // Magnetometer data line
-    var re2 = /\n([a-zA-Z]+)\s+([\d-]+)\s([\d-]+)\s([\d-]+)/g;
+    var re2 = /\n([A-Z]+)\s+([\d-].*)/gi;
 
     // First combine timestamp and data line and remove station string.
     // Then split on newlines, remove last line, and keep data lines.
@@ -52,8 +52,8 @@ exports.extractData = function (data) {
     return data
     		.toString()
     		.replace(/[ \t]+/g,' ')			 // Replace tabs with space.
-    		.replace(/[0-9](\n[A-Z])/g,'$1') // Removes last element of time lines which is number of records that follow timestamp.
-			.replace(re2," $2 $3 $4")     // Removes newline and keeps data line.
+    		.replace(/[0-9](\s\n[A-Z])/gi,'$1') // Removes last element of time lines which is number of records that follow timestamp.
+			.replace(re2,"$2")     // Removes newline and keeps data line.
 			.split("\n")
 			.filter(function (line) {return line.search(re1)!=-1}) // Removes lines that don't match re1.
 			.join("\n") + "\n";

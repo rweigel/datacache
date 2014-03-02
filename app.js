@@ -76,6 +76,7 @@ var debugtemplate = s2b(process.argv[6] || "false");
 		old.call(app, route, function(req, res){
 			var d = domain.create();
 			d.on('error', function(err){
+				console.log(err);
 				res.send(500, "");
 
 				// TODO: needs a better error handling, like let other works
@@ -300,6 +301,7 @@ function syncsummary(source,options,res) {
 }
 
 function handleRequest(req, res) {
+
 	var options = parseOptions(req);
 	var source  = parseSource(req);
 	options.id  = Math.random().toString().substring(1) 
@@ -327,8 +329,8 @@ function handleRequest(req, res) {
 function parseOptions(req) {
 
  	var options = {};
-        
-	// TODO: Copy req.body to req.query.
+
+ 	// TODO: Copy req.body to req.query.
 	options.req = {};
 	options.req.query      = req.query;
 	
@@ -347,7 +349,7 @@ function parseOptions(req) {
 	options.plugin         = req.query.plugin        || req.body.plugin        || "";
 	options.lineRegExp     = req.query.lineRegExp    || req.body.lineRegExp    || ".";	
 	options.lineFormatter  = req.query.lineFormatter || req.body.lineFormatter || "";
-
+	
 	options.debugapp       = req.query.debugapp      || req.body.debugapp      || debugapp;
 	options.debugstream    = req.query.debugstream   || req.body.debugstream   || debugstream;
 	options.debugplugin    = req.query.debugplugin   || req.body.debugplugin   || debugplugin;
@@ -436,6 +438,7 @@ function parseSource(req) {
 			opts.timeRange  = timeRange;
 			opts.indexRange = null;
 			opts.debug      =  opts.debugtemplate;
+			console.log(opts)
 			sourcet = expandtemplate(opts);
 			if (opts.debugtemplate) {
 				console.log("sourcet = ");

@@ -6,7 +6,7 @@
     "request": "2.9.203",
     "express": "3.0.0beta7",
     "hogan.js": "2.0.0",
-    "moment": "1.7.0",
+    "moment": "2.5.1",
     "socket.io": "*",
     "ftp": "0.3.4",
     "whiskers": "0.2.4",

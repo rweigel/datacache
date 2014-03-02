@@ -49,6 +49,7 @@ function stream(source, options, res) {
 	var streamfilecat     = streamdir + streamsignature + ".stream.gz";
 	var streamfilecatlck  = streamfilecat.replace("stream.gz","lck");
 
+	//console.log(options.debugstream)
 	if (options.debugstream) console.log(options.id+" streamdir         : " + streamdir);
 	if (options.debugstream) console.log(options.id+" streamfilecat     : " + streamfilecat);
 	if (options.debugstream) console.log(options.id+" streamfilecatlck  : " + streamfilecatlck);
@@ -61,11 +62,12 @@ function stream(source, options, res) {
 		if (options.debugstream) console.log(options.id+" streamfilecatlck exists.");
 	}
 
+	// This does not work because node.js does not handle concatenated gzip files.
 	if (fs.existsSync(streamfilecat) && !fs.existsSync(streamfilecatlck) && !options.forceWrite && !options.forceUpdate) {
-		streamcat();
-		return;
+		//streamcat();
+		//return;
 	}
-
+	
 	var N = source.length;
 	if (options.debugstream) console.log(options.id+' stream called with ' + N + ' urls and options.streamOrder = '+options.streamOrder);
 	if (options.streamOrder) {
@@ -152,7 +154,7 @@ function stream(source, options, res) {
 				if (options.debugstream) console.log(options.id+" It does.  Locking it.");
 				fs.writeFileSync(streamfilepartlck,"");
 				if (options.streamGzip == false) {
-					if (options.debugstream) console.log(options.id+"Unzipping it.");
+					if (options.debugstream) console.log(options.id+" Unzipping it.");
 					var streamer = fs.createReadStream(streamfilepart).pipe(zlib.createGunzip());
 				} else {
 					if (options.debugstream) console.log(options.id+" Sending raw.");
@@ -209,10 +211,30 @@ function stream(source, options, res) {
 			//console.log("New column: " + work.plugin.columnTranslator(1))
 			var outcolumnsStr = options.streamFilterReadColumns.split(/,/);
 			var outcolumns = [];
+
 			
-			if (options.debugstream) {console.log("outformat requested");console.log(options.streamFilterTimeFormat);}
-			if (options.debugstream) {console.log("timecolumns");console.log(options.req.query.timecolumns);}
-			if (options.debugstream) {console.log("columns requested");console.log(outcolumnsStr);}
+			//console.log(outcolumnsStr)
+			for (var z = 0;z < outcolumnsStr.length;z++) {
+				if (outcolumnsStr[z].match("-")) {					
+					//console.log("FOUND HYPHEN")
+					var start = parseInt(outcolumnsStr[z].split("-")[0]);
+					var stop  = parseInt(outcolumnsStr[z].split("-")[1]);
+					var newstr = start;
+					for (var zz = 1;zz < stop-start+1; zz++) {
+						newstr = newstr + "," +(start+zz);
+					}
+					outcolumnsStr[z] = newstr;
+				}
+			}
+			outcolumnsStr = outcolumnsStr.join(",").split(",");
+
+			//console.log(newstr)
+			//console.log(outcolumnsStr)
+
+			
+			if (options.debugstream) {console.log(options.id+" outformat requested " + options.streamFilterTimeFormat);}
+			if (options.debugstream) {console.log(options.id+" timecolumns " + options.req.query.timecolumns);}
+			if (options.debugstream) {console.log(options.id+" columns requested " + outcolumnsStr);}
 			if (work.plugin.columnTranslator) {
 				// The plugin may have changed the number of columns by reformatting time.
 				for (var z = 0;z < outcolumnsStr.length; z++) {
@@ -223,7 +245,7 @@ function stream(source, options, res) {
 					outcolumns[z] = lineFormatter.columnTranslator(parseInt(outcolumnsStr[z]),options);
 				}
 			}
-			if (options.debugstream) {console.log("columns translated");console.log(outcolumns);}
+			if (options.debugstream) {console.log(options.id+" columns translated " + outcolumns.join(","));}
 	
 			function onlyUnique(value, index, self) { 
 			    return self.indexOf(value) === index;
@@ -238,11 +260,11 @@ function stream(source, options, res) {
 				outcolumns = [1,2,3,4,5,6].concat(outcolumns);
 			}
 			
-			if (options.debugstream) {console.log("columns final");console.log(outcolumns);}
+			if (options.debugstream) {console.log(options.id+" columns final " + outcolumns.join(","));}
 		}
 
 		if (options.streamFilterComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
-			if (options.debugstream) console.log("Reading filter")
+			if (options.debugstream) console.log(options.id+" Reading filter")
 			var stats = require("./filters/stats.js");
 		}
 		
@@ -258,7 +280,7 @@ function stream(source, options, res) {
 
 				if (k >= options.streamFilterReadPosition) {				  		
 					if (lr == stopline) {	
-						if (options.debugstream) console.log("readline: Callback");
+						if (options.debugstream) console.log(options.id+" readline: Callback due to reaching stop line");
 						readcallback("",lines);
 						lines = "";
 						done = true;
@@ -266,17 +288,27 @@ function stream(source, options, res) {
 					
 					if (options.streamFilterReadColumns !== "0") {
 						
-						if (options.debugstream) console.log("Before " + line)
+						//if (options.debugstream) console.log("Before " + line)
 						line = lineFormatter.formatLine(line,options);
-						if (options.debugstream) console.log("After " + line)
+						//if (options.debugstream) console.log("After " + line)
+						
+						if (line == "END_OF_TIMERANGE") {	
+							if (options.debugstream) console.log(options.id+" readline: Callback due to end of time range");
+							readcallback("",lines);
+							lines = "";
+							done = true;
+							return;
+							
+						}
+
 						linea = line.split(/\s+/g);
 						line = "";
-						if (options.debugstream) console.log(linea)
-						if (options.debugstream) console.log(outcolumns)
+						//if (options.debugstream) console.log(linea)
+						//if (options.debugstream) console.log(outcolumns)
 						for (var z = 0;z < outcolumns.length; z++) {
 							line = line + linea[outcolumns[z]-1] + " ";
 						}							
-						if (options.debugstream) console.log(line)
+						//if (options.debugstream) console.log(line)
 
 					}
 
@@ -306,7 +338,7 @@ function stream(source, options, res) {
 			}).then(function () {
 				if (!done) {
 					if (options.streamFilterComputeFunction && linesx !== '') {
-						if (options.debugstream) console.log("Last window not full.");
+						if (options.debugstream) console.log(options.id+" Last window not full.");
 						linesx = linesx + stats.stats(linesa.replace(/\n$/,""),options);
 						readcallback("",linesx);
 					} else {
@@ -350,13 +382,13 @@ function stream(source, options, res) {
 											k = k+1;
 										}
 									}
-									if (options.debugstream) {console.log(options.id+" Found files: "); console.log(files2)}
+									if (options.debugstream) {console.log(options.id+" Found files: " + files2.join(","))}
 									//TODO: Lock these files
 									//TODO: Check if streamsignature.lck exists.
 									//TODO: This may not be needed if one of the parts was locked.
 									if (files.length > 1) {
 										if (options.debugstream) console.log(options.id+" Concatenating " + files2.length + " stream parts into ../" + streamsignature + ".stream.gz");
-										var com = "cd " + streamdir + streamsignature + "; touch " + files2.join(" ").replace(/\.gz/g,".lck"); + ";touch ../" + streamsignature + ".lck" + ";cat " + files2.join(" ") + " > ../" + streamsignature + ".stream.gz; rm ../"+streamsignature+".lck"+ ";rm " + files2.join(" ").replace(/\.gz/g,".lck");
+										var com = "cd " + streamdir + streamsignature + "; touch " + files2.join(" ").replace(/\.gz/g,".lck") + ";touch ../" + streamsignature + ".lck" + ";cat " + files2.join(" ") + " > ../" + streamsignature + ".stream.gz; rm ../"+streamsignature+".lck"+ ";rm " + files2.join(" ").replace(/\.gz/g,".lck");
 										if (options.debugstream) console.log(options.id+" Evaluating: " + com);
 										child = exec(com,function (error, stdout, stderr) {
 											if (options.debugstream) console.log(options.id+" Concatenation finished.");

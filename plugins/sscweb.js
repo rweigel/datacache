@@ -5,7 +5,8 @@ exports.match = function(url){
 }
 
 exports.extractData = function(data){
-	var re = /^([\d]+)\s+([\d]+)\s+([\d:]+)\s+([+-\.\d]+)\s+([+-\.\d]+)\s+([+-\.\d]+)$/;
+	//var re = /^([\d]+)\s+([\d]+)\s+([\d:]+)\s+([+-\.\d]+)\s+([+-\.\d]+)\s+([+-\.\d]+)$/;
+	var re = /^([\d]+)\s+([\d]+)\s+([\d:]+)/;
 	return data.toString()
 			.split("\n")
 			.filter(function(line){
@@ -15,7 +16,8 @@ exports.extractData = function(data){
 };
 
 exports.extractRem = function(data){
-	var re = /^([\d]+)\s+([\d]+)\s+([\d:]+)\s+([+-\.\d]+)\s+([+-\.\d]+)\s+([+-\.\d]+)$/;
+	//var re = /^([\d]+)\s+([\d]+)\s+([\d:]+)\s+([+-\.\d]+)\s+([+-\.\d]+)\s+([+-\.\d]+)$/;
+	var re = /^([\d]+)\s+([\d]+)\s+([\d:]+)/;
 	return data.toString()
 			.split("\n")
 			.filter(function(line){
