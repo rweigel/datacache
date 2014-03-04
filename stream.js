@@ -280,7 +280,7 @@ function stream(source, options, res) {
 
 				if (k >= options.streamFilterReadPosition) {				  		
 					if (lr == stopline) {	
-						if (options.debugstream) console.log(options.id+" readline: Callback due to reaching stop line");
+						if (options.debugstream) console.log(options.id+" stream.readline(): Callback due to reaching stop line");
 						readcallback("",lines);
 						lines = "";
 						done = true;
@@ -293,7 +293,7 @@ function stream(source, options, res) {
 						//if (options.debugstream) console.log("After " + line)
 						
 						if (line == "END_OF_TIMERANGE") {	
-							if (options.debugstream) console.log(options.id+" readline: Callback due to end of time range");
+							if (options.debugstream) console.log(options.id+" stream.readline(): Callback due to end of time range");
 							readcallback("",lines);
 							lines = "";
 							done = true;
@@ -313,11 +313,6 @@ function stream(source, options, res) {
 					}
 
 					line = line.substring(0,line.length-1);
-					
-					// TODO: Only return data if in time range given.
-					//if (options.streamFilterTimeRange !== "") {
-					//	line = lineFormatter.formatLine(line,options);
-					//}
 
 					if (!line.match("undefined")) {
 						lines = lines + line + "\n";

@@ -16,8 +16,14 @@ var request = require("request"),
 var qs   = require('querystring');
 var mmm  = require('mmmagic');
 
-var expandtemplate        = require("tsdset").expandtemplate;
-var expandISO8601Duration = require("tsdset").expandISO8601Duration;
+if (fs.existsSync("../tsdset/lib/expandtemplate.js")) {
+	var expandtemplate        = require("../tsdset/lib/expandtemplate.js").expandtemplate;
+	var expandISO8601Duration = require("../tsdset/lib/expandtemplate.js").expandISO8601Duration;
+} else {
+	var expandtemplate        = require("tsdset").expandtemplate;
+	var expandISO8601Duration = require("tsdset").expandISO8601Duration;
+}
+
 
 // Locking notes:
 // Each time a file is being streamed, a stream counter is incremented for the file.
@@ -61,11 +67,12 @@ function s2b(str) {if (str === "true") {return true} else {return false}}
 function s2i(str) {return parseInt(str)}
 
 // Get port number from command line option.
-var port          = s2i(process.argv[2] || 8000);
-var debugapp      = s2b(process.argv[3] || "false");
-var debugstream   = s2b(process.argv[4] || "false");
-var debugplugin   = s2b(process.argv[5] || "false");
-var debugtemplate = s2b(process.argv[6] || "false");
+var port               = s2i(process.argv[2] || 8000);
+var debugapp           = s2b(process.argv[3] || "false");
+var debugstream        = s2b(process.argv[4] || "false");
+var debugplugin        = s2b(process.argv[5] || "false");
+var debugtemplate      = s2b(process.argv[6] || "false");
+var debuglineformatter = s2b(process.argv[7] || "false");
 
 // Middleware
 /* wrap app.VERB to handle exceptions: send 500 back to the client before crashing*/
@@ -354,6 +361,7 @@ function parseOptions(req) {
 	options.debugstream    = req.query.debugstream   || req.body.debugstream   || debugstream;
 	options.debugplugin    = req.query.debugplugin   || req.body.debugplugin   || debugplugin;
 	options.debugtemplate  = req.query.debugtemplate || req.body.debugtemplate || debugtemplate;
+	options.debuglineformatter  = req.query.debuglineformatter || req.body.debuglineformatter || debuglineformatter;
 	
 	if (options.lineFormatter === "") {
 		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){return line.search(lineRegExp)!=-1;}";
@@ -388,7 +396,7 @@ function parseOptions(req) {
 
     options.timeRange = req.body.timeRange || req.query.timeRange || "";
 	if (options.timeRange !== "") {
-		options.timeRangeExpanded  = expandISO8601Duration(options.timeRange,{debug:debugtemplate})
+		options.timeRangeExpanded  = expandISO8601Duration(options.timeRange,{debug:options.debugtemplate})
 	} else {
 		options.timeRangeExpanded  = options.timeRange;
 	}
@@ -412,7 +420,6 @@ function parseOptions(req) {
 
 function parseSource(req) {
 
-
 	options = parseOptions(req);
 	
     var source     = req.body.source || req.query.source || "";
@@ -431,16 +438,15 @@ function parseSource(req) {
     if (template) {	
 	    opts.template = template;
 		opts.check    = false;
-		opts.debug    = opts.debugtemplate;
+		opts.debug    = options.debugtemplate;
 		opts.side     = "server";	
 		if (timeRange) {
 			opts.type       = "strftime";
 			opts.timeRange  = timeRange;
 			opts.indexRange = null;
-			opts.debug      =  opts.debugtemplate;
-			console.log(opts)
-			sourcet = expandtemplate(opts);
-			if (opts.debugtemplate) {
+			opts.debug      =  options.debugtemplate;
+			sourcet         = expandtemplate(opts);
+			if (options.debugtemplate) {
 				console.log("sourcet = ");
 			    console.log(sourcet);
 			}
@@ -451,12 +457,11 @@ function parseSource(req) {
 			opts.timeRange  = null;
 			opts.indexRange = indexRange;
 			opts.template   = template;
-			opts.debug      = opts.debugtemplate;
+			opts.debug      = options.debugtemplate;
 			sourcet         = sourcet.concat(expandtemplate(opts));
 		}
 	}
 
-    if (debugapp) console.log(sourcet)
 	if (source) {
 		source = source.trim().replace("\r", "").split(/[\r\n]+/).filter(function (line) {return line.trim() != "";});
 	}
@@ -465,9 +470,6 @@ function parseSource(req) {
 		console.log("\noptions after parseSource:")
 		console.log(options);
 	}
-
-	if (options.debugapp) console.log(sourcet);
-	if (options.debugapp) console.log(source);
 
 	if ((sourcet.length > 0) && (source.length > 0)) {
 		source = source.concat(sourcet);
@@ -479,8 +481,10 @@ function parseSource(req) {
 	if (prefix)		    			
 		for (i = 0; i < source.length; i++) {source[i] = prefix + source[i];}
 
-	if (options.debugapp)
-	    console.log(source);
+	if (options.debugapp) { 
+		console.log("source = ");
+		console.log(source);
+	}
 	
 	return source;
 }

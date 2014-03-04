@@ -39,14 +39,11 @@ exports.columnTranslator = function(col,options) {
 
 exports.formatLine = function (line, options) {
 
-	var debug = options.debugplugin;
+	var debug = options.debuglineformatter;
 
-	var debug = false;
 	var timeformat  = options.req.query.timeformat   || "$Y-$m-$dT$H:$M$SZ";//"YYYY-MM-DDTHH:mm:ss.SSSZ";
 	var timecolumns = options.req.query.timecolumns  || "1";
 	var outformat   = options.streamFilterTimeFormat || "0";
-	//console.log(options.plugin)
-	//console.log("here")
 	
 	var scheduler = require("../scheduler.js");
 	
@@ -63,16 +60,16 @@ exports.formatLine = function (line, options) {
 
 	//timeformat = timeformat.replace("yyyy","YYYY").replace("yy","YY").replace("dd",'DD').replace("S","SSS").replace("SS","SSS").replace("j","DDD");
 	timeformat = timeformat.replace("$Y","YYYY").replace("$m","MM").replace("$H","HH").replace("$M","mm").replace("$d",'DD').replace("$S","ss").replace("$j","DDD").replace("$(millis)","SSS");
-	if (debug) console.log("timeformat: " + timeformat);
-	if (debug) console.log("timecolumns: " + timecolumns);
+	if (debug) console.log("formattedTime: timeformat: " + timeformat);
+	if (debug) console.log("formattedTime: timecolumns: " + timecolumns);
 
 	var timeformata  = timeformat.split(/,|\s+/);
 	var timecolumnsa = timecolumns.split(/,/);
 
-	if (debug) console.log("line: "+line);
+	if (debug) console.log("formattedTime: line: "+line);
 		       
 	if (line === "") {
-		if (debug) console.log("Empty line");
+		if (debug) console.log("formattedTime: Empty line.");
 		return "";
 	}
 	
@@ -80,19 +77,16 @@ exports.formatLine = function (line, options) {
 	// Assumes time is in continuous columns and before any data column that is to be kept.
 	timev      = line.split(/\s+/).slice(parseInt(timecolumnsa[0])-1,parseInt(timecolumnsa[timecolumnsa.length-1]));
 	datav      = line.split(/\s+/).slice(parseInt(timecolumnsa[timecolumnsa.length-1]));
-	if (debug) console.log(datav)
+
 	if (debug) {
-		console.log("line: " + line);
-		console.log("XX---timeformat array: " + timeformata.join(","));
-		console.log("time array: " + timev.join(","))
-		console.log("data array: " + datav.join(","));
+		console.log("formattedTime: line: " + line);
+		console.log("formattedTime: timeformat array: " + timeformata.join(","));
+		console.log("formattedTime: time array: " + timev.join(","))
+		console.log("formattedTime: data array: " + datav.join(","));
 	}
 	
 	var startdate = options.timeRangeExpanded.split("/")[0];
 	var stopdate  = options.timeRangeExpanded.split("/")[1];
-
-	//console.log(startdate);
-	//console.log(stopdate);
 
 	var startms = new Date(startdate).getTime();
 	var stopms  = new Date(stopdate).getTime();
@@ -108,19 +102,17 @@ exports.formatLine = function (line, options) {
 	d[6] = ((""+d[6]).length == 1) ? "0"+d[6] : d[6];
 	d[6] = ((""+d[6]).length == 2) ? "0"+d[6] : d[6];
 	
-	if (debug) console.log("Formatted date: " + d)
+	if (debug) console.log("formattedTime: formatted date: " + d)
 	var timestamp = d[0]+"-"+d[1]+"-"+d[2]+"T"+d[3]+":"+d[4]+":"+d[5]+"."+d[6]+"Z";
 
 	var currms = new Date(timestamp).getTime();
 
 	if (currms < startms) {
-		//if (debug) 
-		//console.log("Time of " + tmp._d + " is less than requested start time " + startdate)
+		if (debug) console.log("formattedTime: time of " + tmp._d + " is less than requested start time " + startdate)
 		return "";
 	}
 	if (currms > stopms) {
-		//if (debug)
-		console.log("Time of " + tmp._d + " is greater than requested stop time " + stopdate)
+		if (debug) console.log("formattedTime: time of " + tmp._d + " is greater than requested stop time " + stopdate)
 		return "END_OF_TIMERANGE";
 	}
 	//console.log("--------------")
@@ -132,10 +124,10 @@ exports.formatLine = function (line, options) {
 	}
 	//console.log(d)
 	if (outformat === "1") {		
-		if (debug) console.log("Formatted date: " + d)
+		if (debug) console.log("formattedTime: Formatted date: " + d)
 		var timestamp = d[0]+"-"+d[1]+"-"+d[2]+"T"+d[3]+":"+d[4]+":"+d[5]+"."+d[6]+"Z";
 
-		if (debug) console.log("returning: "+timestamp + " " + datav.join(" "))
+		if (debug) console.log("formattedTime: Returning: "+timestamp + " " + datav.join(" "))
 	}
 	if (outformat === "2") {
 		var timestamp = d[0]+" "+(parseInt(d[1])+1)+" "+d[2]+" "+d[3]+" "+d[4]+" "+d[5]+"."+d[6];
