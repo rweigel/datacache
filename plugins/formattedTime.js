@@ -112,9 +112,11 @@ exports.formatLine = function (line, options) {
 		return "";
 	}
 	if (currms > stopms) {
-		if (debug) console.log("formattedTime: time of " + tmp._d + " is greater than requested stop time " + stopdate)
+		//if (debug) 
+		console.log("formattedTime: time of " + tmp._d + " is greater than requested stop time " + stopdate)
 		return "END_OF_TIMERANGE";
 	}
+
 	//console.log("--------------")
 	//zz = moment([1997,238,23,48].join(" "),'YYYY,DDD,HH,mm')._a;
 	//console.log(zz);
@@ -134,7 +136,9 @@ exports.formatLine = function (line, options) {
 	}
 
 	line = timestamp + " " + datav.join(" ");
-	
+
+	console.log(timestamp + " # of columns: " + datav.length)
+
 	return line;
 
 }

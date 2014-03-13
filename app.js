@@ -188,6 +188,7 @@ app.post("/async", function (req, res) {
 	res.send(200);
 })
 
+
 app.get("/sync", function (req,res) {
 	if (debugapp) console.log("GET")
 	handleRequest(req,res);

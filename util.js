@@ -10,7 +10,8 @@ var http    = require('http');
 http.globalAgent.maxSockets = 100;  // Most Apache servers have this set at 100.	
 
 
-var TIMEOUT = 20000;
+//var TIMEOUT = 20000;
+var TIMEOUT = 1000*60*15;
 var MAXCONNECTION = 1000;
 
 var app = require("./stream.js");

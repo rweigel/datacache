@@ -64,6 +64,7 @@ function stream(source, options, res) {
 
 	// This does not work because node.js does not handle concatenated gzip files.
 	if (fs.existsSync(streamfilecat) && !fs.existsSync(streamfilecatlck) && !options.forceWrite && !options.forceUpdate) {
+		if (options.debugstream) console.log("Not using cached stream file because of gzip issue.") 
 		//streamcat();
 		//return;
 	}
