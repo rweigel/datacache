@@ -188,3 +188,10 @@ tests[j]      = {};
 tests[j].url  = server + "sync?source="+server+"test/data/aae20040101vmin.min%0A"+server+"test/data/aae20040102vmin.min&return=stream&lineRegExp=^[0-9]&streamGzip=true";
 tests[j].n    = n || 50;
 tests[j].md5  = "6e777ce6fb02ce90170cce95996c9f3d";
+
+j = j+1;
+tests[j]      = {};
+tests[j].url  = server + "sync?source="+server+"test/data/filetoaverage1withNaN.txt&return=stream&lineRegExp=^[0-9]&timeformat=DD-MM-YYYY,HH:mm:ss.SSS&timecolumns=1,2&streamFilterReadColumns=1,2,3,4,5,6&forceUpdate=true&forceWrite=true&streamFilterTimeFormat=1&streamFilterComputeWindow=2&streamFilterComputeFunction=max&streamFilterExcludeColumnValues=99999,9999,999,99";
+tests[j].n    = n || 50;
+tests[j].md5  = "5bfe3b84476742c44bf0bc849e9d62cf";
+

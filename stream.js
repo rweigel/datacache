@@ -39,17 +39,32 @@ function stream(source, options, res) {
 	
 	var plugin = scheduler.getPlugin(options,source[0])
 	
-	extractSignature = source.join(",");
-	if (plugin.extractSignature) extractSignature = plugin.extractSignature(options);
-	if (options.debugapp) console.log("plugin extractSignature: " + extractSignature);
+	if (options.streamFilterComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
+		if (options.debugstream) console.log(options.id+" Reading ./filters/stats.js");
+		var filter = require("./filters/stats.js");
+	}
+	if (options.streamFilterComputeFunction.match(/regrid/)) {
+		if (options.debugstream) console.log(options.id+" Reading ./filters/regrid.js");
+		var filter = require("./filters/regrid.js");
+	}
+	
+	extractSignature = source.join(",");	
+	if (plugin.extractSignature) extractSignature = extractSignature + plugin.extractSignature(options);
+	if (options.debugapp) console.log(options.id+" plugin signature: " + extractSignature);
 
-	//console.log("-----" + options.timeRangeExpanded)
-	var streamsignature   = util.md5(extractSignature + options.timeRangeExpanded + options.streamFilterReadBytes  + options.streamFilterReadLines  + options.streamFilterReadPosition  + options.streamFilterReadColumns  + options.streamFilterTimeFormat + options.streamFilterComputeWindow + options.streamFilterComputeFunction);
+	filterSignature = ""; 
+	if (filter.filterSignature) filterSignature = filter.filterSignature(options);
+	if (options.debugapp) console.log(options.id+" filter signature: " + filterSignature);
+
+	var streamsignature   = util.md5(extractSignature + filterSignature +
+									options.timeRangeExpanded + options.streamFilterReadBytes +
+								    options.streamFilterReadLines  + options.streamFilterReadPosition +
+								    options.streamFilterReadColumns);
+
 	var streamdir         = __dirname +"/cache/stream/"+source[0].split("/")[2]+"/"+streamsignature+"/";
 	var streamfilecat     = streamdir + streamsignature + ".stream.gz";
 	var streamfilecatlck  = streamfilecat.replace("stream.gz","lck");
 
-	//console.log(options.debugstream)
 	if (options.debugstream) console.log(options.id+" streamdir         : " + streamdir);
 	if (options.debugstream) console.log(options.id+" streamfilecat     : " + streamfilecat);
 	if (options.debugstream) console.log(options.id+" streamfilecatlck  : " + streamfilecatlck);
@@ -64,6 +79,7 @@ function stream(source, options, res) {
 
 	// This does not work because node.js does not handle concatenated gzip files.
 	if (fs.existsSync(streamfilecat) && !fs.existsSync(streamfilecatlck) && !options.forceWrite && !options.forceUpdate) {
+		if (options.debugstream) console.log(options.id+" ignoring existing streamfilecat because of bug in node.js with concateneated gzip files");
 		//streamcat();
 		//return;
 	}
@@ -197,15 +213,6 @@ function stream(source, options, res) {
 			fs.readFile(fname + ".data", "utf8", readcallback);
 		}
 
-		var line   = '';
-		var lines  = '';
-		var linesx = ''; // Modified kept lines.
-		var linesa = ''; // Accumulated lines.
-
-		var lr = 0; // Lines kept.
-		var k = 1;  // Lines read.
-		
-		var done = false;
 		
 		if (options.streamFilterReadColumns !== "0") {
 			//console.log("New column: " + work.plugin.columnTranslator(1))
@@ -263,10 +270,15 @@ function stream(source, options, res) {
 			if (options.debugstream) {console.log(options.id+" columns final " + outcolumns.join(","));}
 		}
 
-		if (options.streamFilterComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
-			if (options.debugstream) console.log(options.id+" Reading filter")
-			var stats = require("./filters/stats.js");
-		}
+		var line   = '';
+		var lines  = '';
+		var linesx = ''; // Modified kept lines.
+		var linesa = ''; // Accumulated lines.
+
+		var lr = 0; // Lines kept.
+		var k = 1;  // Lines read.
+		
+		var done = false;
 		
 		function readline(fname) {	
 			lineReader.eachLine(fname, function(line, last) {
@@ -298,18 +310,14 @@ function stream(source, options, res) {
 							lines = "";
 							done = true;
 							return;
-							
 						}
 
-						linea = line.split(/\s+/g);
+						tmparr = line.split(/\s+/g);
 						line = "";
-						//if (options.debugstream) console.log(linea)
-						//if (options.debugstream) console.log(outcolumns)
-						for (var z = 0;z < outcolumns.length; z++) {
-							line = line + linea[outcolumns[z]-1] + " ";
-						}							
-						//if (options.debugstream) console.log(line)
 
+						for (var z = 0;z < outcolumns.length; z++) {
+							line = line + tmparr[outcolumns[z]-1] + " ";
+						}							
 					}
 
 					line = line.substring(0,line.length-1);
@@ -323,7 +331,7 @@ function stream(source, options, res) {
 
 					if (options.streamFilterComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
 						if (lr % options.streamFilterComputeWindow == 0) {
-							linesx = linesx + stats.stats(linesa.replace(/\n$/,""),options);
+							linesx = linesx + filter.stats(linesa.replace(/\n$/,""),options);
 							linesa = '';
 						}
 					}
@@ -332,11 +340,15 @@ function stream(source, options, res) {
 				k = k+1;
 			}).then(function () {
 				if (!done) {
-					if (options.streamFilterComputeFunction && linesx !== '') {
+					if (options.streamFilterComputeFunction.match(/stats|mean|max|min|std|Nvalid/) && linesx !== '') {
 						if (options.debugstream) console.log(options.id+" Last window not full.");
-						linesx = linesx + stats.stats(linesa.replace(/\n$/,""),options);
+						linesx = linesx + filter.stats(linesa.replace(/\n$/,""),options);
 						readcallback("",linesx);
 					} else {
+						if (options.streamFilterComputeFunction.match(/regrid/) && lines !== '') {
+							console.log(options.id + " stream.js: Calling regrid()");
+							lines = filter.regrid(lines,options);
+						}
 						readcallback("",lines);
 					}
 				}

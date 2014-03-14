@@ -389,11 +389,14 @@ function parseOptions(req) {
 	options.streamFilterReadLines       = s2i(req.query.streamFilterReadLines       || req.body.streamFilterReadLines         || "0");
 	options.streamFilterReadPosition    = s2i(req.query.streamFilterReadPosition    || req.body.streamFilterReadPosition      || "1");
 	options.streamFilterReadColumns     =     req.query.streamFilterReadColumns     || req.body.streamFilterReadColumns       || "0";
-	options.streamFilterExcludeColumnValues = req.query.streamFilterExcludeColumnValues  || req.body.streamFilterExcludeColumnValues    || "";
+	options.streamFilterExcludeColumnValues = req.query.streamFilterExcludeColumnValues || req.body.streamFilterExcludeColumnValues    || "";
 	options.streamFilterTimeFormat      =     req.query.streamFilterTimeFormat      || req.body.streamFilterTimeFormat        || "0";
-	options.streamFilterComputeWindow   = s2i(req.query.streamFilterComputeWindow   || req.query.streamFilterComputeWindow    || "1"); 
-	options.streamFilterComputeFunction =     req.query.streamFilterComputeFunction || req.query.streamFilterComputeFunction  || ""; 
+	options.streamFilterComputeWindow   = s2i(req.query.streamFilterComputeWindow   || req.body.streamFilterComputeWindow    || "1"); 
+	options.streamFilterComputeFunction =     req.query.streamFilterComputeFunction || req.body.streamFilterComputeFunction  || ""; 
 
+	options.streamFilterRegridDt        = s2i(req.query.streamFilterRegridDt	       || req.body.streamFilterRegridDt) ||  "";
+	options.streamFilterRegridTimeRange = s2i(req.query.streamFilterRegridTimeRange || req.body.streamFilterRegridTimeRange) || "";
+    
     options.timeRange = req.body.timeRange || req.query.timeRange || "";
 	if (options.timeRange !== "") {
 		options.timeRangeExpanded  = expandISO8601Duration(options.timeRange,{debug:options.debugtemplate})

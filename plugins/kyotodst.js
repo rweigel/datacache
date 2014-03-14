@@ -9,9 +9,7 @@ exports.extractSignature = function(options) {
 }
 
 exports.extractData = function(data,options){
-    
-	
-	//console.log(typeof data)
+
 	var monthyear = data.toString().split("\n").filter(function(line){return line.search(/JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER/)!=-1;})[0].replace(/\s/g,"");
 	var yearmonth = monthyear.replace(/(.*)([0-9][0-9][0-9][0-9])/,"$2-$1-01T00:30:00.00000Z")
 					.replace("JANUARY","01")
