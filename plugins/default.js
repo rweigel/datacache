@@ -20,15 +20,18 @@ exports.process = function (work, callback) {
 
 	// TODO: If work.urlMd5base exists, set work.body to be urlMd5base.out, work.dataBinary to be urlMd5base.bin, etc. and return.
 	
+	console.log("default.js: process() called.")
 	if (work.url.match(/^http/)) {
 		var headers = work.options.acceptGzip ? {"accept-encoding" : "gzip, deflate"} : {};
+		var sz = 0;
 		util.get(work.url, function (error, response, body) {
 			if (error || response.statusCode!==200){
 				work.error = "Can't fetch data";
-				console.log("Error")
+				console.log("Error when attempting to GET " + work.url)
 				callback(true, work);
 			} else {
 				
+				console.log("Done.")
 				if (response.headers["content-type"] === "application/x-gzip") {
 					//console.log("Content-Type is application/x-gzip")
 					zlib.gunzip(body,cb);
@@ -53,13 +56,20 @@ exports.process = function (work, callback) {
 				}
 			}
 		})
+		.on("error", function(data){
+			console.log("default.js: Error.")
+		})
 		.on("end", function(data){
+			console.log("default.js: End.")
 			if (!work.getEndTime) {
 			    work.getEndTime = new Date();
 			}
 		})
 		.on("data", function(data){
+			console.log("default.js: Got chunk of size [bytes] " + data.length + ". Total = "+sz)
+			sz = sz + data.length;
 			if (!work.getFirstChunkTime) {
+				console.log("default.js: Got first chunk.")
 			    work.getFirstChunkTime = new Date();
 			}
 		});
