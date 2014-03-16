@@ -76,7 +76,7 @@ exports.formatLine = function (line, options) {
 	//line = line.replace(":"," ");
 	// Assumes time is in continuous columns and before any data column that is to be kept.
 	timev      = line.split(/\s+/).slice(parseInt(timecolumnsa[0])-1,parseInt(timecolumnsa[timecolumnsa.length-1]));
-	datav      = line.split(/\s+/).slice(parseInt(timecolumnsa[timecolumnsa.length-1]));
+	datav      = line.split(/,|\s+/).slice(parseInt(timecolumnsa[timecolumnsa.length-1]));
 
 	if (debug) {
 		console.log("formattedTime: line: " + line);
