@@ -99,10 +99,11 @@ var debuglineformatter = s2b(process.argv[7] || "false");
 	}
 })
 
+//app.use(express.timeout(120000));
+
 //app.use(express.logger());
 app.use(express.methodOverride());
 app.use(express.bodyParser());
-
 
 // Rewrite /sync?return=report ... to /report ...
 app.use(function (req, res, next) {
@@ -112,6 +113,7 @@ app.use(function (req, res, next) {
 	}
 	next();
 });
+
 
 app.use(express.errorHandler({ showStack: true, dumpExceptions: true }));
 
@@ -191,6 +193,7 @@ app.post("/async", function (req, res) {
 
 app.get("/sync", function (req,res) {
 	if (debugapp) console.log("GET")
+	req.setTimeout(1000*60*15);
 	handleRequest(req,res);
 });
 
@@ -254,6 +257,8 @@ app.use("/test/data", express.directory(__dirname + "/test/data"));
 app.use("/asset", express.static(__dirname + "/asset"));
 
 server.listen(port);
+//server.timeout(1000*60*15,function () {console.log("Timeout")});
+server.setTimeout(60*1000*15,function() {console.log("Timeout")});
 var clients = [];
 
 sio.sockets.on("connection", function (socket) {
