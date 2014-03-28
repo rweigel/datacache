@@ -137,7 +137,7 @@ exports.formatLine = function (line, options) {
 
 	line = timestamp + " " + datav.join(" ");
 
-	console.log(timestamp + " # of columns: " + datav.length)
+	//console.log(timestamp + " # of columns: " + datav.length)
 
 	return line;
 

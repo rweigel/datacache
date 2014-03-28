@@ -53,8 +53,8 @@ function stream(source, options, res) {
 	if (options.debugapp) console.log(options.id+" plugin signature: " + extractSignature);
 
 	filterSignature = ""; 
-	if (filter.filterSignature) filterSignature = filter.filterSignature(options);
-	if (options.debugapp) console.log(options.id+" filter signature: " + filterSignature);
+	//if (filter.filterSignature) filterSignature = filter.filterSignature(options);
+	//if (options.debugapp) console.log(options.id+" filter signature: " + filterSignature);
 
 	var streamsignature   = util.md5(extractSignature + filterSignature +
 									options.timeRangeExpanded + options.streamFilterReadBytes +
@@ -166,6 +166,16 @@ function stream(source, options, res) {
 
 		if (!fs.existsSync(streamfilepartlck) && !options.forceWrite && !options.forceUpdate) {
 			if (options.debugstream) console.log(options.id+" Checking if stream part exists: " + streamfilepart);
+
+if (0) {
+var fo = "/Users/robertweigel/Documents/workspace/datacache/cache/stream/satdat.ngdc.noaa.gov/02030b636deae9cc29ebe3e16cc932ec/02030b636deae9cc29ebe3e16cc932ec/0.stream.gz";
+	if (fs.existsSync(fo)) {
+		console.log("Found file");
+		console.log(fo);
+		console.log(streamfilepart);
+	}
+}
+
 			if (fs.existsSync(streamfilepart)) {
 				if (options.debugstream) console.log(options.id+" It does.  Locking it.");
 				fs.writeFileSync(streamfilepartlck,"");
@@ -189,7 +199,10 @@ function stream(source, options, res) {
 				if (options.debugstream) console.log(options.id+" Streaming it.");
 				streamer.pipe(res,{ end: false });
 				return;
+			} else {
+				if (options.debugstream) console.log(options.id+" It does not.");
 			}
+			
 		}
 
 		if (options.debugstream) console.log(rnd+" Stream locking " + fname.replace(__dirname,""));
