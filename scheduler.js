@@ -247,6 +247,9 @@ function newWork(url, options, callback){
 		},
 		extractData: function (data, options) {
 			exports.emit("extractdata", this);
+			if (data.length == 0) {
+				return "\n";
+			}
 			return this.plugin.extractData(data, options);
 		},
 		extractDataBinary: function (data, options) {

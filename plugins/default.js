@@ -66,10 +66,11 @@ exports.process = function (work, callback) {
 			}
 		})
 		.on("data", function(data){
-			console.log("default.js: Got chunk of size [bytes] " + data.length + ". Total = "+sz)
 			sz = sz + data.length;
+			
 			if (!work.getFirstChunkTime) {
-				console.log("default.js: Got first chunk.")
+				console.log("default.js: Got first chunk of size [bytes] " + data.length);
+				//console.log("default.js: Got first chunk.")
 			    work.getFirstChunkTime = new Date();
 			}
 		});

@@ -33,11 +33,25 @@ exports.extractData = function(data0,options){
 	var stations_available = [];
 	var J = 0;
 	data0 = data0.toString().split("\n");
+	//console.log(data0)
 	//var data = $(".data").text().split("\n");
 	for (var j = 0;j < stations.length;j++) {
+
+		// Grab lines that start with 0-9 or contain station name
 		var re = new RegExp("^[0-9]|"+stations[j]);
-		data   = data0.filter(function(line){return line.search(re)!=-1;});
+		// Result will be
+		// Date
+		// Station Data
+		// Date
+		// StationData
+		data = data0.filter(function(line){return line.search(re)!=-1;});
 		
+		// Case where file has no time stamps and no stations lines.
+		if (data.length < 2) {
+			//console.log("No data found for station "+stations[j]);
+			continue;
+		}
+		// Case where file has only two time stamps.
 		if (data[1].match(/^[0-9]/)) {
 			continue;
 		}
