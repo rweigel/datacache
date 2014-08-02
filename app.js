@@ -13,6 +13,8 @@ var request = require("request"),
 	whiskers = require("whiskers"),
 	domain = require("domain");
 
+var util = require('./util.js');
+
 var qs   = require('querystring');
 var mmm  = require('mmmagic');
 
@@ -42,7 +44,7 @@ if (fs.existsSync("../tsdset/lib/expandtemplate.js")) {
 //process.setMaxListeners(0);
 
 process.on('exit', function () {
-	console.log('Received exit signal.  Removing lock files.');
+	console.log('Received exit signal.  Removing partially written files.');
 	// TODO: 
 	// Remove partially written files by inspecting cache/locks/*.lck
 	// Remove streaming locks by inspecting cache/locks/*.streaming
@@ -69,10 +71,12 @@ function s2i(str) {return parseInt(str)}
 // Get port number from command line option.
 var port               = s2i(process.argv[2] || 8000);
 var debugapp           = s2b(process.argv[3] || "false");
-var debugstream        = s2b(process.argv[4] || "false");
+var debugstream        = s2b(process.argv[4] || "true");
 var debugplugin        = s2b(process.argv[5] || "false");
 var debugtemplate      = s2b(process.argv[6] || "false");
 var debuglineformatter = s2b(process.argv[7] || "false");
+var debugutil          = s2b(process.argv[8] || "true");
+
 
 // Middleware
 /* wrap app.VERB to handle exceptions: send 500 back to the client before crashing*/
@@ -317,8 +321,8 @@ function handleRequest(req, res) {
 
 	var options = parseOptions(req);
 	var source  = parseSource(req);
-	options.id  = Math.random().toString().substring(1) 
-
+	options.id  = Math.random().toString().substring(1); 
+	var logcolor   = Math.round(255*parseFloat(options.id));
 	// Compress response if headers accept it and streamGzip is not requested.
 	if (!options.streamGzip) 	
 		app.use(express.compress()); 
@@ -330,7 +334,7 @@ function handleRequest(req, res) {
 	}
 
 	if (options.debugapp || options.debugstream)
-		console.log(options.id + " handleRequest called with source="+source);
+		util.logc(options.id + " handleRequest called with source=\n\t"+source.toString().replace(",","\n\t"),logcolor);
 
 	if (options.return === "stream") {
 		stream.stream(source,options,res);
@@ -365,6 +369,7 @@ function parseOptions(req) {
 	
 	options.debugapp       = req.query.debugapp      || req.body.debugapp      || debugapp;
 	options.debugstream    = req.query.debugstream   || req.body.debugstream   || debugstream;
+	options.debugutil      = req.query.debugutil     || req.body.debugutil     || debugutil;
 	options.debugplugin    = req.query.debugplugin   || req.body.debugplugin   || debugplugin;
 	options.debugtemplate  = req.query.debugtemplate || req.body.debugtemplate || debugtemplate;
 	options.debuglineformatter  = req.query.debuglineformatter || req.body.debuglineformatter || debuglineformatter;

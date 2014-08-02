@@ -7,7 +7,7 @@ exports.setMaxListeners(1000);
 
 var logger = require("./logger.js");
 
-var params = { concurrency : 5 };
+var params = { concurrency : 4 };
 
 var runningWorks = [];
 var worksQueue   = [];
@@ -63,7 +63,7 @@ function run() {
 		var work = worksQueue.shift();
 		runningWorks.push(work);
 
-		logger.d("processing work");
+		logger.d("scheduler.run(): Processing work");
 
 		work.cacheCheckStartTime = new Date();
 		util.isCached(work, function (work) {
@@ -91,6 +91,9 @@ function run() {
 					work.retries += 1;
 					worksQueue.push(work);
 				} else {
+					if (work.retries == work.options.maxTries) {
+						console.log("scheduler.run.workFinish(): Number of tries exceeded.  Aborting and returing cached data if found.")
+					}
 					if(work.data){
 						work.callback(work2result(work));
 					} else {
@@ -108,7 +111,7 @@ function run() {
 		})		
 	}
 	if (worksQueue.length > 0) {
-	    logger.d("scheduler: delaying");
+	    logger.d("scheduler.run(): Delaying");
 	    if (typeof(setImmediate) !== "undefined") {
 	    	setImmediate(run);
 	    } else {
@@ -166,7 +169,6 @@ function work2result(work) {
 	ret.work2ResultFinishedTime = new Date();
 	ret.jobFinishedTime = new Date();
 	return ret;
-
 }
 
 function getPlugin(options,url) {
@@ -181,6 +183,31 @@ function getPlugin(options,url) {
 	return plugin;
 }
 exports.getPlugin = getPlugin;
+
+var getId = (function () {
+
+	var Id = 1;
+	var timeStamp = "";
+
+	function pad(str, num){
+	    // convert to string
+	    str = str+"";
+	    while (str.length < num) {
+			str = "0" + str;
+	    }
+	    return str;
+	}
+
+	return function () {
+	    var now = new Date();
+	    var ret = "" + now.getFullYear() + pad(now.getMonth() + 1, 2) + pad(now.getDate(), 2);
+	    if (ret !== timeStamp) {
+			timeStamp = ret;
+			jobId = 1;
+	    }
+	    return ret + "-" + (jobId++);
+	}
+})();
 
 function newWork(url, options, callback){
 
@@ -198,7 +225,7 @@ function newWork(url, options, callback){
 	// scheduler should check to see if urlMd5base.out exists.
 	
 	var work = {
-		id: util.getId(),
+		id: getId(),
 		plugin : plugin,
 		url : url,
 		options : options ? options : {},
