@@ -1,31 +1,29 @@
-var request = require("request"),
-	xml2js = require('xml2js'),
-	parser = new xml2js.Parser(),
-	express = require('express'),
-	app = express(),
-	server = require("http").createServer(app),
-	io = require("socket.io"),
-	sio = io.listen(server),
-	crypto = require("crypto"),
-	fs = require("fs"),
-	hogan = require("hogan.js"),
-	moment = require("moment"),
-	whiskers = require("whiskers"),
-	domain = require("domain");
-
-var util = require('./util.js');
-
-var qs   = require('querystring');
-var mmm  = require('mmmagic');
+var request  = require("request");
+var	xml2js   = require('xml2js');
+var	parser   = new xml2js.Parser();
+var	express  = require('express');
+var	app      = express();
+var	server   = require("http").createServer(app);
+var	io       = require("socket.io");
+var	sio      = io.listen(server);
+var	crypto   = require("crypto");
+var	fs       = require("fs");
+var	hogan    = require("hogan.js");
+var	moment   = require("moment");
+var	whiskers = require("whiskers");
+var	domain   = require("domain");
+var qs       = require('querystring');
+var mmm      = require('mmmagic');
+var util     = require('./util.js');
 
 if (fs.existsSync("../tsdset/lib/expandtemplate.js")) {
+	// Use local file if it is found.
 	var expandtemplate        = require("../tsdset/lib/expandtemplate.js").expandtemplate;
 	var expandISO8601Duration = require("../tsdset/lib/expandtemplate.js").expandISO8601Duration;
 } else {
 	var expandtemplate        = require("tsdset").expandtemplate;
 	var expandISO8601Duration = require("tsdset").expandISO8601Duration;
 }
-
 
 // Locking notes:
 // Each time a file is being streamed, a stream counter is incremented for the file.
