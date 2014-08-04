@@ -192,7 +192,6 @@ app.post("/async", function (req, res) {
 	res.send(200);
 })
 
-
 app.get("/sync", function (req,res) {
 	if (debugapp) console.log("GET")
 	req.setTimeout(1000*60*15);
@@ -260,7 +259,7 @@ app.use("/asset", express.static(__dirname + "/asset"));
 
 server.listen(port);
 //server.timeout(1000*60*15,function () {console.log("Timeout")});
-server.setTimeout(60*1000*15,function() {console.log("Timeout")});
+server.setTimeout(60*1000*15,function() {console.log("app.js: Timeout.")});
 var clients = [];
 
 sio.sockets.on("connection", function (socket) {
@@ -332,7 +331,7 @@ function handleRequest(req, res) {
 	}
 
 	if (options.debugapp || options.debugstream)
-		util.logc(options.id + " handleRequest called with source=\n\t"+source.toString().replace(",","\n\t"),logcolor);
+		util.logc(options.id + " handleRequest called with source=\n\t"+source.toString().replace(/,/g,"\n\t"),logcolor);
 
 	if (options.return === "stream") {
 		stream.stream(source,options,res);

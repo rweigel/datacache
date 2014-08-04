@@ -1,11 +1,10 @@
-var util = require("./util.js"),
-	fs = require("fs"),
-	EventEmitter = require("events").EventEmitter;
+var util     = require("./util.js");
+var logger   = require("./logger.js");
+var fs       = require("fs");
+EventEmitter = require("events").EventEmitter;
 
 module.exports = exports = new EventEmitter();
 exports.setMaxListeners(1000);
-
-var logger = require("./logger.js");
 
 var params = { concurrency : 4 };
 

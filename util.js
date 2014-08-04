@@ -315,14 +315,21 @@ function getCachedData(work, callback) {
 exports.getCachedData = getCachedData;
 
 var memLock = {};
+//var writeLock = {};
 var writeCache = function(work, callback) {
 
-	var logcolor   = Math.round(255*parseFloat(work.options.id));		
+	var logcolor = Math.round(255*parseFloat(work.options.id));		
 
 	var fname = getCachePath(work);
 
-	if (!writeCache.memLock) writeCache.memLock = {}; writeCache.memLock[fname] = 0
-
+	if (!writeCache.memLock) {
+		writeCache.memLock = {};
+	}
+	if (typeof(writeCache.memLock[fname]) === "undefined") {
+		writeCache.memLock[fname] = 0;
+	}
+	//if (!writeLock[fname]) {writeLock[fname] = 0;}
+	
 	var directory = getCacheDir(work);
 	var filename  = getCachePath(work);
 	var header    = [];
@@ -336,11 +343,14 @@ var writeCache = function(work, callback) {
 	// No other process should be writing to cache directory, so no need to check lock
 	// before writing.
 
+//setTimeout(function () {
 	if ((writeCache.memLock[filename] == 0 || typeof(writeCache.memLock[filename]) === "undefined") && (app.stream.streaming[filename] == 0 || typeof(app.stream.streaming[filename]) === "undefined")) {
 
-		if (work.options.debugutil) logc(work.options.id + " util.writeCache(): Locking "+filename.replace(__dirname,"") + " " + writeCache.memLock[filename],logcolor);
-
 		writeCache.memLock[filename] = writeCache.memLock[filename] + 1;
+		var tmp = writeCache.memLock[filename];
+		//writeLock[fname] = writeLock[fname] + 1;
+		if (work.options.debugutil) logc(work.options.id + " util.writeCache(): Locking "+filename.replace(__dirname,"") + " " + tmp,logcolor);
+		//if (work.options.debugutil) logc(work.options.id + " util.writeCache(): wrieLock[fname] = "+writeLock[fname],logcolor);
 
 		memLock[work.id] = 6; // 6 is number of writes associated with each request.
 		work.writeStartTime = new Date();
@@ -362,14 +372,14 @@ var writeCache = function(work, callback) {
 		});
 	} else {
 		if (writeCache.memLock[filename] != 0) {
-			if (work.options.debugutil) logc(work.options.id + " util.writeCache(): File is being written already.",logcolor);
+			if (work.options.debugutil) logc(work.options.id + " util.writeCache(): File is being written already by writeCache().",logcolor);
 		}
 		if ( !(typeof(app.stream.streaming[filename]) === "undefined") || app.stream.streaming[filename] != 0) {
 			if (work.options.debugutil) logc(work.options.id + " util.writeCache(): Stream lock found.  Not writing file.",logcolor);
 		}
 		callback(work);
 	}
-
+//},Math.round(10*Math.random()));
 	function writeCacheFiles() {
 
 
@@ -457,6 +467,10 @@ var writeCache = function(work, callback) {
 					fs.unlinkSync(filename+".lck");
 				}
 				writeCache.memLock[filename] = writeCache.memLock[filename]-1;
+				var tmp = writeCache.memLock[filename];
+				if (work.options.debugutil) logc(work.options.id + " util.writeCache(): Unlocking "+filename.replace(__dirname,"") + " " + tmp,logcolor);				
+				//writeLock[fname] = writeLock[fname] - 1;
+
 				//logc(work.options.id + " util.writeCacheFiles(): " + writeCache.memLock[filename]);
 				callback(work);
 			}

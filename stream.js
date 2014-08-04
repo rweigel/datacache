@@ -143,12 +143,17 @@ function stream(source, options, res) {
 			return;
 		}
 
+		//console.log(typeof(util.writeCache.memLock[fname]))
 		// See if util.writeCache is writing the file.
-		if (util.writeCache.memLock[fname] > 0) {
-			//if (options.debugstream)
-			if (options.debugstream) util.logc(rnd+" stream.processwork(): File is locked.  Trying again in 100 ms.",logcolor);
-			setTimeout(function () {processwork(work,inorder)},100);
-			return;
+		if (typeof(util.writeCache.memLock) != "undefined") {
+			if (typeof(util.writeCache.memLock[fname]) != "undefined") {
+				if (util.writeCache.memLock[fname] > 0) {
+					//if (options.debugstream)
+					if (options.debugstream) util.logc(rnd+" stream.processwork(): File is locked.  Trying again in 100 ms.",logcolor);
+					setTimeout(function () {processwork(work,inorder)},100);
+					return;
+				}
+			}
 		}
 
 		if (!stream.streaming[fname]) {
@@ -168,21 +173,21 @@ function stream(source, options, res) {
 
 		// Use cached version of part if exists and options allow it.
 		if (!fs.existsSync(streamfilepartlck) && !options.forceWrite && !options.forceUpdate) {
-			if (options.debugstream) util.logc(options.id+" stream.processwork(): Checking if stream part exists: " + streamfilepart);
+			if (options.debugstream) util.logc(options.id+" stream.processwork(): Checking if stream part exists: " + streamfilepart.replace(__dirname,""),logcolor);
 
 			if (fs.existsSync(streamfilepart)) {
-				if (options.debugstream) util.logc(options.id+" stream.processwork(): It does.  Locking it.");
+				if (options.debugstream) util.logc(options.id+" stream.processwork(): It does.  Locking it.",logcolor);
 				fs.writeFileSync(streamfilepartlck,"");
 				if (options.streamGzip == false) {
-					if (options.debugstream) util.logc(options.id+" stream.processwork(): Unzipping it.");
+					if (options.debugstream) util.logc(options.id+" stream.processwork(): Unzipping it.",logcolor);
 					var streamer = fs.createReadStream(streamfilepart).pipe(zlib.createGunzip());
 				} else {
-					if (options.debugstream) util.logc(options.id+" stream.processwork(): Sending raw.");
+					if (options.debugstream) util.logc(options.id+" stream.processwork(): Sending raw.",logcolor);
 					var streamer = fs.createReadStream(streamfilepart);
 				}
 				streamer.on('end',function() {
-					if (options.debugstream) util.logc(options.id+" stream.processwork(): Received streamer.on end event.");
-					if (options.debugstream) util.logc(options.id+" stream.processwork(): Removing " + streamfilepartlck);
+					if (options.debugstream) util.logc(options.id+" stream.processwork(): Received streamer.on end event.",logcolor);
+					if (options.debugstream) util.logc(options.id+" stream.processwork(): Removing " + streamfilepartlck.replace(__dirname,""),logcolor);
 					fs.unlink(streamfilepartlck);
 				    stream.streaming[fname] = stream.streaming[fname] - 1;
 					finished(inorder);
@@ -190,11 +195,11 @@ function stream(source, options, res) {
 				streamer.on('error',function(err) {
 					util.logc(err)
 				});
-				if (options.debugstream) util.logc(options.id+" stream.processwork(): Streaming it.");
+				if (options.debugstream) util.logc(options.id+" stream.processwork(): Streaming it.",logcolor);
 				streamer.pipe(res,{ end: false });
 				return;
 			} else {
-				if (options.debugstream) util.logc(options.id+" stream.processwork(): It does not.");
+				if (options.debugstream) util.logc(options.id+" stream.processwork(): It does not.",logcolor);
 			}
 			
 		}
@@ -379,7 +384,7 @@ function stream(source, options, res) {
 
 			if (options.debugstream) util.logc(options.id+" stream.readcallback(): Called for " + fname.replace(__dirname,""),logcolor);
 
-			if (arguments.length < 3) cachepart = false;
+			if (arguments.length < 3) cachepart = true;
 			
 			function cachestream(streamfilepart,data) {
 				if (options.debugstream) util.logc(options.id+" stream.readcallback(): Creating " + streamdir+streamsignature,logcolor);
@@ -394,7 +399,7 @@ function stream(source, options, res) {
 						if (options.debugstream) util.logc(options.id+" stream.readcallback(): Wrote   "+streamfilepart.replace(".gz","").replace(__dirname,"")+".lck",logcolor);
 						if (options.debugstream) util.logc(options.id+" stream.readcallback(): Writing " + streamfilepart.replace(__dirname,""),logcolor);
 						fs.writeFile(streamfilepart,data,function (err) {
-							if (options.debugstream) util.logc(options.id+" stream.readcallback(): Wrote   "+streamfilepart.replace(__dirname,""));
+							if (options.debugstream) util.logc(options.id+" stream.readcallback(): Wrote   "+streamfilepart.replace(__dirname,""),logcolor);
 							if (options.debugstream) util.logc(options.id+" stream.readcallback(): Removing   "+streamfilepart.replace(".gz","").replace(__dirname,"")+".lck",logcolor);
 							fs.unlink(streamfilepart.replace(".gz","")+".lck",function () { 
 								if (options.debugstream) util.logc(options.id+" stream.readcallback(): Removed   "+streamfilepart.replace(".gz","").replace(__dirname,"")+".lck",logcolor);
