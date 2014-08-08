@@ -53,9 +53,9 @@ process.on('SIGINT', function () {
 });
 
 var scheduler = require("./scheduler.js");
-var util = require("./util.js");
-var stream = require("./stream.js");
-var logger = require("./logger.js");
+var util      = require("./util.js");
+var stream    = require("./stream.js");
+var logger    = require("./logger.js");
 app.use(express.limit('4mb')); // Max POST size
 
 // Create cache dir if it does not exist.
@@ -258,6 +258,7 @@ app.use("/test/data", express.directory(__dirname + "/test/data"));
 app.use("/asset", express.static(__dirname + "/asset"));
 
 server.listen(port);
+util.logc(Date().toString() + " - [datacache] listening on port "+port,10)
 //server.timeout(1000*60*15,function () {console.log("Timeout")});
 server.setTimeout(60*1000*15,function() {console.log("app.js: Timeout.")});
 var clients = [];
@@ -266,11 +267,11 @@ sio.sockets.on("connection", function (socket) {
 	clients.push(socket);
 	socket.on("disconnect", function () {clients.remove(socket);});
 });
-sio.set("log level", 1);
+//sio.set("log level", 1);
 
 // Need if running app behind apache server that does not support websockets.
 sio.set('transports', ['xhr-polling']);
-sio.set('polling duration',20);
+//sio.set('polling duration',20);
 
 logger.bindClientList(clients);
 
