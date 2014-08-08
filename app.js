@@ -69,11 +69,11 @@ function s2i(str) {return parseInt(str)}
 // Get port number from command line option.
 var port               = s2i(process.argv[2] || 8000);
 var debugapp           = s2b(process.argv[3] || "false");
-var debugstream        = s2b(process.argv[4] || "true");
+var debugstream        = s2b(process.argv[4] || "false");
 var debugplugin        = s2b(process.argv[5] || "false");
 var debugtemplate      = s2b(process.argv[6] || "false");
 var debuglineformatter = s2b(process.argv[7] || "false");
-var debugutil          = s2b(process.argv[8] || "true");
+var debugutil          = s2b(process.argv[8] || "false");
 
 
 // Middleware
