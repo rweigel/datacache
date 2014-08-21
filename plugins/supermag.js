@@ -6,7 +6,7 @@ exports.extractData = function (data) {
 	// Time stamp line
 	var re1 = /^([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)/;
 
-	// Magnetometer data line
+	// Data line
 	var re2 = /\n([A-Z]+)\s+([\d-].*)/gi;
 
 	// First combine timestamp and data line and remove station string.
