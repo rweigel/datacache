@@ -2,7 +2,7 @@ cache/
 log/*
 test/data-stream/out.*
 !test/data-stream/out.*.0
-node_modules/
+node_modules*
 *.log
 *~
 .DS_Store
