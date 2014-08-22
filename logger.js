@@ -55,16 +55,34 @@ exports.bindClientList = bindClientList;
 
 function log(type, work){
 
-	// Write to requests.log
-	var file = __dirname + "/log/datacache.log";
-	// Needed on Mac?
-	//var file = __dirname + "/datacache/log/datacache.log";
-	var entry = util.formatTime(new Date()) + "\t" + type + "\t" +work.url+"\n";
-	fs.appendFile(file, entry, function(err){if (err) console.log(err);});
+	if (!log.nwriting) log.nwriting = 0;
+	if (!log.entries) log.entries = "";
 
-	// Write to STDOUT
-	var entry0 = util.formatTime(new Date()) + "\t" + type + "\t" +work.url;
-	//console.log(entry0);
+	log.nwriting = log.nwriting + 1;
+
+	var entry = util.formatTime(new Date()) + "\t" + type + "\t" +work.url+"\n";
+
+
+	log.entries = log.entries + entry;
+
+	// This is to prevent too many files from being open at the same time.
+	if (log.nwriting < 10) {
+
+		//Write to STDOUT
+		//console.log(entry.replace(/\n\n$/,"\n"));
+
+		var tmp = new Date();
+		var yyyymmdd = tmp.toISOString().substring(0,10);
+		// Write to requests.log
+		var file = __dirname + "/log/datacache_"+yyyymmdd+".log";
+
+		fs.appendFile(file, log.entries, 
+			function(err){
+				log.entries = "";
+				log.nwriting = log.nwriting - 1;
+				if (err) console.log(err);
+			});
+	}
 
 	// Write to clients
 	clients.forEach(function(socket){
