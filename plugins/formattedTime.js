@@ -111,8 +111,7 @@ exports.formatLine = function (line, options) {
 		if (debug) console.log("formattedTime: time of " + tmp._d + " is less than requested start time " + startdate)
 		return "";
 	}
-	if (currms > stopms) {
-		//if (debug) 
+	if (currms >= stopms) {
 		if (debug) console.log("formattedTime: time of " + tmp._d + " is greater than requested stop time " + stopdate)
 		return "END_OF_TIMERANGE";
 	}
