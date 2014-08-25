@@ -82,10 +82,12 @@ exports.process = function (work, callback) {
 		var host = work.url.split("/")[2];
 		var filepath = work.url.split("/").slice(3).join("/");
 
+		console.log("Connecting to "+host)
 		logger.d("ftp connecting... ");
 		logger.d("host: " + host);
 		logger.d("connect func: " + conn.connect);
 		conn.on("ready", function(){
+			console.log("Ready event from "+host)
 				
 				// TODO: Write .header file.
 				//conn.list(filepath, function(err,list) {
@@ -118,6 +120,8 @@ exports.process = function (work, callback) {
 				});
 		})
 		.on("error", function(e){
+			console.log("Error event from "+host)
+
 			logger.d("ftp error: " + e);
 
 			work.error=e;

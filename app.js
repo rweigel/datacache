@@ -258,7 +258,7 @@ app.use("/test/data", express.directory(__dirname + "/test/data"));
 app.use("/asset", express.static(__dirname + "/asset"));
 
 server.listen(port);
-util.logc(Date().toString() + " - [datacache] listening on port "+port,10)
+util.logc((new Date()).toISOString() + " - [datacache] listening on port "+port,10)
 //server.timeout(1000*60*15,function () {console.log("Timeout")});
 server.setTimeout(60*1000*15,function() {console.log("app.js: Timeout.")});
 var clients = [];

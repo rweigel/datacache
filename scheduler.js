@@ -6,7 +6,8 @@ EventEmitter = require("events").EventEmitter;
 module.exports = exports = new EventEmitter();
 exports.setMaxListeners(1000);
 
-var params = { concurrency : 4 };
+// Maximum number of jobs to run at same time.
+var params = { concurrency : 40 };
 
 var runningWorks = [];
 var worksQueue   = [];
@@ -91,7 +92,7 @@ function run() {
 					worksQueue.push(work);
 				} else {
 					if (work.retries == work.options.maxTries) {
-						console.log("scheduler.run.workFinish(): Number of tries exceeded.  Aborting and returing cached data if found.")
+						console.warn("scheduler.run.workFinish(): Number of tries (" + work.options.maxTries + ") exceeded.  Aborting and returing cached data if found. URL = \n\t"+work.url);
 					}
 					if(work.data){
 						work.callback(work2result(work));
