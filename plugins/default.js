@@ -112,9 +112,7 @@ exports.process = function (work, callback) {
 							work.data = work.extractData(work.body, work.options);
 							work.dataMd5 =  util.md5(work.data);
 							work.header = "";
-							util.writeCache(work, function(){
-								callback(false, work);
-							});
+							util.writeCache(work, function(){callback(false, work);});
 						});
 					}
 				});
