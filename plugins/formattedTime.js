@@ -1,6 +1,5 @@
 var moment = require('moment');
 
-//if (1) {
 exports.extractSignature = function (options) {
 	var version = "1.0.0";
 
@@ -11,11 +10,44 @@ exports.extractSignature = function (options) {
 	return version.split(".")[0] + xoptions;
 }
 
+function plugininfo(options,what) {
 
-//var strfmtime = require(__dirname + "/sprintf-0.7-beta1.js");
+	var scheduler = require("../scheduler.js");
+	var plugin = scheduler.getPlugin(options);
+
+	if (plugin === "") {
+		console.log("Error: plugin "+options.plugin+" not found.");
+	}
+
+	if (what === "timeFormat") {
+		var timeformat = "";
+		if (plugin.timeFormat) {
+			timeformat = plugin.timeFormat();
+			if (debug) console.log("formattedTime: Plugin has time format of: "+timeFormat);
+		}
+		return timeformat;
+	}
+	if (what === "timeColumns") {
+		var timecolumns = "";
+		if (plugin.timeColumns) {
+			timecolumns = plugin.timeColumns();
+			if (debug) console.log("formattedTime: Plugin has time columns of: "+timeColumns);
+		}
+		return timecolumns;
+	}
+
+}
 
 exports.columnTranslator = function(col,options) {
-	var No = options.req.query.timecolumns.split(",").length;
+
+	if (options.plugin) {
+		var No = plugininfo(options,"timeColumns");
+	} 
+
+	if (options.req.query.timecolumns) {
+		var No = options.req.query.timecolumns.split(",").length;
+	}
+
 	var outformat = options.streamFilterTimeFormat;
 
 	if (outformat == "0") {
@@ -35,6 +67,7 @@ exports.columnTranslator = function(col,options) {
 			return 1;
 		}
 	}
+
 }
 
 exports.formatLine = function (line, options) {
@@ -45,18 +78,12 @@ exports.formatLine = function (line, options) {
 	var timecolumns = options.req.query.timecolumns  || "1";
 	var outformat   = options.streamFilterTimeFormat || "0";
 	
-	var scheduler = require("../scheduler.js");
-	
-	if (options.plugin) {
-		var plugin = scheduler.getPlugin(options);
-		if (plugin.timeFormat) {
-			var timeformat = plugin.timeFormat();
-			if (debug) console.log("formattedTime: Plugin has time format of: "+timeformat);
-		}
-		if (plugin.timeColumns) {
-			var timecolumns = plugin.timeColumns();
-		}
-	} 
+	if (options.plugin && !options.req.query.timeformat) {
+		var timeformat = plugininfo(options,"timeFormat");
+	}
+	if (options.plugin && !options.req.query.timecolumns) {
+		var timecolumns = plugininfo(options,"timeColumns");
+	}
 
 	//timeformat = timeformat.replace("yyyy","YYYY").replace("yy","YY").replace("dd",'DD').replace("S","SSS").replace("SS","SSS").replace("j","DDD");
 	timeformat = timeformat.replace("$Y","YYYY").replace("$m","MM").replace("$H","HH").replace("$M","mm").replace("$d",'DD').replace("$S","ss").replace("$j","DDD").replace("$(millis)","SSS");

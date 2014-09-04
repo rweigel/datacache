@@ -173,10 +173,8 @@ function work2result(work) {
 
 function getPlugin(options,url) {
 	var plugin;
-	if(options.plugin){
-		plugin = plugins.find(function (d) {
-			return d.name === options.plugin;
-		}) || defaultPlugin;
+	if (options.plugin) {
+		plugin = plugins.find(function (d) {return d.name === options.plugin}) || "";
 	} else {
 		plugin = plugins.find(function(d){return d.match(url);}) || defaultPlugin;
 	}
@@ -213,6 +211,15 @@ function newWork(url, options, callback){
 
 	plugin = getPlugin(options,url)
 
+	if (plugin === "") {
+		console.log("Error: plugin "+options.plugin+" not found.");
+		var pluginerror = "Error: plugin "+options.plugin+" not found.";
+	} else {
+		var pluginerror = false;
+	}
+
+	// TODO: If pluginerror, a crash results.
+
 	//TODO: Check if plugin changed on disk.  If so, re-load it.
 	plugin = getPlugin(options,url);
 	
@@ -243,7 +250,7 @@ function newWork(url, options, callback){
 		isExpired : false,
 		isFinished : false,
 		foundInCache: false,
-		error : false,
+		error : pluginerror,
 		jobStartTime : new Date(),
 		processStartTime : 0,
 		cacheCheckStartTime : 0,
