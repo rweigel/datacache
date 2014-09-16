@@ -16,8 +16,14 @@ var qs       = require('querystring');
 var mmm      = require('mmmagic');
 var util     = require('./util.js');
 
-var expandtemplate        = require("tsdset").expandtemplate;
-var expandISO8601Duration = require("tsdset").expandISO8601Duration;
+if (fs.existsSync("../tsds2/tsdset/lib/expandtemplate.js")) {
+	// Use local file if it is found.
+	var expandtemplate        = require("../tsds2/tsdset/lib/expandtemplate").expandtemplate;
+	var expandISO8601Duration = require("../tsds2/tsdset/lib/expandtemplate").expandISO8601Duration;
+} else {
+//	var expandtemplate        = require("tsdset").expandtemplate;
+//	var expandISO8601Duration = require("tsdset").expandISO8601Duration;
+}
 
 // Locking notes:
 // Each time a file is being streamed, a stream counter is incremented for the file.

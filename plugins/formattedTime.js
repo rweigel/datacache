@@ -73,6 +73,7 @@ exports.columnTranslator = function(col,options) {
 exports.formatLine = function (line, options) {
 
 	var debug = options.debuglineformatter;
+	debug = true;
 
 	var timeformat  = options.req.query.timeformat   || "$Y-$m-$dT$H:$M$SZ";//"YYYY-MM-DDTHH:mm:ss.SSSZ";
 	var timecolumns = options.req.query.timecolumns  || "1";
@@ -158,7 +159,7 @@ exports.formatLine = function (line, options) {
 		if (debug) console.log("formattedTime: Returning: "+timestamp + " " + datav.join(" "))
 	}
 	if (outformat === "2") {
-		var timestamp = d[0]+" "+(parseInt(d[1])+1)+" "+d[2]+" "+d[3]+" "+d[4]+" "+d[5]+"."+d[6];
+		var timestamp = d[0]+" "+d[1]+" "+d[2]+" "+d[3]+" "+d[4]+" "+d[5]+"."+d[6];
 	}
 
 	line = timestamp + " " + datav.join(" ");
