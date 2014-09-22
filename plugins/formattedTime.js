@@ -73,7 +73,7 @@ exports.columnTranslator = function(col,options) {
 exports.formatLine = function (line, options) {
 
 	var debug = options.debuglineformatter;
-	debug = true;
+	//debug = true;
 
 	var timeformat  = options.req.query.timeformat   || "$Y-$m-$dT$H:$M$SZ";//"YYYY-MM-DDTHH:mm:ss.SSSZ";
 	var timecolumns = options.req.query.timecolumns  || "1";
