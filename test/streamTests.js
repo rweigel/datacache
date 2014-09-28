@@ -1,10 +1,6 @@
 // To run a single test, use
 // node streamTests.js true 20 false 1 http://localhost:7999/
 
-// Local server
-// Production server
-// Both servers using data from original data source 
-
 var port = 7999;
 
 function s2b(str) {if (str === "true") {return true} else {return false}}
@@ -31,17 +27,11 @@ var testsuite2 = ["streamTests.js true 0 true " + n + " http://datacache.org/dc/
                  ];
 
 var fs      = require("fs");
-var logger  = require("./lib/logger")();
 var md5     = require("./lib/util").md5;
 sys         = require('sys');
 exec        = require('child_process').exec;
 spawn       = require('child_process').spawn;
 
-var runner    = require("./lib/testRunner")();
-var suite     = runner.suite;
-var assertNot = runner.assertNot;
-
-console.log(port)
 if (process.argv.length == 2) {
 	runsuite(0);
 	return;
@@ -61,17 +51,15 @@ function runsuite(j) {
 }
 
 ////////////////////////////////////////////////////////////////////////////
-// Simulated server
-// First two files are served without delay from 
-// Next three files are served with random delay between 0 and 100 ms.
+// Local server
+if (server2 == 1) var prefix = server;
 
-if (server2 == 1) var prefix = server + "test/data-stream/bou201308";
+// Mirror of real server (served through apache2)
+if (server2 == 2) var prefix = "http://mag.gmu.edu/datacache/";
 
-// Mirror of real server.
-if (server2 == 2) var prefix = "http://mag.gmu.edu/tmp/magweb.cr.usgs.gov/data/magnetometer/BOU/OneMinute/bou201308";
-
-// Real server
-if (server2 == 3) var prefix = "http://magweb.cr.usgs.gov/data/magnetometer/BOU/OneMinute/bou201308";
+// Remote production server (served through node.js)
+// Not currently tested.
+if (server2 == 3) var prefix = "http://datacache.org/dc/";
 ////////////////////////////////////////////////////////////////////////////
 
 eval(fs.readFileSync(__dirname + '/streamTestsInput.js','utf8'))

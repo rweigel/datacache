@@ -77,12 +77,8 @@ function(cb){
 				try{
 					json = JSON.parse(body);
 				} catch(e){}
-				assert(json);
-				if (body.match("http://finder.cox.net")) {
-					assert(false);
-				} else {
-					assert(json[0].error);
-				}
+				assert(json[0].error);
+				
 			});
 
 			suiteDone();

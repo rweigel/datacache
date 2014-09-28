@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/bin/sh
 
 echo "Starting datacache server"
 
@@ -10,11 +10,10 @@ echo "Starting tests in 3 seconds."
 
 sleep 3
 
-node test/devTest.js
+node test/devTests.js
 
 RESULT=$?
 
 kill $PID
 
 exit $RESULT
-
