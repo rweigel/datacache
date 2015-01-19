@@ -5,6 +5,7 @@ var AdmZip = require('adm-zip');
 var fs  	= require("fs");
 var mkdirp 	= require("mkdirp");
 
+// This plug-in is called if the following pattern appears in the URL
 var urlRegx = /(.*\.zip)(.+)/i;
 
 exports.name  = "zip";

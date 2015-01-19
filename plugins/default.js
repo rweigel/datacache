@@ -32,9 +32,9 @@ exports.process = function (work, callback) {
 				if (debug) console.log("default.js: Error when attempting to GET " + work.url)
 				callback(true, work);
 			} else {
-				
+				//console.log(response.headers)
 				if (debug) console.log("default.js: Done.")
-				if (response.headers["content-type"] === "application/x-gzip") {
+				if (response.headers["content-encoding"] === "gzip" || response.headers["content-type"] === "application/x-gzip") {
 					//console.log("Content-Type is application/x-gzip")
 					zlib.gunzip(body,cb);
 				} else {
@@ -83,9 +83,9 @@ exports.process = function (work, callback) {
 		var filepath = work.url.split("/").slice(3).join("/");
 
 		//console.log("Connecting to "+host)
-		logger.d("ftp connecting... ");
-		logger.d("host: " + host);
-		logger.d("connect func: " + conn.connect);
+		//logger.d("ftp connecting... ");
+		//logger.d("host: " + host);
+		//logger.d("connect func: " + conn.connect);
 		conn.on("ready", function(){
 			//console.log("Ready event from "+host)
 				
@@ -106,7 +106,13 @@ exports.process = function (work, callback) {
 							}
 							buff+=data.toString();
 						})
-						.on("error", function(e){work.error=e;callback(true, work);conn.end();})
+						.on("error", function(e){
+							work.error=e;
+							console.log("Error event in conn.get from "+host)
+							console.log("\t"+e);
+							callback(true, work);
+							conn.end();
+						})
 						.on("end", function(){
 							work.body = buff;
 							work.data = work.extractData(work.body, work.options);
@@ -118,13 +124,19 @@ exports.process = function (work, callback) {
 				});
 		})
 		.on("error", function(e){
-			console.log("Error event from "+host)
 
-			logger.d("ftp error: " + e);
+			if (!e.toString().match("No transfer timeout")) {
+				// FTP servers send this "error" if no tranfer after a certain amount of time.
+				// It is really just a signal to close the connection.
+				console.log("Error event in conn.ready from "+host)
+				console.log("\t"+e);
 
-			work.error=e;
-			callback(true, work);
-			conn.end();
+				//logger.d("ftp error: " + e);
+
+				work.error=e;
+				callback(true, work);
+				conn.end();
+			}
 		})
 		conn.connect({host: host});
 	} else {

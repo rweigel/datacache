@@ -3,7 +3,6 @@ var	xml2js = require('xml2js'),
 
 var util = require("../util.js");
 
-
 exports.name = "cdaweb";
 
 exports.match = function(url){
@@ -19,6 +18,7 @@ exports.preprocess = function(work, callback){
 				if(err || !res.FileDescription || !res.FileDescription.Name){
 				    callback(true, work);
 				} else{
+					console.log(res.FileDescription.Name);
 				    work.url = res.FileDescription.Name;
 				    callback(false, work);
 				}

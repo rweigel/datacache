@@ -13,8 +13,9 @@ function stream(source, options, res) {
 	var logger     = require("./logger.js");
 	var util       = require("./util.js");
 
-	res.setHeader('Transfer-Encoding', 'chunked');
-
+	//res.setHeader('Transfer-Encoding', 'chunked');
+	//res.setHeader('Content-Encoding','gzip');
+	
 	var lineFormatter = require(__dirname + "/plugins/formattedTime.js");
 
 	var rnd        = options.id;

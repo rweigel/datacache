@@ -1,5 +1,4 @@
 exports.name = "kyotodst";
-//var moment = require("moment");
 exports.match = function(url){
 	return url.split("/")[2].toLowerCase()==="xwdc.kugi.kyoto-u.ac.jp";
 }

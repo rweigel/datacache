@@ -3,7 +3,6 @@
 
 var fs      = require("fs");
 var md5     = require("./lib/util").md5;
-var process = require("process");
 var sys     = require('sys');
 var exec    = require('child_process').exec;
 var spawn   = require('child_process').spawn;
@@ -32,7 +31,6 @@ var testsuite2 = ["streamTests.js true 0 true " + n + " http://datacache.org/dc/
                  "streamTests.js true 0 true " + n + " http://datacache.org/dc/ 2",
                  "streamTests.js false 0 true " + n + " http://datacache.org/dc/ 2"
                  ];
-
 
 if (process.argv.length == 2) {
 	runsuite(0);
