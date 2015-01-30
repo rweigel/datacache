@@ -51,6 +51,7 @@ function stream(source, options, res) {
 	var streamsignature   = util.md5(extractSignature + filterSignature +
 									options.timeRangeExpanded + options.streamFilterReadBytes +
 								    options.streamFilterReadLines  + options.streamFilterReadPosition +
+								    options.streamFilterTimeFormat +
 								    options.streamFilterReadColumns);
 
 	var streamdir         = __dirname +"/cache/stream/"+source[0].split("/")[2]+"/"+streamsignature+"/";
