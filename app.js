@@ -14,7 +14,41 @@ var	whiskers = require("whiskers");
 var	domain   = require("domain");
 var qs       = require('querystring');
 var mmm      = require('mmmagic');
-var util     = require('./util.js');
+var argv     = require('yargs')
+					.default({
+						'port':7999,
+						'debugall':false,
+						'debugapp':false,
+						'debugutil':false,
+						'debugstream':false,
+						'debugplugin':false,
+						'debugtemplate':false,
+						'debugscheduler':false,
+						'debuglineformatter':false
+					})
+					.argv;
+
+if (argv.help || argv.h) {
+	console.log("Usage: node app.js --port=number --debug?, where ?={all,app,util,stream,plugin,template,scheduler,lineformatter}.");
+	return;
+}
+if (argv.debugall) {
+	argv.debugapp = true;
+	argv.debugutil = true;
+	argv.debugstream = true;
+	argv.debugplugin = true;
+	argv.debugtemplate = true;
+	argv.debugscheduler = true;
+	argv.debuglineformatter = true;
+}
+
+var util      = require('./util.js');
+var scheduler = require("./scheduler.js");
+var stream    = require("./stream.js");
+var logger    = require("./logger.js");
+
+//console.log(argv.help());
+//require('v8-profiler');
 
 if (fs.existsSync("../tsds2/tsdset/lib/expandtemplate.js")) {
 	// Use local file if it is found.
@@ -25,21 +59,8 @@ if (fs.existsSync("../tsds2/tsdset/lib/expandtemplate.js")) {
 //	var expandISO8601Duration = require("tsdset").expandISO8601Duration;
 }
 
-// Locking notes:
-// Each time a file is being streamed, a stream counter is incremented for the file.
-// If the stream counter is non-zero, forceUpdate=true will not work as expected.
-
-// TODO: Indicate that the update failed in the HTTP headers?
-
-// If a process tries to write a file that is being streamed, the write is aborted.
-// TODO: Indicate this in the JSON and the HTTP headers (if stream request).
-
-// TODO:
-// Check if cache directory is writeable and readable.  If not, send 500 error.
-
-//http://stackoverflow.com/questions/9768444/possible-eventemitter-memory-leak-detected
-//Use this when in production.
-//process.setMaxListeners(0);
+// http://stackoverflow.com/questions/9768444/possible-eventemitter-memory-leak-detected
+process.setMaxListeners(0);
 
 process.on('exit', function () {
 	console.log('Received exit signal.  Removing partially written files.');
@@ -52,32 +73,23 @@ process.on('SIGINT', function () {
 	process.exit();
 });
 
-var scheduler = require("./scheduler.js");
-var util      = require("./util.js");
-var stream    = require("./stream.js");
-var logger    = require("./logger.js");
-app.use(express.limit('4mb')); // Max POST size
-
 // Create cache dir if it does not exist.
 if (!fs.existsSync(__dirname+"/cache")) {fs.mkdirSync(__dirname+"/cache");}
 if (!fs.existsSync(__dirname+"/cache/locks")) {fs.mkdirSync(__dirname+"/cache/locks");}
 if (!fs.existsSync(__dirname+"/log")) {fs.mkdirSync(__dirname+"/log");}
 
-function s2b(str) {if (str === "true") {return true} else {return false}}
-function s2i(str) {return parseInt(str)}
-
-// Get port number from command line option.
-var port               = s2i(process.argv[2] || 8000);
-var debugapp           = s2b(process.argv[3] || "false");
-var debugstream        = s2b(process.argv[4] || "false");
-var debugplugin        = s2b(process.argv[5] || "false");
-var debugtemplate      = s2b(process.argv[6] || "false");
-var debuglineformatter = s2b(process.argv[7] || "false");
-var debugutil          = s2b(process.argv[8] || "false");
-
+// Monitor and log memory usage every 1000 ms.
+setInterval(function () {
+	var tmp = new Date();
+	mem = process.memoryUsage();
+	var yyyymmdd = tmp.toISOString().substring(0,10);
+	// Write to requests.log
+	var file = __dirname + "/log/datacache_" + argv.port + "_memory_"+yyyymmdd+".log";
+	fs.appendFile(file, tmp.toISOString() + " " + mem.rss + " " + mem.heapTotal + " " + mem.heapUsed + "\n");
+},1000);
 
 // Middleware
-/* wrap app.VERB to handle exceptions: send 500 back to the client before crashing*/
+/* wrap app.VERB to handle exceptions: send 500 back to the client before crashing */
 ["get", "post", "put"].forEach(function(verb){
 	var old = app[verb];
 	var params = arguments;
@@ -102,22 +114,18 @@ var debugutil          = s2b(process.argv[8] || "false");
 })
 
 //app.use(express.timeout(120000));
-
 //app.use(express.logger());
+app.use(express.limit('4mb')); // Max POST size
 app.use(express.methodOverride());
 app.use(express.bodyParser());
+app.use(express.errorHandler({ showStack: true, dumpExceptions: true }));
 
 // Rewrite /sync?return=report ... to /report ...
 app.use(function (req, res, next) {
 	ret = req.body.return || req.query.return;
-	if (ret === "report") { 
-		req.url = "/report";
-	}
+	if (ret === "report") {req.url = "/report";}
 	next();
 });
-
-
-app.use(express.errorHandler({ showStack: true, dumpExceptions: true }));
 
 app.get('/', function (req, res) {
 	res.contentType("html");
@@ -145,34 +153,6 @@ app.post("/report", function (req,res) {
   	 	});
 }) 
 
-app.get("/demo/changingfile.txt", function (req,res) {
-	var date = new Date();
-    var str = date.getFullYear() + " " + date.getMonth()   +  " " + date.getDate() +  " " + 
-			  date.getHours()    + " " + date.getMinutes() +  " " + date.getSeconds();
-	//console.log(str);
-	res.send(str);
-})
-
-// Delay serving to test stream ordering. 
-app.get("/test/data-stream/bou20130801vmin.min", function (req,res) {
-	//setTimeout(function () {res.send(fs.readFileSync("test/data-stream/bou20130801vmin.min"))},Math.round(100*Math.random()));
-	setTimeout(function () {res.send(fs.readFileSync("test/data-stream/bou20130801vmin.min"))},0);
-
-})
-app.get("/test/data-stream/bou20130802vmin.min", function (req,res) {
-	//setTimeout(function () {res.send(fs.readFileSync("test/data-stream/bou20130802vmin.min"))},Math.round(100*Math.random()));
-	setTimeout(function () {res.send(fs.readFileSync("test/data-stream/bou20130802vmin.min"))},0);
-})
-app.get("/test/data-stream/bou20130803vmin.min", function (req,res) {
-	setTimeout(function () {res.send(fs.readFileSync("test/data-stream/bou20130803vmin.min"))},Math.round(100*Math.random()));
-})
-app.get("/test/data-stream/bou20130804vmin.min", function (req,res) {
-	setTimeout(function () {res.send(fs.readFileSync("test/data-stream/bou20130804vmin.min"))},Math.round(100*Math.random()));
-})
-app.get("/test/data-stream/bou20130805vmin.min", function (req,res) {
-	setTimeout(function () {res.send(fs.readFileSync("test/data-stream/bou20130805vmin.min"))},Math.round(100*Math.random()));
-})
-
 app.get("/report.htm", function (req,res) {
 	res.contentType("html");
 	fs.readFile(__dirname+"/report.htm", "utf8", 
@@ -193,13 +173,13 @@ app.post("/async", function (req, res) {
 })
 
 app.get("/sync", function (req,res) {
-	if (debugapp) console.log("GET")
+	if (argv.debugapp) console.log("GET")
 	req.setTimeout(1000*60*15);
 	handleRequest(req,res);
 });
 
 app.post("/sync", function (req, res) {
-	if (debugapp) console.log("POST")
+	if (argv.debugapp) console.log("POST")
 	handleRequest(req,res);
 });
 
@@ -210,7 +190,6 @@ app.get("/plugins", function (req, res) {
 app.get("/api/presets", function (req,res) {
 	fs.readdir(__dirname+"/presets", function (err, files) {
 		if (err) {return res.send("");}
-
 		var results = [];
 		files.forEach(function (file) {
 			fs.readFile(__dirname+"/presets/"+file, "utf8", function (err, data) {
@@ -234,20 +213,47 @@ app.get("/api/presets", function (req,res) {
 	}); // fs.readdir()
 });
 
-Magic = mmm.Magic;
-
-var magic = new Magic(mmm.MAGIC_MIME_TYPE);
-
-app.use(function(req, res, next){
-	magic.detectFile(__dirname + req.path, function(err, result) {
-		if (!err) {
-			res.contentType(result);
-		} else {
-			console.log(err)
-		}
-		next();
-	});
+app.get("/test/changingfile.txt", function (req,res) {
+	var date = new Date();
+    var str = date.getFullYear() + " " + date.getMonth() + " " + 
+    			date.getDate() + " " + date.getHours() + " " + 
+    			date.getMinutes() + " " + date.getSeconds();
+	res.send(str);
 })
+// Delay serving files to test stream ordering. 
+app.get("/test/data-stream/bou20130801vmin.min", function (req,res) {
+	setTimeout(function () {
+		res.send(fs.readFileSync("test/data-stream/bou20130801vmin.min"))},0);
+})
+app.get("/test/data-stream/bou20130802vmin.min", function (req,res) {
+	setTimeout(function () {
+		res.send(fs.readFileSync("test/data-stream/bou20130802vmin.min"))},0);
+})
+app.get("/test/data-stream/bou20130803vmin.min", function (req,res) {
+	setTimeout(function () {
+		res.send(fs.readFileSync("test/data-stream/bou20130803vmin.min"))},Math.round(100*Math.random()));
+})
+app.get("/test/data-stream/bou20130804vmin.min", function (req,res) {
+	setTimeout(function () {
+		res.send(fs.readFileSync("test/data-stream/bou20130804vmin.min"))},Math.round(100*Math.random()));
+})
+app.get("/test/data-stream/bou20130805vmin.min", function (req,res) {
+	setTimeout(function () {
+		res.send(fs.readFileSync("test/data-stream/bou20130805vmin.min"))},Math.round(100*Math.random()));
+})
+
+Magic = mmm.Magic;
+var magic = new Magic(mmm.MAGIC_MIME_TYPE);
+app.use(function(req, res, next){
+		magic.detectFile(__dirname + req.path, function (err, result) {
+			if (!err) {
+				res.contentType(result);
+			} else {
+				console.log(err)
+			}
+			next();
+		});
+	});
 
 app.use("/cache", express.directory(__dirname+"/cache"));
 app.use("/cache", express.static(__dirname + "/cache"));
@@ -255,14 +261,15 @@ app.use("/demo",  express.directory(__dirname+"/demo"));
 app.use("/demo",  express.static(__dirname + "/demo"));
 app.use("/test/data", express.static(__dirname + "/test/data"));
 app.use("/test/data", express.directory(__dirname + "/test/data"));
+app.use("/asset", express.directory(__dirname + "/asset"));
 app.use("/asset", express.static(__dirname + "/asset"));
 
-server.listen(port);
-util.logc((new Date()).toISOString() + " - [datacache] listening on port "+port,10)
-//server.timeout(1000*60*15,function () {console.log("Timeout")});
-server.setTimeout(60*1000*15,function() {console.log("app.js: Timeout.")});
-var clients = [];
+server.listen(argv.port); // Start the server
 
+util.logc((new Date()).toISOString() + " - [datacache] listening on port "+argv.port,10);
+server.setTimeout(60*1000*15,function() {console.log("app.js: Timeout.")});
+
+var clients = [];
 sio.sockets.on("connection", function (socket) {
 	clients.push(socket);
 	socket.on("disconnect", function () {clients.remove(socket);});
@@ -321,6 +328,7 @@ function handleRequest(req, res) {
 	var source  = parseSource(req);
 	options.id  = Math.random().toString().substring(1); 
 	var logcolor   = Math.round(255*parseFloat(options.id));
+
 	// Compress response if headers accept it and streamGzip is not requested.
 	if (!options.streamGzip) 	
 		app.use(express.compress()); 
@@ -332,7 +340,7 @@ function handleRequest(req, res) {
 	}
 
 	if (options.debugapp || options.debugstream)
-		util.logc(options.id + " handleRequest called with source=\n\t"+source.toString().replace(/,/g,"\n\t"),logcolor);
+		util.logc(options.id + " app.handleRequest() called with source="+source.toString().replace(/,/g,"\n\t"),logcolor);
 
 	if (options.return === "stream") {
 		stream.stream(source,options,res);
@@ -342,6 +350,9 @@ function handleRequest(req, res) {
 }
 
 function parseOptions(req) {
+
+	function s2b(str) {if (str === "true") {return true} else {return false}}
+	function s2i(str) {return parseInt(str)}
 
  	var options = {};
 
@@ -365,12 +376,13 @@ function parseOptions(req) {
 	options.lineRegExp     = req.query.lineRegExp    || req.body.lineRegExp    || ".";	
 	options.lineFormatter  = req.query.lineFormatter || req.body.lineFormatter || "";
 	
-	options.debugapp       = req.query.debugapp      || req.body.debugapp      || debugapp;
-	options.debugstream    = req.query.debugstream   || req.body.debugstream   || debugstream;
-	options.debugutil      = req.query.debugutil     || req.body.debugutil     || debugutil;
-	options.debugplugin    = req.query.debugplugin   || req.body.debugplugin   || debugplugin;
-	options.debugtemplate  = req.query.debugtemplate || req.body.debugtemplate || debugtemplate;
-	options.debuglineformatter  = req.query.debuglineformatter || req.body.debuglineformatter || debuglineformatter;
+	options.debugapp       = req.query.debugapp      || req.body.debugapp      || argv.debugapp;
+	options.debugstream    = req.query.debugstream   || req.body.debugstream   || argv.debugstream;
+	options.debugutil      = req.query.debugutil     || req.body.debugutil     || argv.debugutil;
+	options.debugplugin    = req.query.debugplugin   || req.body.debugplugin   || argv.debugplugin;
+	options.debugtemplate  = req.query.debugtemplate || req.body.debugtemplate || argv.debugtemplate;
+	options.debuglineformatter  = req.query.debuglineformatter || req.body.debuglineformatter || argv.debuglineformatter;
+	options.debugscheduler      = req.query.debugscheduler    || req.body.debugscheduler     || argv.debugscheduler;
 	
 	if (options.lineFormatter === "") {
 		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){return line.search(lineRegExp)!=-1;}";
@@ -422,7 +434,7 @@ function parseOptions(req) {
 	    }
 	}
 	
-	if (debugapp) {
+	if (argv.debugapp) {
 		console.log("\noptions after parseOptions:");
 		console.log(options);
 	}

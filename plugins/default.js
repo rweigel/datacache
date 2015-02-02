@@ -1,13 +1,11 @@
-var request = require("request");
-var zlib    = require('zlib');
-
-var util    = require("../util.js");
-
-var logger = require("../logger.js");
-
+var request   = require("request");
+var zlib      = require('zlib');
 var localeval = require("localeval");
-var jsdom = require("jsdom");
-var jquery = require("jquery");
+var jsdom     = require("jsdom");
+var jquery    = require("jquery");
+
+var util      = require("../util.js");
+var logger    = require("../logger.js");
 
 exports.name  = "default";
 exports.version = "1.0.0";
@@ -20,22 +18,25 @@ exports.process = function (work, callback) {
 
 	// TODO: If work.urlMd5base exists, set work.body to be urlMd5base.out, work.dataBinary to be urlMd5base.bin, etc. and return.
 	
-	debug = false;
+	debug = work.options.debugplugin;
+	var rnd        = work.options.id;
+	var logcolor   = Math.round(255*parseFloat(rnd));		
 
-	if (debug) console.log("default.js: process() called.")
 	if (work.url.match(/^http/)) {
+		if (debug) util.logc(work.options.id + " default.process(): Called with work.url = " + work.url,logcolor)
 		var headers = work.options.acceptGzip ? {"accept-encoding" : "gzip, deflate"} : {};
 		var sz = 0;
+		if (debug) util.logc(work.options.id + " default.process(): Getting: " + work.url,logcolor)
 		util.get(work.url, function (error, response, body) {
-			if (error || response.statusCode!==200){
+			if (error || response.statusCode !== 200) {
 				work.error = "Can't fetch data";
-				if (debug) console.log("default.js: Error when attempting to GET " + work.url)
+				if (debug) util.logc(" default.process(): Error when attempting to GET " + work.url,logcolor)
 				callback(true, work);
 			} else {
-				//console.log(response.headers)
-				if (debug) console.log("default.js: Done.")
+				if (debug) util.logc(work.options.id + " default.process(): Got " + work.url,logcolor)				
+				if (debug) util.logc(work.options.id + " default.process(): Headers: " + JSON.stringify(response.headers),logcolor);
 				if (response.headers["content-encoding"] === "gzip" || response.headers["content-type"] === "application/x-gzip") {
-					//console.log("Content-Type is application/x-gzip")
+					console.log("Content-Type is application/x-gzip")
 					zlib.gunzip(body,cb);
 				} else {
 					//console.log("Content-Type is not application/x-gzip")
@@ -59,10 +60,10 @@ exports.process = function (work, callback) {
 			}
 		})
 		.on("error", function(data){
-			if (debug) console.log("default.js: Error.")
+			if (debug) util.logc(work.options.id + " default.process(): On error event.",logcolor)
 		})
 		.on("end", function(data){
-			if (debug) console.log("default.js: End.")
+			if (debug) util.logc(work.options.id + " default.process(): On end event.  Size [bytes]     " + sz,logcolor);
 			if (!work.getEndTime) {
 			    work.getEndTime = new Date();
 			}
@@ -71,7 +72,7 @@ exports.process = function (work, callback) {
 			sz = sz + data.length;
 			
 			if (!work.getFirstChunkTime) {
-				if (debug) console.log("default.js: Got first chunk of size [bytes] " + data.length);
+				if (debug) util.logc(work.options.id + " default.process(): Got first chunk of size [bytes] " + data.length,logcolor);
 				//console.log("default.js: Got first chunk.")
 			    work.getFirstChunkTime = new Date();
 			}

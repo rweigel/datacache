@@ -10,14 +10,14 @@ var source    = "test/data/bou20130801vmin.min%0Atest/data/bou20130802vmin.min";
 var tests     = [];
 var j = 0;
 tests[j]      = {};
-tests[j].url  = server + args + "&streamOrder=true&streamFilterReadLines=10&prefix="+prefix+"&source="+source;
+tests[j].url  = server + args + "&streamOrder=true&streamFilterReadLines=10&prefix="+serverdata+"&source="+source;
 tests[j].n    = n || 50;
 //tests[j].md5  = "8ee474572d7118be2a842fb140337cd9";
 tests[j].md5  = "651f75d088a29b4a0a95e97a1bcccd48";
 
 var j = j+1;
 tests[j]      = {};
-tests[j].url  = server + args + "&streamOrder=true&streamGzip=true&streamFilterReadLines=10&prefix="+prefix+"&source="+source;
+tests[j].url  = server + args + "&streamOrder=true&streamGzip=true&streamFilterReadLines=10&prefix="+serverdata+"&source="+source;
 tests[j].n    = n || 50;
 //tests[j].md5  = "8ee474572d7118be2a842fb140337cd9";
 tests[j].md5  = "651f75d088a29b4a0a95e97a1bcccd48";
@@ -25,7 +25,7 @@ tests[j].md5  = "651f75d088a29b4a0a95e97a1bcccd48";
 // Stream order = false.  Sorted stream should have same md5 as previous.
 j = j+1;
 tests[j]      = {};
-tests[j].url  = server + args + "&streamOrder=false&streamFilterReadLines=10&prefix="+prefix+"&source="+source;
+tests[j].url  = server + args + "&streamOrder=false&streamFilterReadLines=10&prefix="+serverdata+"&source="+source;
 tests[j].n    = n || 50;
 //tests[j].md5  = "8ee474572d7118be2a842fb140337cd9";
 tests[j].md5  = "651f75d088a29b4a0a95e97a1bcccd48";
@@ -34,14 +34,14 @@ tests[j].md5  = "651f75d088a29b4a0a95e97a1bcccd48";
 // does not preserve the newline character - it replaces it with \n.
 j = j+1;
 tests[j]      = {};
-tests[j].url  = server + args + "&streamOrder=true&streamFilterReadBytes=720&prefix="+prefix+"&source="+source;
+tests[j].url  = server + args + "&streamOrder=true&streamFilterReadBytes=720&prefix="+serverdata+"&source="+source;
 tests[j].sort = false;
 tests[j].n    = n || 50;
 tests[j].md5  = "8ee474572d7118be2a842fb140337cd9";
 
 j = j+1;
 tests[j]      = {};
-tests[j].url  = server + args + "&streamOrder=false&streamFilterReadBytes=720&prefix="+prefix+"&source="+source;
+tests[j].url  = server + args + "&streamOrder=false&streamFilterReadBytes=720&prefix="+serverdata+"&source="+source;
 tests[j].sort = true;
 tests[j].n    = n || 50;
 tests[j].md5  = "8ee474572d7118be2a842fb140337cd9";
@@ -53,41 +53,41 @@ var source    = "test/data/bou20130803vmin.min%0Atest/data/bou20130804vmin.min%0
 
 j = j+1;
 tests[j]      = {};
-tests[j].url  = server + args + "&streamOrder=true&streamFilterReadLines=10&prefix="+prefix+"&source="+source;
+tests[j].url  = server + args + "&streamOrder=true&streamFilterReadLines=10&prefix="+serverdata+"&source="+source;
 tests[j].n    = n || 50;
 //tests[j].md5  = "4dcc638a9d40bdf4f4c1c6d38ecfa979";
 tests[j].md5  = "cef9e50efae894c42293ed5922af2b8e";
 
 j = j+1;
 tests[j]      = {};
-tests[j].url  = server + args + "&streamOrder=false&streamFilterReadLines=10&prefix="+prefix+"&source="+source;
+tests[j].url  = server + args + "&streamOrder=false&streamFilterReadLines=10&prefix="+serverdata+"&source="+source;
 tests[j].n    = n || 50;
 //tests[j].md5  = "4dcc638a9d40bdf4f4c1c6d38ecfa979";
 tests[j].md5  = "cef9e50efae894c42293ed5922af2b8e";
 
 j = j+1;
 tests[j]      = {};
-tests[j].url  = server + args + "&streamOrder=true&streamFilterReadBytes=720&prefix="+prefix+"&source="+source;
+tests[j].url  = server + args + "&streamOrder=true&streamFilterReadBytes=720&prefix="+serverdata+"&source="+source;
 tests[j].n    = n || 50;
 tests[j].md5  = "4dcc638a9d40bdf4f4c1c6d38ecfa979";
 
 j = j+1;
 tests[j]      = {};
-tests[j].url  = server + args + "&streamOrder=false&streamFilterReadBytes=720&prefix="+prefix+"&source="+source;
+tests[j].url  = server + args + "&streamOrder=false&streamFilterReadBytes=720&prefix="+serverdata+"&source="+source;
 tests[j].sort = true;
 tests[j].n    = n || 50;
 tests[j].md5  = "4dcc638a9d40bdf4f4c1c6d38ecfa979";
 
 j = j+1;
 tests[j]      = {};
-tests[j].url  = server + args + "&streamOrder=true&streamFilterReadLines=10&streamFilter=replace('2013','2013')&prefix="+prefix+"&source="+source;
+tests[j].url  = server + args + "&streamOrder=true&streamFilterReadLines=10&streamFilter=replace('2013','2013')&prefix="+serverdata+"&source="+source;
 tests[j].n    = n || 50;
 //tests[j].md5  = "4dcc638a9d40bdf4f4c1c6d38ecfa979";
 tests[j].md5  = "cef9e50efae894c42293ed5922af2b8e";
 
 j = j+1;
 tests[j]      = {};
-tests[j].url  = server + args + "&streamOrder=false&streamFilterReadBytes=720&streamFilter=replace('2013','2013')&prefix="+prefix+"&source="+source;
+tests[j].url  = server + args + "&streamOrder=false&streamFilterReadBytes=720&streamFilter=replace('2013','2013')&prefix="+serverdata+"&source="+source;
 tests[j].n    = n || 50;
 tests[j].md5  = "4dcc638a9d40bdf4f4c1c6d38ecfa979";
 

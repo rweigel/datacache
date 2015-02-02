@@ -1,3 +1,16 @@
+// Locking notes:
+// Each time a file is being streamed, a stream counter is incremented for the file.
+// If the stream counter is non-zero, forceUpdate=true will not work as expected.
+
+// TODO: Indicate that the update failed in the HTTP headers?
+
+// If a process tries to write a file that is being streamed, the write is aborted.
+// TODO: Indicate this in the JSON and the HTTP headers (if stream request).
+
+// TODO:
+// Check if cache directory is writeable and readable.  If not, send 500 error.
+
+
 === Example: Testing a regular expression ===
 For verifying regular expressions (for interactive regular expression creation and debugging, see [http://regexpal.com/]), open Chrome or Firefox's debugger and enter values for the first four variables given below.
 <source lang="javascript">

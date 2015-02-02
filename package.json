@@ -22,8 +22,9 @@
     "jquery": "~1.8.3",
     "jsdom": "~0.8.3",
     "localeval": "~13.6.10",
+    "cli-color": "*",
     "mmmagic": "*",
-    "cli-color": "*"
+    "yargs": "*"
   },
   "scripts": {
     "test": "sh test/test.sh"

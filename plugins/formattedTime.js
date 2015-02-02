@@ -22,7 +22,7 @@ function plugininfo(options,what) {
 	if (what === "timeFormat") {
 		var timeformat = "";
 		if (plugin.timeFormat) {
-			timeformat = plugin.timeFormat();
+			timeFormat = plugin.timeFormat();
 			if (debug) console.log("formattedTime: Plugin has time format of: "+timeFormat);
 		}
 		return timeformat;
@@ -30,10 +30,10 @@ function plugininfo(options,what) {
 	if (what === "timeColumns") {
 		var timecolumns = "";
 		if (plugin.timeColumns) {
-			timecolumns = plugin.timeColumns();
+			timeColumns = plugin.timeColumns();
 			if (debug) console.log("formattedTime: Plugin has time columns of: "+timeColumns);
 		}
-		return timecolumns;
+		return timeColumns;
 	}
 
 }

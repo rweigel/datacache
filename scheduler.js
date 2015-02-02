@@ -32,6 +32,10 @@ function addURLs(source, options, callback){
 exports.addURLs = addURLs;
 
 function addURL(url, options, callback) {
+	var rnd        = options.id;
+	var logcolor   = Math.round(255*parseFloat(rnd));		
+
+	if (options.debugscheduler) util.logc(options.id + " scheduler.addURL(): Called with url = "+url,logcolor);
 	options  = options || {};
 	var work = newWork(url, options, callback);
 	exports.emit("submit", work);
@@ -57,12 +61,16 @@ exports.plugins = plugins;
 
 function run() {
 
-	logger.d("scheduler: "+runningWorks.length + ", " + params.concurrency);
 
+	logger.d("scheduler: "+runningWorks.length + ", " + params.concurrency);
+	//util.logc(options.id + " scheduler.run(): Called.",logcolor);
 	while (runningWorks.length < params.concurrency && worksQueue.length > 0) {
 		var work = worksQueue.shift();
-		runningWorks.push(work);
 
+		var rnd        = work.options.id;
+		var logcolor   = Math.round(255*parseFloat(rnd));		
+		if (work.options.debugscheduler) util.logc(rnd + " scheduler.run(): Called.",logcolor);
+		runningWorks.push(work);
 		logger.d("scheduler.run(): Processing work");
 
 		work.cacheCheckStartTime = new Date();
