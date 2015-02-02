@@ -1,0 +1,82 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>DataCache Report</title>
+	<style>
+ 		body {
+ 			//background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAG0lEQVQIW2NkgIILp27/NzBTZQRxwQQIUFEQABDwFAb+vyWtAAAAAElFTkSuQmCC) repeat;
+ 			//background-position: 200px 100px; 					
+ 		}
+ 		body {background-color:yellow;}
+ 	 	#wrapper {}
+ 	 	#summary {}
+
+		.note {
+			font-size: 75%;
+		}
+	 	.tooltip {
+	 	   position: absolute;
+		   padding: 2px;
+		   z-index: 1000;
+		   border:1px solid black;
+		   background-color:yellow;
+		}      
+ 	</style>
+ 	
+ 	<script type="text/javascript" src="asset/sprintf-0.7-beta1.js"></script>	
+	<script type="text/javascript" src="asset/jquery-1.8.3.js"></script>
+    <script type="text/javascript" src="asset/jquery.tmpl.js"></script>
+    <script type="text/javascript" src="asset/report.js"></script>
+    <script type="text/javascript" src="asset/tooltip.js"></script>
+
+    <script type="text/javascript">
+
+		querystr = "__QUERYSTR__"; // Gets replaced by server-side code usually.
+    	if (querystr.match("__QUERYSTR__")) {
+			querystr = "source=http://datacache.org/dc/demo/file1.txt%0Ahttp://datacache.org/dc/demo/file2.txt"
+    	}
+
+    	//querystr = "source=http%3A%2F%2Fdatacache.org%2Fdc%2Fdemo%2Ffile1.txt%0Ahttp%3A%2F%2Fdatacache.org%2Fdc%2Fdemo%2Ffile2.txt%0A";
+		console.log(querystr);
+		console.log(querystr.replace(/%0D%0A/g,'%0A'));
+		querystr = decodeURIComponent(querystr.replace(/%0D%0A/g,'%0A'));
+		querystr = querystr.replace("return=report","return=json");
+		console.log(querystr);
+
+		Nruns   = 1;
+		servers = false; // Get additional servers from /servers
+		TIMEOUT = 1000;
+		ASYNC   = true;
+
+    	$(function() {report()});
+    </script>
+
+</head>
+<body>
+	<div id="error" style="display:none;">|</div>
+	<div id="summary"></div>
+	<div id="wrapper"></div>
+	<script id="reportTemplate" type="text/x-jQuery-tmpl">
+		<div id="report" style="font-family: monospace;">
+			<span title="Input URL ${url}"><a href="${url}">I</a></span>
+			<span title="Cache URL ${dir+urlMd5+'.out'}"><a href="${dir+urlMd5+'.out'}">C</a></span>
+			<span title="Data URL ${dir+urlMd5+'.data'}"><a href="${dir+urlMd5+'.data'}">D</a></span>
+			<span title="Error: ${error}">${formaterror(error)}</span>
+			<span title="File size (bytes)">${formatlength(dataLength,6)}</span>
+			<span title="File found in cache: ${foundInCache}">${formatboolean(foundInCache)}</span>
+			<span title="File found in cache and served from cache: ${isFromCache}">${formatboolean(isFromCache)}</span>
+			<span title="Job time (ms)">${computetime(jobStartTime,jobFinishedTime)}</span>
+			<span title="Cache check time (ms)">${computetime(cacheCheckStartTime,cacheCheckFinishedTime)}</span>
+			<span title="Time to get first chunk of data (ms)">${computetime(jobStartTime,getFirstChunkTime)}</span>
+			<span title="File processing time">${computetime(work2ResultStartTime,work2ResultFinishedTime)}</span>
+			<span title="Write time (ms)">${computetime(writeStartTime,writeFinishedTime)}</span>
+			<span title="" style="position:relative">
+				<span title="Request sent time ${computetime(DOMLoadedTime,requestStart,1)} ms"><img style="position:absolute;width:${computewidth(DOMLoadedTime,requestStart,1)}px;height:1em;display:inline;background-color:green;" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" /></span>
+				<span title="Request time ${computetime(requestStart,requestFinish,1)} ms"><img style="position:absolute;width:${computewidth(requestStart,requestFinish,1)}px;height:1em;display:inline;background-color:black;" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" /></span>
+        			<span title="Job time ${computetime(jobStartTime,jobFinishedTime,1)} ms"><img style="position:absolute;width:${computewidth(jobStartTime,jobFinishedTime,1)}px;height:1em;display:inline;background-color:red;" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" /></span>
+			</span>
+			</span>&nbsp;</span>
+		</div>
+	</script>
+</body>
+</html>
