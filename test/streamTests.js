@@ -61,7 +61,6 @@ function runsuite(j) {
 	child.stdout.on('data',function (data) {console.log(data.toString().replace(/\n$/,""))});
 	child.stderr.on('data',function (data) {console.log(data.toString())});
 	child.stdout.on('close',function () {
-		logc("Done.",10);
 		logc("_____________________________________________________________________________________________________________________________________",10);
 		if (j < testsuite.length-1) runsuite(j+1);
 	});
@@ -92,6 +91,11 @@ function checkmd5(j,k,sync,all) {
 			if (tests[j].md5 !== stdout.substring(0,32)) {
 				logc("Error.  Response md5 changed from reference response.  Diff of " + "data-stream/out." + j + ".0" + " data-stream/out." + j + "." + k + ":",9);
 				diff("data-stream/out." + j + ".0","data-stream/out." + j + "." + k);
+				fs.appendFile("streamTests.txt", tests[j].com + "\n", 
+				function(err){
+					if (err) console.log(err);
+				});
+
 			}
 			if (sync == true && k < tests[j].n) {					
 				checkmd5(j,k+1,true,all);
@@ -123,11 +127,12 @@ function command(j,k) {
 			com = com + "| tee " + fname;
 		}
 		com = com + " | " + md5com;
-		com2 = "node streamTests.js --sync=true  --start="+j+" --all=false --n=" + n + " --server=" + argv.server + " --serverdata="+argv.server;
+		com2 = "node streamTests.js --sync=true  --start="+j+" --all=false --n=" + n + " --server=" + argv.server + " --serverdata="+argv.serverdata;
 		if (k == 1) {
 			logc("_____________________________________________________________________________________________________________________________________",11);
 			logc(com2,11);
-			logc(com,12);		
+			logc(com,12);
+			tests[j].com = com2;		
 		}
 		return com;
 }
