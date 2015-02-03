@@ -47,13 +47,17 @@ function stream(source, options, res) {
 	//if (filter.filterSignature) filterSignature = filter.filterSignature(options);
 	//if (options.debugapp) util.logc(options.id+" filter signature: " + filterSignature);
 
-	var streamsignature   = util.md5(extractSignature + filterSignature +
-									options.timeRangeExpanded + options.streamFilterReadBytes +
-								    options.streamFilterReadLines  + options.streamFilterReadPosition +
+	var streamsignature   = util.md5(extractSignature + 
+									filterSignature +
+									options.timeRangeExpanded + 
+									options.streamFilterReadBytes +
+								    options.streamFilterReadLines + 
+								    options.streamFilterReadPosition +
 								    options.streamFilterTimeFormat +
 								    options.streamFilterReadColumns);
 
-	var streamdir         = __dirname +"/cache/stream/"+source[0].split("/")[2]+"/"+streamsignature+"/";
+	var streamdir         = __dirname +"/cache/stream/"+source[0].split("/")[2]
+							+"/"+streamsignature+"/";
 	var streamfilecat     = streamdir + streamsignature + ".stream.gz";
 	var streamfilecatlck  = streamfilecat.replace("stream.gz","lck");
 
