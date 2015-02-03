@@ -20,15 +20,15 @@ function plugininfo(options,what) {
 	}
 
 	if (what === "timeFormat") {
-		var timeformat = "";
+		var timeFormat = "";
 		if (plugin.timeFormat) {
 			timeFormat = plugin.timeFormat();
 			if (debug) console.log("formattedTime: Plugin has time format of: "+timeFormat);
 		}
-		return timeformat;
+		return timeFormat;
 	}
 	if (what === "timeColumns") {
-		var timecolumns = "";
+		var timeColumns = "";
 		if (plugin.timeColumns) {
 			timeColumns = plugin.timeColumns();
 			if (debug) console.log("formattedTime: Plugin has time columns of: "+timeColumns);
