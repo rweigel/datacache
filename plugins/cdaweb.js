@@ -18,7 +18,7 @@ exports.preprocess = function(work, callback){
 				if(err || !res.FileDescription || !res.FileDescription.Name){
 				    callback(true, work);
 				} else{
-					console.log(res.FileDescription.Name);
+					//console.log(res.FileDescription.Name);
 				    work.url = res.FileDescription.Name;
 				    callback(false, work);
 				}
@@ -70,7 +70,7 @@ exports.extractMeta = function(body){
 	all = body.toString().split(/\r?\n/g);
 	for (i = 0; i < all.length; i++) {
 		if (all[i].match(/^EPOCH|^TIME/)) {
-			console.log(i);
+			//console.log(i);
 			break;
 		}
 	}
@@ -89,7 +89,7 @@ exports.metaToJson = function(meta){
 				return d.split(/\s\s+/);
 				});
 
-    console.log(metaJson[0][0].length)
+    //console.log(metaJson[0][0].length)
     if (metaJson[0][0].length == 0){
 	return {};
     }
@@ -120,7 +120,7 @@ exports.metaToJson = function(meta){
 	// EPOCH                           <|B|>
 	// dd-mm-yyyy hh:mm:ss.ms             nT
 	// 01-01-2005 00:00:00.000       6.37000
-	console.log(metaJson[1]);
+	//console.log(metaJson[1]);
 
 	metaJson[1].unshift('dd-mm-yyyy');
 	metaJson[1][1] = "hh:mm:ss.ms";
