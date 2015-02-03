@@ -13,7 +13,7 @@ var argv    = require('yargs')
 						'start':0,
 						'all':"true",
 						'n':10,
-						'server':"http://localhost:7998/",
+						'server':"http://localhost:7999/",
 						'serverdata':"http://mag.gmu.edu/datacache/",
 					})
 					.argv;
