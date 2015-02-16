@@ -272,7 +272,7 @@ config.TIMEOUT = 60*1000*15;
 server.setTimeout(config.TIMEOUT,
 		function(obj) {
 		      console.log("DataCache server timeout ("+(config.TIMEOUT/(1000*60))+" minutes).");
-		      if (obj) console.log(obj);
+		      if (obj) console.log(obj.server._events.request);
 		});
 
 
