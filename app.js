@@ -133,9 +133,9 @@ app.get('/', function (req, res) {
 		function (err, data) {res.send(data);});
 })
 
-app.get('/log', function (req, res) {
-	res.send(fs.readFileSync(__dirname+"/application.log", "utf8"));
-})
+//app.get('/log', function (req, res) {
+//	res.send(fs.readFileSync(__dirname+"/application.log", "utf8"));
+//})
 
 app.get("/report", function (req,res) {
   	 fs.readFile(__dirname+"/report.htm", "utf8", 
@@ -267,7 +267,14 @@ app.use("/asset", express.static(__dirname + "/asset"));
 server.listen(argv.port); // Start the server
 
 util.logc((new Date()).toISOString() + " - [datacache] listening on port "+argv.port,10);
-server.setTimeout(60*1000*15,function() {console.log("app.js: Timeout.")});
+config = {};
+config.TIMEOUT = 60*1000*15;
+server.setTimeout(config.TIMEOUT,
+		function(obj) {
+		      console.log("DataCache server timeout ("+(config.TIMEOUT/(1000*60))+" minutes).");
+		      if (obj) console.log(obj);
+		});
+
 
 var clients = [];
 sio.sockets.on("connection", function (socket) {

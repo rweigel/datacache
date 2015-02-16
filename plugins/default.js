@@ -36,8 +36,8 @@ exports.process = function (work, callback) {
 				if (debug) util.logc(work.options.id + " default.process(): Got " + work.url,logcolor)				
 				if (debug) util.logc(work.options.id + " default.process(): Headers: " + JSON.stringify(response.headers),logcolor);
 				if (response.headers["content-encoding"] === "gzip" || response.headers["content-type"] === "application/x-gzip") {
-					console.log("Content-Type is application/x-gzip")
-					zlib.gunzip(body,cb);
+				    if (debug) console.log("Content-Type is application/x-gzip");
+				    zlib.gunzip(body,cb);
 				} else {
 					//console.log("Content-Type is not application/x-gzip")
 					cb("",body);
