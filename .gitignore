@@ -1,6 +1,8 @@
 cache
 cache/
 log/*
+.project
+.settings
 test/data-stream/out.*
 !test/data-stream/out.*.0
 node_modules*

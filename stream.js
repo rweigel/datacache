@@ -11,6 +11,7 @@ function stream(source, options, res) {
 
 	var scheduler     = require("./scheduler.js");
 	var logger        = require("./logger.js");
+	var log        = require("../tsds2/tsdsfe/log.js");
 	var util          = require("./util.js");
 	var lineFormatter = require(__dirname + "/plugins/formattedTime.js");
 
@@ -31,17 +32,27 @@ function stream(source, options, res) {
 	var plugin = scheduler.getPlugin(options,source[0])
 	
 	if (options.streamFilterComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
-		if (options.debugstream) util.logc(options.id+" stream.js: Reading ./filters/stats.js",logcolor);
+		if (options.debugstream) {
+			log.logres(options.id+", Reading ./filters/stats.js",res);
+			util.logc(options.id+" stream.js: Reading ./filters/stats.js",logcolor)
+		}
 		var filter = require("./filters/stats.js");
 	}
+	console.log(options.debugstream)
 	if (options.streamFilterComputeFunction.match(/regrid/)) {
-		if (options.debugstream) util.logc(options.id+" stream.js: Reading ./filters/regrid.js",logcolor);
+		if (options.debugstream) {
+			log.logres(options.id+", Reading ./filters/regrid.js",res);
+			util.logc(options.id+" stream.js: Reading ./filters/regrid.js",logcolor)
+		}
 		var filter = require("./filters/regrid.js");
 	}
 	
 	extractSignature = source.join(",");	
 	if (plugin.extractSignature) extractSignature = extractSignature + plugin.extractSignature(options);
-	if (options.debugapp) util.logc(options.id+" stream.js: plugin signature: " + extractSignature,logcolor);
+	if (options.debugapp) {
+		log.logres(options.id+": plugin signature md5: " + util.md5(extractSignature), res)
+		util.logc(options.id+" stream.js: plugin signature: " + util.md5(extractSignature),logcolor)
+	}
 
 	filterSignature = ""; 
 	//if (filter.filterSignature) filterSignature = filter.filterSignature(options);
@@ -60,34 +71,47 @@ function stream(source, options, res) {
 							+"/"+streamsignature+"/";
 	var streamfilecat     = streamdir + streamsignature + ".stream.gz";
 	var streamfilecatlck  = streamfilecat.replace("stream.gz","lck");
-
+	
 	if (options.debugstream) {
 		if (!fs.existsSync(streamfilecat)) {
+			log.logres(options.id+" streamfilecat !exists /cache/stream/" + streamfilecat.replace(streamdir,""),res)
 			util.logc(options.id+" stream.js: streamfilecat !exists /cache/stream/" + streamfilecat.replace(streamdir,""),logcolor)
 		} else {
+			log.logres(options.id+": streamfilecat exists /cache/stream/" + streamfilecat.replace(streamdir,""),res)
 			util.logc(options.id+" stream.js: streamfilecat exists /cache/stream/" + streamfilecat.replace(streamdir,""),logcolor)
 		}
 		if (!fs.existsSync(streamfilecatlck)) {
+			log.logres(options.id+": streamfilecatlck !exists /cache/stream/" + streamfilecatlck.replace(streamdir,""),res)
 			util.logc(options.id+" stream.js: streamfilecatlck !exists /cache/stream/" + streamfilecatlck.replace(streamdir,""),logcolor);
 		} else {
+			log.logres(options.id+": streamfilecatlck exists /cache/stream/" + streamfilecatlck.replace(streamdir,""),res)
 			util.logc(options.id+" stream.js: streamfilecatlck exists /cache/stream/" + streamfilecatlck.replace(streamdir,""),logcolor);
 		}
 	}
-
+	
 	// This does not work because node.js does not handle concatenated gzip files.
 	if (fs.existsSync(streamfilecat) && !fs.existsSync(streamfilecatlck) && !options.forceWrite && !options.forceUpdate) {
-		if (options.debugstream) util.logc(options.id+" stream.js: Ignoring existing streamfilecat because of bug in node.js with concateneated gzip files",logcolor);
+		if (options.debugstream) {
+			log.logres(options.id+" stream.js: Ignoring existing streamfilecat because of bug in node.js with concateneated gzip files",res)
+			util.logc(options.id+" stream.js: Ignoring existing streamfilecat because of bug in node.js with concateneated gzip files",logcolor)
+		}
 		//streamcat();
 		//return;
 	}
 	
 	var N = source.length;
-	if (options.debugstream) util.logc(options.id+' stream.js: Calling scheduler with ' + N + ' URL(s) and options.streamOrder = '+options.streamOrder,logcolor);
+	if (options.debugstream) {
+		log.logres(options.id+': Calling scheduler with ' + N + ' URL(s) and options.streamOrder = '+options.streamOrder,res)
+		util.logc(options.id+' stream.js: Calling scheduler with ' + N + ' URL(s) and options.streamOrder = '+options.streamOrder,logcolor)
+	}
 	if (options.streamOrder) {
 	    scheduler.addURL(source[0], options, function (work) {processwork(work,true)});
 	} else {
 	    for (var jj=0;jj<N;jj++) {
-	    	if (options.debugstream) util.logc(options.id+" stream.js: Adding to scheduler: " + source[jj],logcolor);
+	    	if (options.debugstream) {
+	    		log.logres(options.id+": Adding to scheduler: " + source[jj],res)
+	    		util.logc(options.id+" stream.js: Adding to scheduler: " + source[jj],logcolor)
+	    	}
 			scheduler.addURL(source[jj], options, function (work) {processwork(work)});
 	    }
 	}
@@ -97,12 +121,21 @@ function stream(source, options, res) {
 		res.setHeader('Content-Disposition', streamfilecat.replace(/.*\/(.*)/,"$1"))
 
 		if (fs.existsSync(streamfilecatlck)) {
-			if (options.debugstream) util.logc(options.id+" stream.streamcat(): Cached stream file is locked.",logcolor)
+			if (options.debugstream) {
+				log.logres(options.id+": Cached stream file is locked.", res)
+				util.logc(options.id+" stream.streamcat(): Cached stream file is locked.",logcolor)
+			}
 		} else {
-			if (options.debugstream) util.logc(options.id+" stream.streamcat(): Streaming cached concatenated stream file: "+streamfilecat,logcolor);
+			if (options.debugstream) {
+				log.logres(options.id+": Streaming cached concatenated stream file: "+streamfilecat, res)
+				util.logc(options.id+" stream.streamcat(): Streaming cached concatenated stream file: "+streamfilecat,logcolor)
+			}
 			fs.writeFileSync(streamfilecatlck,"");
 			if (options.streamGzip == false) {
-				if (options.debugstream) util.logc(options.id+" stream.streamcat(): Unzipping cached concatenated stream file: "+streamfilecat,logcolor);
+				if (options.debugstream) {
+					log.logres(options.id+": Unzipping cached concatenated stream file: "+streamfilecat, res)
+					util.logc(options.id+" stream.streamcat(): Unzipping cached concatenated stream file: "+streamfilecat,logcolor)
+				}
 				res.setHeader('Content-Disposition', streamfilecat.replace(/.*\/(.*)/,"$1").replace(".gz",""))
 				// This does not handle concatenated stream files.
 				var streamer = fs.createReadStream(streamfilecat).pipe(zlib.createGunzip());
@@ -112,8 +145,12 @@ function stream(source, options, res) {
 				var streamer = fs.createReadStream(streamfilecat);
 			}
 			streamer.on('end',function() {
-				if (options.debugstream) util.logc(options.id+" stream.streamcat(): Received streamer.on end event.",logcolor);
-				if (options.debugstream) util.logc(options.id+" stream.streamcat(): Removing " + streamfilecatlck,logcolor)
+				if (options.debugstream) {
+					util.logc(options.id+" stream.streamcat(): Received streamer.on end event.",logcolor)
+					util.logc(options.id+" stream.streamcat(): Removing " + streamfilecatlck,logcolor)
+					log.logres(options.id+": Received streamer.on end event.",res)
+					log.logres(options.id+": Removing " + streamfilecatlck,res)
+				}
 				fs.unlink(streamfilecatlck)
 				res.end();
 			});
@@ -123,16 +160,25 @@ function stream(source, options, res) {
 	}
 
 	function finished(inorder) {
-		if (options.debugstream) util.logc(rnd+ " stream.finished(): Incremening Nx from " + reqstatus[rnd].Nx + " to " + (reqstatus[rnd].Nx+1),logcolor);
+		if (options.debugstream) {
+			log.logres(rnd+ ": Incremening Nx from " + reqstatus[rnd].Nx + " to " + (reqstatus[rnd].Nx+1),res)
+			util.logc(rnd+ " stream.finished(): Incremening Nx from " + reqstatus[rnd].Nx + " to " + (reqstatus[rnd].Nx+1),logcolor)
+		}
 		reqstatus[rnd].Nx = reqstatus[rnd].Nx + 1;
 
 		if ((reqstatus[rnd].Nx < N) && (inorder)) {
-			if (options.debugstream) util.logc(rnd+ " stream.finished(): Processing next URL.",logcolor)
+			if (options.debugstream) {
+				log.logres(rnd+ ": Processing next URL.",res)
+				util.logc(rnd+ ": Processing next URL.",logcolor)
+			}
 			scheduler.addURL(source[reqstatus[rnd].Nx], options, function (work) {processwork(work,true)});
 		}
 
 		if (N == reqstatus[rnd].Nx) {
-			if (options.debugstream) util.logc(rnd+" stream.finished(): Sending res.end().",logcolor);
+			if (options.debugstream) {
+				log.logres(rnd+": Sending res.end().",res)
+				util.logc(rnd+" stream.finished(): Sending res.end().",logcolor)
+			}
 			res.end();
 		}
 	}
@@ -156,7 +202,10 @@ function stream(source, options, res) {
 			if (typeof(util.writeCache.memLock[fname]) != "undefined") {
 				if (util.writeCache.memLock[fname] > 0) {
 					//if (options.debugstream)
-					if (options.debugstream) util.logc(rnd+" stream.processwork():  File is locked.  Trying again in 100 ms.",logcolor);
+					if (options.debugstream) { 
+						log.logres(rnd+":  File is locked.  Trying again in 100 ms.",res);
+						util.logc(rnd+" stream.processwork():  File is locked.  Trying again in 100 ms.",logcolor);
+					}
 					setTimeout(function () {processwork(work,inorder)},100);
 					return;
 				}
@@ -164,10 +213,16 @@ function stream(source, options, res) {
 		}
 
 		if (!stream.streaming[fname]) {
-			if (options.debugstream) util.logc(rnd+" stream.processwork():  Stream locking " + fname.replace(__dirname,""),logcolor);
+			if (options.debugstream) {
+				log.logres(rnd+": Stream locking " + fname.replace(__dirname,""),res);
+				util.logc(rnd+" stream.processwork():  Stream locking " + fname.replace(__dirname,""),logcolor);
+			}
 			stream.streaming[fname] = 1;
 		} else {
-			if (options.debugstream) util.logc(rnd+" stream.processwork():  Stream locking " + fname.replace(__dirname,""),logcolor);
+			if (options.debugstream) {
+				log.logres(rnd+": Stream locking " + fname.replace(__dirname,""),res);
+				util.logc(rnd+" stream.processwork():  Stream locking " + fname.replace(__dirname,""),logcolor);
+			}
 			stream.streaming[fname] = stream.streaming[fname] + 1;
 		}
 
@@ -175,7 +230,10 @@ function stream(source, options, res) {
 		var streamfilepartlck  = streamdir+streamsignature+"/"+reqstatus[rnd].Nx+".stream.lck";
 
 		if (fs.existsSync(streamfilepartlck)) {
-			if (options.debugstream) util.logc(options.id+" stream.processwork():  streamfilepartlck exists: "+streamfilepartlck,logcolor);
+			if (options.debugstream) {
+				log.logres(options.id+":  streamfilepartlck exists: "+streamfilepartlck,res);
+				util.logc(options.id+" stream.processwork():  streamfilepartlck exists: "+streamfilepartlck,logcolor);
+			}
 		}
 
 		// Use cached version of part if exists and options allow it.
@@ -183,18 +241,33 @@ function stream(source, options, res) {
 			if (options.debugstream) util.logc(options.id+" stream.processwork():  Checking if stream part exists: " + streamfilepart.replace(__dirname,""),logcolor);
 
 			if (fs.existsSync(streamfilepart)) {
-				if (options.debugstream) util.logc(options.id+" stream.processwork():  It does.  Locking it.",logcolor);
+				if (options.debugstream) {
+					log.logres(options.id+" stream.processwork():  It does.  Locking it.",res);
+					util.logc(options.id+" stream.processwork():  It does.  Locking it.",logcolor);
+				}
 				fs.writeFileSync(streamfilepartlck,"");
 				if (options.streamGzip == false) {
-					if (options.debugstream) util.logc(options.id+" stream.processwork():  Unzipping it.",logcolor);
+					if (options.debugstream) {
+						log.logres(options.id+" stream.processwork():  Unzipping it.",res);
+						util.logc(options.id+" stream.processwork():  Unzipping it.",logcolor);
+					}
 					var streamer = fs.createReadStream(streamfilepart).pipe(zlib.createGunzip());
 				} else {
-					if (options.debugstream) util.logc(options.id+" stream.processwork():  Sending raw.",logcolor);
+					if (options.debugstream) {
+						log.logres(options.id+" stream.processwork():  Sending raw.",res);
+						util.logc(options.id+" stream.processwork():  Sending raw.",logcolor);
+					}
 					var streamer = fs.createReadStream(streamfilepart);
 				}
 				streamer.on('end',function() {
-					if (options.debugstream) util.logc(options.id+" stream.processwork(): Received streamer.on end event.",logcolor);
-					if (options.debugstream) util.logc(options.id+" stream.processwork(): Removing " + streamfilepartlck.replace(__dirname,""),logcolor);
+					if (options.debugstream) {
+						log.logres(options.id+": Received streamer.on end event.",res);
+						util.logc(options.id+" stream.processwork(): Received streamer.on end event.",logcolor);
+					}
+					if (options.debugstream) {
+						log.logres(options.id+": Removing " + streamfilepartlck.replace(__dirname,""),res);
+						util.logc(options.id+" stream.processwork(): Removing " + streamfilepartlck.replace(__dirname,""),logcolor);
+					}
 					fs.unlink(streamfilepartlck);
 				    stream.streaming[fname] = stream.streaming[fname] - 1;
 					finished(inorder);
@@ -202,21 +275,34 @@ function stream(source, options, res) {
 				streamer.on('error',function(err) {
 					util.logc(err)
 				});
-				if (options.debugstream) util.logc(options.id+" stream.processwork():  Streaming it.",logcolor);
+				if (options.debugstream) {
+					log.logres(options.id+":  Streaming it.",res);
+					util.logc(options.id+" stream.processwork():  Streaming it.",logcolor);
+				}
 				streamer.pipe(res,{ end: false });
 				return;
 			} else {
-				if (options.debugstream) util.logc(options.id+" stream.processwork():  It does not.",logcolor);
+				if (options.debugstream) {
+					log.logres(options.id+":  It does not.",res);
+					util.logc(options.id+" stream.processwork():  It does not.",logcolor);
+				}
 			}
 			
 		}
 
 		// Create new stream.
 		if (options.streamFilterReadBytes > 0) {
-		    if (options.debugstream) util.logc(rnd+" stream.processwork():  Reading Bytes of "+ fname.replace(__dirname,""),logcolor);
-		    if (options.debugstream) util.logc(rnd+" stream.processwork():  Stream lock status " + stream.streaming[fname],logcolor);
+		    if (options.debugstream) {
+		    	log.logres(rnd+":  Reading Bytes of "+ fname.replace(__dirname,""),res);
+		    	log.logres(rnd+":  Reading Bytes of "+ fname.replace(__dirname,""),res);
+		    	util.logc(rnd+" stream.processwork():  Reading Bytes of "+ fname.replace(__dirname,""),logcolor);
+			    util.logc(rnd+" stream.processwork():  Stream lock status " + stream.streaming[fname],logcolor);
+		    }
 			var buffer = new Buffer(options.streamFilterReadBytes);
-			if (options.debugstream) util.logc(rnd+" stream.processwork():  fs.exist: " + fs.existsSync(fname + ".data"),logcolor);
+			if (options.debugstream) {
+				log.logres(rnd+":  fs.exist: " + fs.existsSync(fname + ".data"),res);
+				util.logc(rnd+" stream.processwork():  fs.exist: " + fs.existsSync(fname + ".data"),logcolor);
+			}
 			fs.open(fname + ".data", 'r', function (err,fd) {
 				logger.d("stream.processwork(): ", "error:", err, "fd:", fd, fd==undefined,  "readbytes:", options.streamFilterReadBytes, "readPosition:", options.streamFilterReadPosition);
 			    fs.read(fd, buffer, 0, options.streamFilterReadBytes, options.streamFilterReadPosition-1, 
@@ -225,12 +311,18 @@ function stream(source, options, res) {
 			    			fs.close(fd);
 			    		})});
 		} else if (options.streamFilterReadLines > 0 || options.streamFilterReadColumns !== "0" ) {
-		    if (options.debugstream) util.logc(rnd+" stream.processwork():  Reading lines of "+ fname.replace(__dirname,""),logcolor);
+		    if (options.debugstream) {
+		    	log.logres(rnd+":  Reading lines of "+ fname.replace(__dirname,""),res);
+		    	util.logc(rnd+" stream.processwork():  Reading lines of "+ fname.replace(__dirname,""),logcolor);
+		    }
 			//if (options.debugstream) util.logc(rnd+" stream.processwork(): fs.exist: " + fs.existsSync(fname + ".data"));
 			//if (options.debugstream) util.logc(rnd+" stream.processwork(): Write lock status: "+util.writeCache.memLock[fname]);
 			readline(fname + ".data");
 		} else {	
-		    if (options.debugstream) util.logc(rnd+" stream.processwork():  Reading all of "+fname.replace(__dirname,""),logcolor);	
+		    if (options.debugstream) {
+		    	log.logres(rnd+":  Reading all of "+fname.replace(__dirname,""),res);
+		    	util.logc(rnd+" stream.processwork():  Reading all of "+fname.replace(__dirname,""),logcolor);	
+		    }
 			// Should be no encoding if streamFilterBinary was given.
 			fs.readFile(fname + ".data", "utf8", readcallback);
 		}
@@ -255,9 +347,15 @@ function stream(source, options, res) {
 			}
 			outcolumnsStr = outcolumnsStr.join(",").split(",");
 			
-			if (options.debugstream) {util.logc(options.id+" stream.processwork():  outformat requested " + options.streamFilterTimeFormat,logcolor);}
-			if (options.debugstream) {util.logc(options.id+" stream.processwork():  timecolumns " + options.req.query.timecolumns,logcolor);}
-			if (options.debugstream) {util.logc(options.id+" stream.processwork():  columns requested " + outcolumnsStr,logcolor);}
+			if (options.debugstream) {
+				log.logres(options.id+":  outformat requested " + options.streamFilterTimeFormat,res);
+				log.logres(options.id+":  timecolumns " + options.req.query.timecolumns,res);
+				log.logres(options.id+":  columns requested " + outcolumnsStr,res);
+				util.logc(options.id+":  outformat requested " + options.streamFilterTimeFormat,logcolor);
+				util.logc(options.id+":  timecolumns " + options.req.query.timecolumns,logcolor);
+				util.logc(options.id+":  columns requested " + outcolumnsStr,logcolor);
+			}
+		
 			if (work.plugin.columnTranslator) {
 				// The plugin may have changed the number of columns by reformatting time.
 				for (var z = 0;z < outcolumnsStr.length; z++) {
@@ -268,7 +366,10 @@ function stream(source, options, res) {
 					outcolumns[z] = lineFormatter.columnTranslator(parseInt(outcolumnsStr[z]),options);
 				}
 			}
-			if (options.debugstream) {util.logc(options.id+" stream.processwork():  columns translated " + outcolumns.join(","),logcolor);}
+			if (options.debugstream) {
+				log.logres(options.id+":  columns translated " + outcolumns.join(","),res);
+				util.logc(options.id+" stream.processwork():  columns translated " + outcolumns.join(","),logcolor);
+			}
 	
 			function onlyUnique(value, index, self) { 
 			    return self.indexOf(value) === index;
@@ -283,7 +384,10 @@ function stream(source, options, res) {
 				outcolumns = [1,2,3,4,5,6].concat(outcolumns);
 			}
 			
-			if (options.debugstream) {util.logc(options.id+" stream.processwork():  columns final " + outcolumns.join(","),logcolor);}
+			if (options.debugstream) {
+				log.logres(options.id+":  columns final " + outcolumns.join(","),res);
+				util.logc(options.id+" stream.processwork():  columns final " + outcolumns.join(","),logcolor);
+			}
 		}
 
 		var line   = '';
@@ -296,7 +400,6 @@ function stream(source, options, res) {
 		
 		var done = false;
 		var fnamesize = -1;
-		var fnamesizelast = -1;
 
 		function readline(fnamefull) {	
 			lineReader.eachLine(fnamefull, function(line, last) {

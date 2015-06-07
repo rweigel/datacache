@@ -29,9 +29,10 @@ var argv     = require('yargs')
 					.argv;
 
 if (argv.help || argv.h) {
-	console.log("Usage: node app.js --port=number --debug?, where ?={all,app,util,stream,plugin,template,scheduler,lineformatter}.");
+	console.log("Usage: node app.js [--port=number --debug{all,app,util,stream,plugin,template,scheduler,lineformatter}=true.]");
 	return;
 }
+
 if (argv.debugall) {
 	argv.debugapp = true;
 	argv.debugutil = true;
@@ -46,6 +47,7 @@ var util      = require('./util.js');
 var scheduler = require("./scheduler.js");
 var stream    = require("./stream.js");
 var logger    = require("./logger.js");
+var log       = require("../tsds2/tsdsfe/log.js");
 
 //console.log(argv.help());
 //require('v8-profiler');
@@ -133,10 +135,6 @@ app.get('/', function (req, res) {
 		function (err, data) {res.send(data);});
 })
 
-//app.get('/log', function (req, res) {
-//	res.send(fs.readFileSync(__dirname+"/application.log", "utf8"));
-//})
-
 app.get("/report", function (req,res) {
   	 fs.readFile(__dirname+"/report.htm", "utf8", 
   	 	function (err,data) {
@@ -173,7 +171,6 @@ app.post("/async", function (req, res) {
 })
 
 app.get("/sync", function (req,res) {
-	if (argv.debugapp) console.log("GET")
 	req.setTimeout(1000*60*15);
 	handleRequest(req,res);
 });
@@ -259,20 +256,27 @@ app.use("/cache", express.directory(__dirname+"/cache"));
 app.use("/cache", express.static(__dirname + "/cache"));
 app.use("/demo",  express.directory(__dirname+"/demo"));
 app.use("/demo",  express.static(__dirname + "/demo"));
-app.use("/test/data", express.static(__dirname + "/test/data"));
 app.use("/test/data", express.directory(__dirname + "/test/data"));
+app.use("/test/data", express.static(__dirname + "/test/data"));
 app.use("/asset", express.directory(__dirname + "/asset"));
 app.use("/asset", express.static(__dirname + "/asset"));
 
-server.listen(argv.port); // Start the server
-
-util.logc((new Date()).toISOString() + " - [datacache] listening on port "+argv.port,10);
 config = {};
 config.TIMEOUT = 60*1000*15;
+config.LOGDIR = __dirname+"/log/";
+config.LOGHEADER = 'x-datacache-log';
+
+server.listen(argv.port); // Start the server
+
+// Create directories if needed.
+config = log.init(config)
+
+log.logc((new Date()).toISOString() + " - [datacache] listening on port "+argv.port,10)
+
 server.setTimeout(config.TIMEOUT,
 		function(obj) {
-		      console.log("DataCache server timeout ("+(config.TIMEOUT/(1000*60))+" minutes).");
-		      if (obj) console.log(obj.server._events.request);
+		      //console.log("DataCache server timeout ("+(config.TIMEOUT/(1000*60))+" minutes).");
+		      //if (obj) console.log(obj);
 		});
 
 
@@ -323,7 +327,7 @@ function syncsummary(source,options,res) {
 				res.contentType('application/json');
 				res.send(JSON.stringify(results));			
 			} else {
-				console.log("Unknown option");
+				console.log("Unknown option for return.");
 				res.send("");
 			}
 		});
@@ -331,23 +335,49 @@ function syncsummary(source,options,res) {
 
 function handleRequest(req, res) {
 
-	var options = parseOptions(req);
-	var source  = parseSource(req);
-	options.id  = Math.random().toString().substring(1); 
-	var logcolor   = Math.round(255*parseFloat(options.id));
+	var message =  req.connection.remoteAddress + "," + req.originalUrl;		
+	if (req.headers['X-Forwarded-For']) {
+		var message = req.headers['X-Forwarded-For'].replace(",",";") + req.originalUrl + ",";
+	} 
+
+	// Create detailed log file name based on current time and other information.
+	var loginfo = crypto.createHash("md5").update((new Date()).toISOString() + message).digest("hex");
+
+	// Set log file name as response header
+	res.header(config.LOGHEADER,loginfo)
+
+	res.config = config;
+
+	log.logapp(loginfo + "," + message, res)
+
+	var options  = parseOptions(req, res);
+	var source   = parseSource(req, res);
+	options.id   = Math.random().toString().substring(1); 
+	var logcolor = Math.round(255*parseFloat(options.id));
+
+	if (argv.debugapp) {
+		//log.logres("Configuration file = "+JSON.stringify(config.CONFIGFILE), res)
+		log.logres("Configuration = "+JSON.stringify(config), res)
+		log.logres("req.headers = " + JSON.stringify(req.headers), res)
+		log.logres("req.connection.remoteAddress = " + JSON.stringify(req.connection.remoteAddress), res)
+		log.logres("req.originalUrl = " + JSON.stringify(req.originalUrl), res)
+		log.logres("options = " + JSON.stringify(options), res)
+	}
 
 	// Compress response if headers accept it and streamGzip is not requested.
 	if (!options.streamGzip) 	
 		app.use(express.compress()); 
 	
-	// Return nothing if no urls were requested or if template did create any urls.
+	// Return nothing if no URLs were requested or if template did create any urls.
 	if (source.length === 0) {
+		log.logres("source.length = 0.  Sending res.end().", res)
 		res.end();
 	    return;
 	}
 
-	if (options.debugapp || options.debugstream)
-		util.logc(options.id + " app.handleRequest() called with source="+source.toString().replace(/,/g,"\n\t"),logcolor);
+	if (options.debugapp || options.debugstream) {
+		util.logc(options.id + " app.handleRequest() called with source="+source.toString().replace(/,/g,"\n\t"),logcolor)
+	}
 
 	if (options.return === "stream") {
 		stream.stream(source,options,res);
@@ -356,7 +386,7 @@ function handleRequest(req, res) {
 	}
 }
 
-function parseOptions(req) {
+function parseOptions(req, res) {
 
 	function s2b(str) {if (str === "true") {return true} else {return false}}
 	function s2i(str) {return parseInt(str)}
@@ -442,21 +472,20 @@ function parseOptions(req) {
 	}
 	
 	if (argv.debugapp) {
-		console.log("\noptions after parseOptions:");
-		console.log(options);
+		log.logres("options after parseOptions:"+JSON.stringify(options), res);
 	}
 	
 	return options;
 }
 
-function parseSource(req) {
+function parseSource(req, res) {
 
-	options = parseOptions(req);
+	options = parseOptions(req, res);
 	
     var source     = req.body.source || req.query.source || "";
     var prefix     = req.body.prefix || req.query.prefix;
 
-    var template   = req.body.template || req.query.template;
+    var template   = req.body.template   || req.query.template;
     var timeRange  = req.body.timeRange  || req.query.timeRange;
 	var indexRange = req.body.indexRange || req.query.indexRange;
         
@@ -464,7 +493,7 @@ function parseSource(req) {
 	
 	var sourcet = [];
 	
-    var opts          = {};
+    var opts = {};
 
     if (template) {	
 	    opts.template = template;
@@ -476,10 +505,14 @@ function parseSource(req) {
 			opts.timeRange  = timeRange;
 			opts.indexRange = null;
 			opts.debug      =  options.debugtemplate;
-			sourcet         = expandtemplate(opts);
+			opts.log        = true;
+			ret             = expandtemplate(opts);
+			console.log(ret.log)
+			sourcet         = ret.files
+			//sourcet = expandtemplate(opts)
 			if (options.debugtemplate) {
-				console.log("sourcet = ");
-			    console.log(sourcet);
+				log.logres("expandtemplate.js: "+ret.log, res)
+				//log.logres("sourcet = "+JSON.stringify(sourcet), res)
 			}
 
 		}
@@ -498,8 +531,7 @@ function parseSource(req) {
 	}
 	
 	if (options.debugtemplate) {
-		console.log("\noptions after parseSource:")
-		console.log(options);
+		log.logres("options after parseSource: "+JSON.stringify(options), res)
 	}
 
 	if ((sourcet.length > 0) && (source.length > 0)) {
@@ -513,8 +545,7 @@ function parseSource(req) {
 		for (i = 0; i < source.length; i++) {source[i] = prefix + source[i];}
 
 	if (options.debugapp) { 
-		console.log("source = ");
-		console.log(source);
+		log.logres("source = "+JSON.stringify(source), res)
 	}
 	
 	return source;
