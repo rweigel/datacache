@@ -47,7 +47,7 @@ var util      = require('./util.js');
 var scheduler = require("./scheduler.js");
 var stream    = require("./stream.js");
 var logger    = require("./logger.js");
-var log       = require("../tsds2/tsdsfe/log.js");
+var log       = require("./log.js");
 
 //console.log(argv.help());
 //require('v8-profiler');
