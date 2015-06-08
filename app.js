@@ -507,7 +507,6 @@ function parseSource(req, res) {
 			opts.debug      =  options.debugtemplate;
 			opts.log        = true;
 			ret             = expandtemplate(opts);
-			console.log(ret.log)
 			sourcet         = ret.files
 			//sourcet = expandtemplate(opts)
 			if (options.debugtemplate) {

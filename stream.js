@@ -38,7 +38,7 @@ function stream(source, options, res) {
 		}
 		var filter = require("./filters/stats.js");
 	}
-	console.log(options.debugstream)
+
 	if (options.streamFilterComputeFunction.match(/regrid/)) {
 		if (options.debugstream) {
 			log.logres(options.id+", Reading ./filters/regrid.js",res);
