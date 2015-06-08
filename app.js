@@ -52,13 +52,15 @@ var log       = require("./log.js");
 //console.log(argv.help());
 //require('v8-profiler');
 
+// TODO: This the right way.
 if (fs.existsSync("../tsds2/tsdset/lib/expandtemplate.js")) {
-	// Use local file if it is found.
+	// Dev configuration
 	var expandtemplate        = require("../tsds2/tsdset/lib/expandtemplate").expandtemplate;
 	var expandISO8601Duration = require("../tsds2/tsdset/lib/expandtemplate").expandISO8601Duration;
-} else {
-//	var expandtemplate        = require("tsdset").expandtemplate;
-//	var expandISO8601Duration = require("tsdset").expandISO8601Duration;
+} else if (fs.existsSync("../../tsdset/lib/expandtemplate.js")) {
+	// When installed as dependency of tsdsfe configuration
+	var expandtemplate        = require("../../tsdset/lib/expandtemplate").expandtemplate;
+	var expandISO8601Duration = require("../../tsdset/lib/expandtemplate").expandISO8601Duration;
 }
 
 // http://stackoverflow.com/questions/9768444/possible-eventemitter-memory-leak-detected
