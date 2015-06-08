@@ -52,26 +52,27 @@ var log       = require("./log.js");
 //console.log(argv.help());
 //require('v8-profiler');
 
-// TODO: This the right way.
-if (fs.existsSync("../tsds2/tsdset/lib/expandtemplate.js")) {
-	// Dev configuration
-	var expandtemplate        = require("../tsds2/tsdset/lib/expandtemplate").expandtemplate;
-	var expandISO8601Duration = require("../tsds2/tsdset/lib/expandtemplate").expandISO8601Duration;
-} else if (fs.existsSync("../../tsdset/lib/expandtemplate.js")) {
-	// When installed as dependency of tsdsfe configuration
-	var expandtemplate        = require("../../tsdset/lib/expandtemplate").expandtemplate;
-	var expandISO8601Duration = require("../../tsdset/lib/expandtemplate").expandISO8601Duration;
-}
+var expandtemplate        = require("./node_modules/tsdset/lib/expandtemplate").expandtemplate;
+var expandISO8601Duration = require("./node_modules/tsdset/lib/expandtemplate").expandISO8601Duration;
 
 // http://stackoverflow.com/questions/9768444/possible-eventemitter-memory-leak-detected
 process.setMaxListeners(0);
 
+process.on('uncaughtException', function(err) {
+	if (err.errno === 'EADDRINUSE') {
+		console.log("[datacache] - Address already in use.");
+	} else {
+		console.log(err);
+	}
+	process.exit(1);
+})
+
 process.on('exit', function () {
-	console.log('Received exit signal.  Removing partially written files.');
+	console.log('[datacache] - Received exit signal.  Removing partially written files.');
 	// TODO: 
 	// Remove partially written files by inspecting cache/locks/*.lck
 	// Remove streaming locks by inspecting cache/locks/*.streaming
-	console.log('Done.  Exiting.');
+	console.log('[datacache] - Done.  Exiting.');
 })
 process.on('SIGINT', function () {
 	process.exit();
