@@ -4,10 +4,12 @@ var moment    = require("moment");
 var request   = require("request");
 var mkdirp    = require("mkdirp");
 var logger    = require("./logger.js");
+var log       = require("./log.js");
 var FtpClient = require("ftp");
 var url       = require('url');
 var clc       = require('cli-color');
 var http      = require('http');
+
 http.globalAgent.maxSockets = 100;  // Most Apache servers have this set at 100.	
 
 //var TIMEOUT = 20000;
@@ -15,13 +17,6 @@ var TIMEOUT = 1000*60*15;
 var MAXCONNECTION = 1000;
 
 var app = require("./stream.js");
-
-function logc(str,color) {
-	var msg = clc.xterm(color);
-	//logc(arguments.caller.toString())
-	console.log(msg(str));
-};
-exports.logc = logc;
 
 Array.prototype.remove = function (el) {this.splice(this.indexOf(el), 1);}
 
@@ -128,14 +123,24 @@ var head = function head(work,callback) {
 	
 		if (work.url.match("^ftp")) {
 			// TODO: Read .header file.
-			if (work.options.debugutil) logc("Head check of FTP is not implemented.")
+			if (work.options.debugutil) {
+				log.logc("Head check of FTP is not implemented.")
+			}
 			callback(work);
-			return;
+			return
 		}
 		
-		var options = {method: 'HEAD', host: url.parse(work.url).hostname, port: 80, path: url.parse(work.url).pathname};
+		var options = {
+						method: 'HEAD',
+						host: url.parse(work.url).hostname,
+						port: 80,
+						path: url.parse(work.url).pathname
+					}
 		
-		if (work.options.debugutil) logc("Doing head check of: " + work.url);
+		if (work.options.debugutil) {
+			log.logc("Doing head check of: " + work.url)
+		}
+
 		var req = http.request(options, function(res) {
 				
 				var fname = getCachePath(work);
@@ -152,35 +157,53 @@ var head = function head(work,callback) {
 					}
 
 					if (j==headers.length) {
-						if (work.options.debugutil) logc("No last-modified in cached header.");
+						if (work.options.debugutil) {
+							log.logc("No last-modified in cached header.")
+						}
 						callback(work);
 						return;
 					}
 					
 					var lmcache = headersplit.join(":")
-					if (work.options.debugutil) logc("last-modified of cache:   " + lmcache);
+					if (work.options.debugutil) {
+						log.logc("last-modified of cache:   " + lmcache)
+					}
 					var mslmcache = new Date(lmcache).getTime();
 					work.lastModified = lmcache;
 					var  lmnow = res.headers["last-modified"];
 					if (lmnow) {
-						if (work.options.debugutil) logc("last-modified of response: " + lmnow);
+						if (work.options.debugutil) {
+							log.logc("last-modified of response: " + lmnow)
+						}
 						var mslmnow = new Date(lmnow).getTime();
 						if (mslmnow > mslmcache) {
-							if (work.options.debugutil) logc("Cache has expired.");
+							if (work.options.debugutil) {
+								log.logc("Cache has expired.")
+							}
 							work.isExpired = true;
 						} else {
-							if (work.options.debugutil) logc("Cache has not expired.");
+							if (work.options.debugutil) {
+								log.logc("Cache has not expired.")
+							}
 						}
 					} else {
-						if (work.options.debugutil) logc("No last-modified in response header.");
+						if (work.options.debugutil) {
+							log.logc("No last-modified in response header.")
+						}
 					}
 				} else {
-					if (work.options.debugutil) logc("No cached header file.");
+					if (work.options.debugutil) {
+						log.logc("No cached header file.")
+					}
 				}
 				callback(work);
 			});
-		req.on('end',function () {if (work.options.debugutil) logc("Finished HEAD check of " + urlo);});
-		req.on('error', function(e) {callback(e);});
+		req.on('end',function () {
+			if (work.options.debugutil) {
+				log.logc("Finished HEAD check of " + urlo)
+			}
+		})
+		req.on('error', function(e) {callback(e)})
 		req.end();
 }
 exports.head = head;
@@ -249,7 +272,7 @@ function getCachedData(work, callback) {
 				finished.z = 0;
 			} 
 			finished.z = finished.z+1;			
-			//logc(msg);
+			//log.logc(msg);
 			if (finished.z == 4) {
 				work.isFinished = true;
 				callback(err);
@@ -257,10 +280,12 @@ function getCachedData(work, callback) {
 		}
 		
 		function getHeader() {
-			//logc("Reading Header Started");
-			if (!work.options.includeHeader) { finished("Reading Header Finished"); return;}
-				fs.readFile(getCachePath(work) + ".header", "utf8",	
-					function (err, header) {
+			if (!work.options.includeHeader) {
+				finished("Reading Header Finished")
+				return
+			}
+			fs.readFile(getCachePath(work) + ".header", "utf8",	
+				function (err, header) {
 					if (typeof(header) !== 'undefined') {
 						tmp = header.split("\n");
 						for (i = 0; i < tmp.length; i++) {
@@ -271,11 +296,14 @@ function getCachedData(work, callback) {
 						work.header[0] = "";
 					}
 						finished("Reading Header Finished");
-					});
+					})
 		}		
 		function getLstat() {
-			//logc("Reading Lstat Started");
-			if (!work.options.includeLstat) { finished("Reading Lstat Finished"); return;}
+			//log.logc("Reading Lstat Started");
+			if (!work.options.includeLstat) {
+				finished("Reading Lstat Finished")
+				return
+			}
 			fs.lstat(getCachePath(work) + ".data",
 				function (err, stats) {
 					if (stats) {
@@ -286,18 +314,24 @@ function getCachedData(work, callback) {
 				});
 		}
 		function getMeta() {
-			//logc("Reading Meta Started");
-			if (!work.options.includeMeta) { finished("Reading Meta Finished"); return;}			
+			//log.logc("Reading Meta Started");
+			if (!work.options.includeMeta) {
+				finished("Reading Meta Finished")
+				return
+			}			
 			fs.readFile(getCachePath(work) + ".meta", "utf8",
 				function (err, data) {
 					work.meta       = data;
 					work.metaJson   = work.plugin.metaToJson(data);
 					finished("Reading Meta Finished");
-				});
+				})
 		}
 		function getData(callback) {
-			//logc("Reading Data Started");
-			if (!work.options.includeData) { finished("Reading Data Finished"); return;}			
+			//log.logc("Reading Data Started");
+			if (!work.options.includeData) {
+				finished("Reading Data Finished")
+				return
+			}			
 			// TODO: Don't specify encoding if writeDataBinary exists.
 			// create work.dataEncoding?
 			fs.readFile(getCachePath(work) + ".data", "utf8",
@@ -310,7 +344,7 @@ function getCachedData(work, callback) {
 				});
 		}
 	} catch(err) {
-		logc(err);
+		log.logc(err);
 	}
 }
 exports.getCachedData = getCachedData;
@@ -319,7 +353,7 @@ var memLock = {};
 //var writeLock = {};
 var writeCache = function(work, callback) {
 
-	var logcolor = Math.round(255*parseFloat(work.options.id));		
+	var logcolor = work.options.logcolor;		
 
 	var fname = getCachePath(work);
 
@@ -350,8 +384,10 @@ var writeCache = function(work, callback) {
 		writeCache.memLock[filename] = writeCache.memLock[filename] + 1;
 		var tmp = writeCache.memLock[filename];
 		//writeLock[fname] = writeLock[fname] + 1;
-		if (work.options.debugutil) logc(work.options.id + " util.writeCache(): Locking "+filename.replace(__dirname,"") + " " + tmp,logcolor);
-		//if (work.options.debugutil) logc(work.options.id + " util.writeCache(): wrieLock[fname] = "+writeLock[fname],logcolor);
+		if (work.options.debugutil) {
+			log.logc(work.options.loginfo + " util.writeCache(): Locking "+filename.replace(__dirname,"") + " " + tmp,logcolor)
+		}
+		//if (work.options.debugutil) log.logc(work.options.loginfo + " util.writeCache(): wrieLock[fname] = "+writeLock[fname],logcolor);
 
 		memLock[work.id] = 6; // 6 is number of writes associated with each request.
 		work.writeStartTime = new Date();
@@ -361,7 +397,7 @@ var writeCache = function(work, callback) {
 			if (!exist) {
 				mkdirp(directory, function (err) {
 					if (err) {
-						logc(err);
+						log.logc(err);
 					}
 					else {
 						writeCacheFiles();
@@ -373,16 +409,19 @@ var writeCache = function(work, callback) {
 		});
 	} else {
 		if (writeCache.memLock[filename] != 0) {
-			if (work.options.debugutil) logc(work.options.id + " util.writeCache(): File is being written already by writeCache().",logcolor);
+			if (work.options.debugutil) {
+				log.logc(work.options.loginfo + " util.writeCache(): File is being written already by writeCache().",logcolor)
+			}
 		}
 		if ( !(typeof(app.stream.streaming[filename]) === "undefined") || app.stream.streaming[filename] != 0) {
-			if (work.options.debugutil) logc(work.options.id + " util.writeCache(): Stream lock found.  Not writing file.",logcolor);
+			if (work.options.debugutil) {
+				log.logc(work.options.loginfo + " util.writeCache(): Stream lock found.  Not writing file.",logcolor)
+			}
 		}
 		callback(work);
 	}
 //},Math.round(10*Math.random()));
 	function writeCacheFiles() {
-
 
 		// If .data does not exist, create it.
 		// If .data file exists and differs from new data, move files to directory md5url.
@@ -394,13 +433,13 @@ var writeCache = function(work, callback) {
 					  writeFiles();
 				  } else {
 					  // If this fails, another process has moved it to the archive directory.
-					  if (work.options.debugutil) logc(work.options.id+" util.writeCacheFiles(): Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1"),logcolor);
+					  if (work.options.debugutil) log.logc(work.options.loginfo+" util.writeCacheFiles(): Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1"),logcolor);
 					  //dataMd5old = md5(fs.readFileSync(filename+".data"));
 					  try {
 						  dataMd5old = md5(fs.readFileSync(filename+".data"));
 					  } catch (e) {
 						  debugger
-						  if (work.options.debugutil) logc(work.options.id+" util.writeCacheFiles(): Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1" + " failed."),logcolor);
+						  if (work.options.debugutil) log.logc(work.options.loginfo+" util.writeCacheFiles(): Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1" + " failed."),logcolor);
 						  dataMd5old = "";
 					  }
 					  if ( (work.dataMd5 != dataMd5old) || work.options.forceWrite || (work.options.respectHeaders && work.isExpired)) {
@@ -419,27 +458,33 @@ var writeCache = function(work, callback) {
 		function writeFiles() {
 
 			
-			if (work.options.debugutil) logc(work.options.id + " util.writeCacheFiles(): Maybe writing: "+filename.replace(/.*\/(.*)/,"$1")+".data",logcolor);
-			if (work.options.debugutil) logc(work.options.id + " util.writeCacheFiles(): fs.exists: " + fs.existsSync(filename+".data"),logcolor);
+			if (work.options.debugutil) {
+				log.logc(work.options.loginfo + " util.writeCacheFiles(): Maybe writing: "+filename.replace(/.*\/(.*)/,"$1")+".data",logcolor)
+				log.logc(work.options.loginfo + " util.writeCacheFiles(): fs.exists: " + fs.existsSync(filename+".data"),logcolor)
+			}
+	
 			if (app.stream.streaming[filename] > 0) {
 				if (work.options.debugutil) {
-					logc(work.options.id + " util.writeCacheFiles(): A stream lock was found.  Aborting write.",logcolor);
-					logc(work.options.id + " util.writeCacheFiles(): Presumably, an update was recently performed.  forceUpdate=true may have unexpected results.",logcolor);
+					log.logc(work.options.loginfo + " util.writeCacheFiles(): A stream lock was found.  Aborting write.",logcolor);
+					log.logc(work.options.loginfo + " util.writeCacheFiles(): Presumably, an update was recently performed.  forceUpdate=true may have unexpected results.",logcolor);
 				}
-
 				finish();finish();finish();finish();finish();finish();
 				return;
 			} else {
-				if (work.options.debugutil) logc(work.options.id + " util.writeCacheFiles(): No stream lock was found.  Writing.",logcolor);
+				if (work.options.debugutil) {
+					log.logc(work.options.loginfo + " util.writeCacheFiles(): No stream lock was found.  Writing.",logcolor)
+				}
 			}
 
 			//if (work.options.debugutil)
-			//logc(work.options.id + " util.writeCacheFiles(): Writing "+filename+".lck")
+			//log.logc(work.options.loginfo + " util.writeCacheFiles(): Writing "+filename+".lck")
 			//fs.writeFileSync(filename+".lck","");
 			//fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".lck",work.dir);
 
-			if (work.options.debugutil) logc(work.options.id + " util.writeCacheFiles(): Writing "+filename.replace(__dirname,"")+".*. .out size = "+work.body.length+" .data size = "+work.data.length,logcolor)
-			//logc("work.data.length: "+work.data.length)
+			if (work.options.debugutil) {
+				log.logc(work.options.loginfo + " util.writeCacheFiles(): Writing "+filename.replace(__dirname,"")+".*. .out size = "+work.body.length+" .data size = "+work.data.length,logcolor)
+			}
+			//log.logc("work.data.length: "+work.data.length)
 			fs.writeFile(filename+".data", work.data, finish);
 			fs.writeFile(filename+".bin", work.dataBinary, finish);
 			fs.writeFile(filename+".meta", work.meta, finish);
@@ -454,25 +499,33 @@ var writeCache = function(work, callback) {
 		}
 
 		function finish(err) {
-			if (err) {logger.log("error", work); console.trace(err);}
-			//logc(memLock[work.id])
+			if (err) {
+				logger.log("error", work);
+				console.trace(err)
+			}
+			//log.logc(memLock[work.id])
 			memLock[work.id]--;
 			work.writeFinishedTime = new Date();
 			if (memLock[work.id]==0) {
 
 				var filename  = getCachePath(work);
-				if (work.options.debugutil) logc(work.options.id + " util.writeCacheFiles(): Finished writing "+filename.replace(__dirname,"")+".*",logcolor);
+				if (work.options.debugutil) {
+					log.logc(work.options.loginfo + " util.writeCacheFiles(): Finished writing "+filename.replace(__dirname,"")+".*",logcolor)
+				}
 				// Will not exist if write was aborted because stream lock was found.
 				if (fs.existsSync(filename+".lck")) {
-					if (work.options.debugutil) logc(work.options.id + " util.writeCacheFiles(): Removing "+filename.replace(__dirname,"")+".lck",logcolor);
+					if (work.options.debugutil) {
+						log.logc(work.options.loginfo + " util.writeCacheFiles(): Removing "+filename.replace(__dirname,"")+".lck",logcolor)
+					}
 					fs.unlinkSync(filename+".lck");
 				}
 				writeCache.memLock[filename] = writeCache.memLock[filename]-1;
 				var tmp = writeCache.memLock[filename];
-				if (work.options.debugutil) logc(work.options.id + " util.writeCache(): Unlocking "+filename.replace(__dirname,"") + " " + tmp,logcolor);				
+				if (work.options.debugutil) {
+					log.logc(work.options.loginfo + " util.writeCache(): Unlocking "+filename.replace(__dirname,"") + " " + tmp,logcolor)
+				}
 				//writeLock[fname] = writeLock[fname] - 1;
-
-				//logc(work.options.id + " util.writeCacheFiles(): " + writeCache.memLock[filename]);
+				//log.logc(work.options.loginfo + " util.writeCacheFiles(): " + writeCache.memLock[filename]);
 				callback(work);
 			}
 		}
@@ -482,19 +535,24 @@ var writeCache = function(work, callback) {
 				fs.renameSync(filename+".data"  , filename+"/"+dataMd5old+".data");			
 			} catch (e) {
 				if (work.options.debugutil) {
-					logc(work.options.id  + " Could not move " + filename.replace(/.*\/(.*)/,"$1") + ".  forceUpdate=true may have unexpected results.",logcolor);
-					logc(work.options.id  + " It was probably moved by another request.");
+					log.logc(work.options.loginfo  + " Could not move " + filename.replace(/.*\/(.*)/,"$1") + ".  forceUpdate=true may have unexpected results.",logcolor);
+					log.logc(work.options.loginfo  + " It was probably moved by another request.");
 				}
 			}		
 		}
 		function renameFiles(callback) {
 			var newdir = filename + "/";
 			mkdirp(newdir, function (err) {
-					if (work.options.debugutil) logc(work.options.id  + " Created directory " + newdir,logcolor);
-					//logc("filename: " + filename);
-					if (err) {logc(err);}
-					if (work.options.debugutil)
-						logc(work.options.id  + " Tring to move files to: " + newdir,logcolor);
+					if (work.options.debugutil) {
+						log.logc(work.options.loginfo  + " Created directory " + newdir,logcolor)
+					}
+					//log.logc("filename: " + filename);
+					if (err) {
+						log.logc(err)
+					}
+					if (work.options.debugutil) {
+						log.logc(work.options.loginfo  + " Tring to move files to: " + newdir,logcolor);
+					}
 					tryrename(filename+".data");					
 					tryrename(filename+".bin");					
 					tryrename(filename+".meta");					

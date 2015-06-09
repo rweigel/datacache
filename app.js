@@ -20,10 +20,13 @@ var argv     = require('yargs')
 						'debugall':false,
 						'debugapp':false,
 						'debugutil':false,
+						'debugutilconsole':false,
 						'debugstream':false,
+						'debugstreamconsole':false,
 						'debugplugin':false,
 						'debugtemplate':false,
 						'debugscheduler':false,
+						'debugschedulerconsole':false,
 						'debuglineformatter':false
 					})
 					.argv;
@@ -36,11 +39,14 @@ if (argv.help || argv.h) {
 if (argv.debugall) {
 	argv.debugapp = true;
 	argv.debugutil = true;
+	argv.debugutilconsole = true;
 	argv.debugstream = true;
+	argv.debugstreamconsole = true;
 	argv.debugplugin = true;
 	argv.debugtemplate = true;
 	argv.debugscheduler = true;
-	argv.debuglineformatter = true;
+	argv.debugschedulerconsole = true;
+	//argv.debuglineformatter = true;
 }
 
 var util      = require('./util.js');
@@ -355,8 +361,10 @@ function handleRequest(req, res) {
 
 	var options  = parseOptions(req, res);
 	var source   = parseSource(req, res);
-	options.id   = Math.random().toString().substring(1); 
-	var logcolor = Math.round(255*parseFloat(options.id));
+	var logcolor = Math.round(255*parseFloat(Math.random().toString().substring(1)));
+
+	options.loginfo  = loginfo;
+	options.logcolor = logcolor;
 
 	if (argv.debugapp) {
 		//log.logres("Configuration file = "+JSON.stringify(config.CONFIGFILE), res)
@@ -378,8 +386,8 @@ function handleRequest(req, res) {
 	    return;
 	}
 
-	if (options.debugapp || options.debugstream) {
-		util.logc(options.id + " app.handleRequest() called with source="+source.toString().replace(/,/g,"\n\t"),logcolor)
+	if (options.debugstreamconsole) {
+		log.logc(options.loginfo + " app.handleRequest() called with source="+source.toString().replace(/,/g,"\n\t"),logcolor)
 	}
 
 	if (options.return === "stream") {
@@ -423,6 +431,14 @@ function parseOptions(req, res) {
 	options.debugtemplate  = req.query.debugtemplate || req.body.debugtemplate || argv.debugtemplate;
 	options.debuglineformatter  = req.query.debuglineformatter || req.body.debuglineformatter || argv.debuglineformatter;
 	options.debugscheduler      = req.query.debugscheduler    || req.body.debugscheduler     || argv.debugscheduler;
+
+	options.debugappconsole       = argv.debugappconsole;
+	options.debugstreamconsole    = argv.debugstreamconsole;
+	options.debugutilconsole      = argv.debugutilconsole;
+	options.debugpluginconsole    = argv.debugpluginconsole;
+	options.debugtemplateconsole  = argv.debugtemplateconsole;
+	options.debuglineformatterconsole  = argv.debuglineformatterconsole;
+	options.debugschedulerconsole      = argv.debugschedulerconsole;
 	
 	if (options.lineFormatter === "") {
 		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){return line.search(lineRegExp)!=-1;}";

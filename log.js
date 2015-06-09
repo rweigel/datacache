@@ -7,12 +7,12 @@ var crypto = require("crypto");
 function init(config) {
 
 	// Base log directory
-	config.LOGDIR = config.LOGDIR
 	if (!config.LOGDIR.match(/^\//)) {
 		// If relative path given for CACHEDIR, prepend with __dirname.
 		config.LOGDIR   = __dirname+"/log/"
 	}
 	config.LOGDIRAPPPRIVATE = config.LOGDIR + "application-private/";
+
 	// Log directory for application
 	if (!fs.existsSync(config.LOGDIRAPPPRIVATE)) {
 		// Create log directory if not found

@@ -1,5 +1,6 @@
 var util     = require("./util.js");
 var logger   = require("./logger.js");
+var log      = require("./log.js");
 var fs       = require("fs");
 EventEmitter = require("events").EventEmitter;
 
@@ -32,10 +33,12 @@ function addURLs(source, options, callback){
 exports.addURLs = addURLs;
 
 function addURL(url, options, callback) {
-	var rnd        = options.id;
-	var logcolor   = Math.round(255*parseFloat(rnd));		
+	var rnd        = options.loginfo;
+	var logcolor   = options.logcolor;
 
-	if (options.debugscheduler) util.logc(options.id + " scheduler.addURL(): Called with url = "+url,logcolor);
+	if (options.debugschedulerconsole) {
+		log.logc(options.loginfo + " scheduler.addURL(): Called with url = "+url,logcolor);
+	}
 	options  = options || {};
 	var work = newWork(url, options, callback);
 	exports.emit("submit", work);
@@ -63,13 +66,15 @@ function run() {
 
 
 	logger.d("scheduler: "+runningWorks.length + ", " + params.concurrency);
-	//util.logc(options.id + " scheduler.run(): Called.",logcolor);
+	//util.logc(options.loginfo + " scheduler.run(): Called.",logcolor);
 	while (runningWorks.length < params.concurrency && worksQueue.length > 0) {
 		var work = worksQueue.shift();
 
-		var rnd        = work.options.id;
-		var logcolor   = Math.round(255*parseFloat(rnd));		
-		if (work.options.debugscheduler) util.logc(rnd + " scheduler.run(): Called.",logcolor);
+		var rnd        = work.options.loginfo;
+		var logcolor   = work.options.logcolor;
+		if (work.options.debugschedulerconsole) {
+			log.logc(rnd + " scheduler.run(): Called.",logcolor)
+		}
 		runningWorks.push(work);
 		logger.d("scheduler.run(): Processing work");
 
