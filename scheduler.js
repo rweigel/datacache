@@ -1,5 +1,4 @@
 var util     = require("./util.js");
-var logger   = require("./logger.js");
 var log      = require("./log.js");
 var fs       = require("fs");
 EventEmitter = require("events").EventEmitter;
@@ -64,8 +63,7 @@ exports.plugins = plugins;
 
 function run() {
 
-
-	logger.d("scheduler: "+runningWorks.length + ", " + params.concurrency);
+	//logger.d("scheduler: "+runningWorks.length + ", " + params.concurrency);
 	//util.logc(options.loginfo + " scheduler.run(): Called.",logcolor);
 	while (runningWorks.length < params.concurrency && worksQueue.length > 0) {
 		var work = worksQueue.shift();
@@ -76,7 +74,7 @@ function run() {
 			log.logc(rnd + " scheduler.run(): Called.",logcolor)
 		}
 		runningWorks.push(work);
-		logger.d("scheduler.run(): Processing work");
+		//logger.d("scheduler.run(): Processing work");
 
 		work.cacheCheckStartTime = new Date();
 		util.isCached(work, function (work) {
@@ -112,7 +110,7 @@ function run() {
 					} else {
 						util.getCachedData(work, function (err) {
 							exports.emit("finish", work);
-							logger.log("finish", work);
+							//logger.log("finish", work);
 							work.callback(work2result(work));
 						})
 					}
@@ -124,7 +122,7 @@ function run() {
 		})		
 	}
 	if (worksQueue.length > 0) {
-	    logger.d("scheduler.run(): Delaying");
+	    l//ogger.d("scheduler.run(): Delaying");
 	    if (typeof(setImmediate) !== "undefined") {
 	    	setImmediate(run);
 	    } else {
@@ -316,6 +314,6 @@ function newWork(url, options, callback){
 			return this.plugin.extractRem(data, options);
 		}
 	}
-	logger.log("submit", work);
+	//logger.log("submit", work);
 	return work;
 }

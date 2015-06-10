@@ -1,76 +1,75 @@
-var request  = require("request");
-var	xml2js   = require('xml2js');
-var	parser   = new xml2js.Parser();
-var	express  = require('express');
-var	app      = express();
-var	server   = require("http").createServer(app);
-var	io       = require("socket.io");
-var	sio      = io.listen(server);
-var	crypto   = require("crypto");
-var	fs       = require("fs");
-var	hogan    = require("hogan.js");
-var	moment   = require("moment");
-var	whiskers = require("whiskers");
-var	domain   = require("domain");
-var qs       = require('querystring');
-var mmm      = require('mmmagic');
+var request  = require("request")
+var	xml2js   = require('xml2js')
+var	parser   = new xml2js.Parser()
+var	express  = require('express')
+var	app      = express()
+var	server   = require("http").createServer(app)
+var	crypto   = require("crypto")
+var	fs       = require("fs")
+var	hogan    = require("hogan.js")
+var	moment   = require("moment")
+var	whiskers = require("whiskers")
+var	domain   = require("domain")
+var qs       = require('querystring')
+var mmm      = require('mmmagic')
 var argv     = require('yargs')
 					.default({
-						'port':7999,
-						'debugall':false,
-						'debugapp':false,
-						'debugutil':false,
-						'debugutilconsole':false,
-						'debugstream':false,
-						'debugstreamconsole':false,
-						'debugplugin':false,
-						'debugtemplate':false,
-						'debugscheduler':false,
-						'debugschedulerconsole':false,
-						'debuglineformatter':false
+						'port': 7999,
+						'debugall': false,
+						'debugapp': false,
+						'debugappconsole': false,
+						'debugutil': false,
+						'debugutilconsole': false,
+						'debugstream': false,
+						'debugstreamconsole': false,
+						'debugplugin': false,
+						'debugpluginconsole': false,
+						'debugtemplate': false,
+						'debugscheduler': false,
+						'debugschedulerconsole': false,
+						'debuglineformatter': false
 					})
-					.argv;
+					.argv
 
 if (argv.help || argv.h) {
-	console.log("Usage: node app.js [--port=number --debug{all,app,util,stream,plugin,template,scheduler,lineformatter}=true.]");
-	return;
+	console.log("Usage: node app.js [--port=number --debug{all,app,util,stream,plugin,template,scheduler,lineformatter}=true.]")
+	return
 }
 
 if (argv.debugall) {
 	argv.debugapp = true;
+	argv.debugappconsole = true;
 	argv.debugutil = true;
 	argv.debugutilconsole = true;
 	argv.debugstream = true;
 	argv.debugstreamconsole = true;
 	argv.debugplugin = true;
+	argv.debugpluginconsole = true;
 	argv.debugtemplate = true;
 	argv.debugscheduler = true;
 	argv.debugschedulerconsole = true;
 	//argv.debuglineformatter = true;
 }
 
-var util      = require('./util.js');
-var scheduler = require("./scheduler.js");
-var stream    = require("./stream.js");
-var logger    = require("./logger.js");
-var log       = require("./log.js");
+var util      = require('./util.js')
+var scheduler = require("./scheduler.js")
+var stream    = require("./stream.js")
+var log       = require("./log.js")
 
-//console.log(argv.help());
-//require('v8-profiler');
-
-var expandtemplate        = require("./node_modules/tsdset/lib/expandtemplate").expandtemplate;
-var expandISO8601Duration = require("./node_modules/tsdset/lib/expandtemplate").expandISO8601Duration;
+var tsdsetpath            = "./node_modules/tsdset/lib/expandtemplate"
+var expandtemplate        = require(tsdsetpath).expandtemplate
+var expandISO8601Duration = require(tsdsetpath).expandISO8601Duration
 
 // http://stackoverflow.com/questions/9768444/possible-eventemitter-memory-leak-detected
-process.setMaxListeners(0);
+process.setMaxListeners(0)
 
 process.on('uncaughtException', function(err) {
 	if (err.errno === 'EADDRINUSE') {
-		console.log("[datacache] - Address already in use.");
+		console.log("[datacache] - Address already in use.")
 	} else {
-		console.log(err);
+		console.log(err)
 	}
-	process.exit(1);
+	process.exit(1)
 })
 
 process.on('exit', function () {
@@ -78,7 +77,7 @@ process.on('exit', function () {
 	// TODO: 
 	// Remove partially written files by inspecting cache/locks/*.lck
 	// Remove streaming locks by inspecting cache/locks/*.streaming
-	console.log('[datacache] - Done.  Exiting.');
+	console.log('[datacache] - Done.  Exiting.')
 })
 process.on('SIGINT', function () {
 	process.exit();
@@ -91,45 +90,51 @@ if (!fs.existsSync(__dirname+"/log")) {fs.mkdirSync(__dirname+"/log");}
 
 // Monitor and log memory usage every 1000 ms.
 setInterval(function () {
-	var tmp = new Date();
-	mem = process.memoryUsage();
-	var yyyymmdd = tmp.toISOString().substring(0,10);
+	var tmp = new Date()
+	mem = process.memoryUsage()
+	var yyyymmdd = tmp.toISOString().substring(0,10)
 	// Write to requests.log
-	var file = __dirname + "/log/datacache_" + argv.port + "_memory_"+yyyymmdd+".log";
-	fs.appendFile(file, tmp.toISOString() + " " + mem.rss + " " + mem.heapTotal + " " + mem.heapUsed + "\n");
+	var file = __dirname + "/log/datacache_" + argv.port + "_memory_"+yyyymmdd+".log"
+	fs.appendFile(file, tmp.toISOString() + " " + mem.rss + " " + mem.heapTotal + " " + mem.heapUsed + "\n")
 },1000);
 
 // Middleware
-/* wrap app.VERB to handle exceptions: send 500 back to the client before crashing */
-["get", "post", "put"].forEach(function(verb){
-	var old = app[verb];
-	var params = arguments;
-	app[verb] = function(route, callback){
-		old.call(app, route, function(req, res){
+// Wrap app.VERB to handle exceptions: send 500 back to the client before crashing
+["get", "post", "put"].forEach(function (verb) {
+	var old = app[verb]
+	var params = arguments
+	app[verb] = function (route, callback) {
+		old.call(app, route, function (req, res) {
 			var d = domain.create();
-			d.on('error', function(err){
-				console.log(err);
-				res.send(500, "");
+			d.on('error', function (err) {
+				console.log(err)
+				res.send(500, "")
 
 				// TODO: needs a better error handling, like let other works
 				// in the queue finish before closing the server. 
 
 				// Re-throw the exception to crash the server.
-				throw err;
+				throw err
 			});
-			d.run(function(){
-				callback(req, res);
+			d.run(function () {
+				callback(req, res)
 			})
-		});
+		})
 	}
 })
 
-//app.use(express.timeout(120000));
-//app.use(express.logger());
 app.use(express.limit('4mb')); // Max POST size
 app.use(express.methodOverride());
 app.use(express.bodyParser());
 app.use(express.errorHandler({ showStack: true, dumpExceptions: true }));
+app.use("/cache", express.directory(__dirname+"/cache"));
+app.use("/cache", express.static(__dirname + "/cache"));
+app.use("/demo",  express.directory(__dirname+"/demo"));
+app.use("/demo",  express.static(__dirname + "/demo"));
+app.use("/test/data", express.directory(__dirname + "/test/data"));
+app.use("/test/data", express.static(__dirname + "/test/data"));
+app.use("/asset", express.directory(__dirname + "/asset"));
+app.use("/asset", express.static(__dirname + "/asset"));
 
 // Rewrite /sync?return=report ... to /report ...
 app.use(function (req, res, next) {
@@ -182,16 +187,29 @@ app.post("/async", function (req, res) {
 app.get("/sync", function (req,res) {
 	req.setTimeout(1000*60*15);
 	handleRequest(req,res);
-});
+})
 
 app.post("/sync", function (req, res) {
 	if (argv.debugapp) console.log("POST")
 	handleRequest(req,res);
-});
+})
 
 app.get("/plugins", function (req, res) {
 	res.send(scheduler.plugins.map(function (p) {return p.name;}));
-});
+})
+
+Magic = mmm.Magic;
+var magic = new Magic(mmm.MAGIC_MIME_TYPE);
+app.use(function(req, res, next){
+	magic.detectFile(__dirname + req.path, function (err, result) {
+		if (!err) {
+			res.contentType(result)
+		} else {
+			console.log(err)
+		}
+		next()
+	})
+})
 
 app.get("/api/presets", function (req,res) {
 	fs.readdir(__dirname+"/presets", function (err, files) {
@@ -217,15 +235,16 @@ app.get("/api/presets", function (req,res) {
 			}); // fs.readFile()
 		}); // files.forEach()
 	}); // fs.readdir()
-});
+})
 
 app.get("/test/changingfile.txt", function (req,res) {
 	var date = new Date();
     var str = date.getFullYear() + " " + date.getMonth() + " " + 
     			date.getDate() + " " + date.getHours() + " " + 
     			date.getMinutes() + " " + date.getSeconds();
-	res.send(str);
+	res.send(str)
 })
+
 // Delay serving files to test stream ordering. 
 app.get("/test/data-stream/bou20130801vmin.min", function (req,res) {
 	setTimeout(function () {
@@ -248,103 +267,81 @@ app.get("/test/data-stream/bou20130805vmin.min", function (req,res) {
 		res.send(fs.readFileSync("test/data-stream/bou20130805vmin.min"))},Math.round(100*Math.random()));
 })
 
-Magic = mmm.Magic;
-var magic = new Magic(mmm.MAGIC_MIME_TYPE);
-app.use(function(req, res, next){
-		magic.detectFile(__dirname + req.path, function (err, result) {
-			if (!err) {
-				res.contentType(result);
-			} else {
-				console.log(err)
-			}
-			next();
-		});
-	});
-
-app.use("/cache", express.directory(__dirname+"/cache"));
-app.use("/cache", express.static(__dirname + "/cache"));
-app.use("/demo",  express.directory(__dirname+"/demo"));
-app.use("/demo",  express.static(__dirname + "/demo"));
-app.use("/test/data", express.directory(__dirname + "/test/data"));
-app.use("/test/data", express.static(__dirname + "/test/data"));
-app.use("/asset", express.directory(__dirname + "/asset"));
-app.use("/asset", express.static(__dirname + "/asset"));
-
 config = {};
 config.TIMEOUT = 60*1000*15;
 config.LOGDIR = __dirname+"/log/";
 config.LOGHEADER = 'x-datacache-log';
 
-server.listen(argv.port); // Start the server
-
 // Create directories if needed.
 config = log.init(config)
 
-log.logc((new Date()).toISOString() + " - [datacache] listening on port "+argv.port,10)
-
 server.setTimeout(config.TIMEOUT,
-		function(obj) {
-		      //console.log("DataCache server timeout ("+(config.TIMEOUT/(1000*60))+" minutes).");
-		      //if (obj) console.log(obj);
-		});
+	function(obj) {
+		//console.log("DataCache server timeout ("+(config.TIMEOUT/(1000*60))+" minutes).");
+		//if (obj) console.log(obj);
+	})
 
+// Start the server
+server.listen(argv.port)
 
-var clients = [];
-sio.sockets.on("connection", function (socket) {
-	clients.push(socket);
-	socket.on("disconnect", function () {clients.remove(socket);});
-});
-//sio.set("log level", 1);
+log.logc((new Date()).toISOString() + " - [datacache] listening on port "+argv.port, 10)
 
-// Need if running app behind apache server that does not support websockets.
-sio.set('transports', ['xhr-polling']);
-//sio.set('polling duration',20);
+function syncSummary(source, options, res) {
 
-logger.bindClientList(clients);
+	// http://codereview.stackexchange.com/questions/20069/monkey-patching-extra-events-in-node-js-http-express
+	var end = res.end
+	res.end = function () {
+		log.logc(options.loginfo + " app.syncSummary(): Response end event.", options.logcolor)
+		res.end = end
+		res.emit('end')
+		res.end.apply(this, arguments)
+	}
+	
+	scheduler.addURLs(source, options, function (results) {
 
-function syncsummary(source,options,res) {
-		
-		scheduler.addURLs(source, options, function (results) {
-			// TODO: If forceUpdate=true and all updates failed, give error
-			// with message that no updates could be performed.
-			if (options.return === "json") {
-				res.contentType('application/json');
-				res.send(results);
-			} else if (options.return === "urilistflat") {
-				res.contentType("text/plain");
-				var ret = [];
-				for (var j = 0; j < results.length; j++) {
-					ret[j] = results[j].url;
-				}
-				res.send(ret.join("\n"));
-			} else if (options.return === "urilist") {
-				res.contentType("text/json");
-				var ret = [];
-				for (var j = 0; j < results.length; j++) {
-					ret[j] = results[j].url;
-				}
-				res.send(JSON.stringify(ret));
-			} else if (options.return === "xml") {
-				res.contentType("text/xml");
-				var ret = '<array>';
-				for (var j = 0; j < results.length; j++) {
-					ret = ret + whiskers.render("<element><url>{url}</url><urlMd5>{urlMd5}</urlMd5><dataLength>{dataLength}</dataLength><error>{error}</error></element>", results[j]);
-				}
-				ret = ret + "</array>";
-				res.send(ret);
-			} else if (options.return === "jsons") {
-				res.contentType('application/json');
-				res.send(JSON.stringify(results));			
-			} else {
-				console.log("Unknown option for return.");
-				res.send("");
+		// TODO: If forceUpdate=true and all updates failed, give error
+		// with message that no updates could be performed.
+		if (options.debugappconsole) {
+			log.logc(options.loginfo + " app.syncSummary(): scheduler.addURLs() callback.  Sending result.", options.logcolor)
+		}
+		if (options.return === "json") {
+			res.contentType('application/json');
+			res.send(results);
+		} else if (options.return === "urilistflat") {
+			res.contentType("text/plain");
+			var ret = [];
+			for (var j = 0; j < results.length; j++) {
+				ret[j] = results[j].url;
 			}
-		});
+			res.send(ret.join("\n"));
+		} else if (options.return === "urilist") {
+			res.contentType("text/json");
+			var ret = [];
+			for (var j = 0; j < results.length; j++) {
+				ret[j] = results[j].url;
+			}
+			res.send(JSON.stringify(ret));
+		} else if (options.return === "xml") {
+			res.contentType("text/xml");
+			var ret = '<array>';
+			for (var j = 0; j < results.length; j++) {
+				ret = ret + whiskers.render("<element><url>{url}</url><urlMd5>{urlMd5}</urlMd5><dataLength>{dataLength}</dataLength><error>{error}</error></element>", results[j]);
+			}
+			ret = ret + "</array>";
+			res.send(ret);
+		} else if (options.return === "jsons") {
+			res.contentType('application/json');
+			res.send(JSON.stringify(results));			
+		} else {
+			console.log("Unknown option for return.");
+			res.send("");
+		}
+	})
 }
 
 function handleRequest(req, res) {
 
-	var message =  req.connection.remoteAddress + "," + req.originalUrl;		
+	var message = req.connection.remoteAddress + "," + req.originalUrl;		
 	if (req.headers['X-Forwarded-For']) {
 		var message = req.headers['X-Forwarded-For'].replace(",",";") + req.originalUrl + ",";
 	} 
@@ -374,26 +371,34 @@ function handleRequest(req, res) {
 		log.logres("req.originalUrl = " + JSON.stringify(req.originalUrl), res)
 		log.logres("options = " + JSON.stringify(options), res)
 	}
+	if (argv.debugappconsole) {
+		log.logc(options.loginfo + " app.handleRequest(): Handling req.originalUrl = " + JSON.stringify(req.originalUrl), logcolor)
+	}
+	if (options.debugappconsole) {
+		log.logc(options.loginfo + " app.handleRequest(): parseSource() returned source = " + source.toString().replace(/,/g,"\n\t"),logcolor)
+	}
 
 	// Compress response if headers accept it and streamGzip is not requested.
-	if (!options.streamGzip) 	
-		app.use(express.compress()); 
+	if (!options.streamGzip) {	
+		app.use(express.compress())
+	}
 	
 	// Return nothing if no URLs were requested or if template did create any urls.
 	if (source.length === 0) {
-		log.logres("source.length = 0.  Sending res.end().", res)
-		res.end();
-	    return;
-	}
-
-	if (options.debugstreamconsole) {
-		log.logc(options.loginfo + " app.handleRequest() called with source="+source.toString().replace(/,/g,"\n\t"),logcolor)
+		if (argv.debugapp) {
+			log.logres("source.length = 0.  Sending res.end().", res)
+		}
+		if (argv.debugappconsole) {
+			log.logc(options.loginfo + " app.handleRequest(): source.length == 0.  Sending res.end().", logcolor)
+		}
+		res.end()
+	    return
 	}
 
 	if (options.return === "stream") {
-		stream.stream(source,options,res);
+		stream.stream(source,options,res)
 	} else {
-		syncsummary(source,options,res);
+		syncSummary(source,options,res)
 	}
 }
 
@@ -430,7 +435,7 @@ function parseOptions(req, res) {
 	options.debugplugin    = req.query.debugplugin   || req.body.debugplugin   || argv.debugplugin;
 	options.debugtemplate  = req.query.debugtemplate || req.body.debugtemplate || argv.debugtemplate;
 	options.debuglineformatter  = req.query.debuglineformatter || req.body.debuglineformatter || argv.debuglineformatter;
-	options.debugscheduler      = req.query.debugscheduler    || req.body.debugscheduler     || argv.debugscheduler;
+	options.debugscheduler      = req.query.debugscheduler     || req.body.debugscheduler     || argv.debugscheduler;
 
 	options.debugappconsole       = argv.debugappconsole;
 	options.debugstreamconsole    = argv.debugstreamconsole;

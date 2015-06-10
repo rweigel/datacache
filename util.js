@@ -3,12 +3,12 @@ var crypto    = require("crypto");
 var moment    = require("moment");
 var request   = require("request");
 var mkdirp    = require("mkdirp");
-var logger    = require("./logger.js");
-var log       = require("./log.js");
 var FtpClient = require("ftp");
 var url       = require('url');
 var clc       = require('cli-color');
 var http      = require('http');
+
+var log       = require("./log.js");
 
 http.globalAgent.maxSockets = 100;  // Most Apache servers have this set at 100.	
 
@@ -500,7 +500,7 @@ var writeCache = function(work, callback) {
 
 		function finish(err) {
 			if (err) {
-				logger.log("error", work);
+				//logger.log("error", work);
 				console.trace(err)
 			}
 			//log.logc(memLock[work.id])
