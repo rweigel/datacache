@@ -76,9 +76,15 @@ function get(url, callback) {
 					timeout: TIMEOUT,
 					encoding: null,
 					pool: {maxSockets : MAXCONNECTION}
-				  };
-				  var i =0;
-	return request.get(options, callback);
+				  }
+
+	//TODO: Create .out file here
+	//var outfile = fs.createWriteStream('doodle.png')
+	//outfile.on('finish', function(){ work.tmpfile = rnd })
+	//return request.get(options, callback).pipe(outfile)
+	//In default.js, if work.tmpfile exists, don't create .out file, just rename it
+	//Will need to move code for unzipping to extractData in default.js
+	return request.get(options, callback)
 }
 exports.get = get;
 
@@ -103,8 +109,8 @@ function formatTime(date) {
 exports.formatTime = formatTime;
 
 function md5(str) {
-	if (!str) return "";
-	return crypto.createHash("md5").update(str).digest("hex");
+	if (!str) return ""
+	return crypto.createHash("md5").update(str).digest("hex")
 }
 exports.md5 = md5;
 
@@ -120,126 +126,153 @@ exports.unescapeHTML = unescapeHTML;
 
 // Head check on resource.
 var head = function head(work,callback) {
-	
-		if (work.url.match("^ftp")) {
-			// TODO: Read .header file.
-			if (work.options.debugutil) {
-				log.logc("Head check of FTP is not implemented.")
-			}
-			callback(work);
-			return
-		}
-		
-		var options = {
-						method: 'HEAD',
-						host: url.parse(work.url).hostname,
-						port: 80,
-						path: url.parse(work.url).pathname
-					}
-		
+
+	work.headCheckStartTime = new Date();
+
+	if (work.options.debugutilconsole) {
+		log.logc(work.options.loginfo + " util.head(): Doing head check of " + work.url, work.options.logcolor)
+	}
+
+	if (work.url.match("^ftp")) {
+		// TODO: Read .header file.
 		if (work.options.debugutil) {
-			log.logc("Doing head check of: " + work.url)
+			log.logc(work.options.loginfo + " util.head(): Head check of FTP is not implemented.", work.options.logcolor)
 		}
+		work.headCheckFinishTime = new Date()
+		callback(work)
+		return
+	}
+	
+	var options = {
+					method: 'HEAD',
+					host: url.parse(work.url).hostname,
+					port: url.parse(work.url).port,
+					path: url.parse(work.url).pathname
+				}
 
-		var req = http.request(options, function(res) {
-				
-				var fname = getCachePath(work);
+	var req = http.request(options, function (res) {
 
-				if (fs.existsSync(fname+".header")) {
-					var header = fs.readFileSync(fname+".header").toString();
-					var headers = header.split("\n");
-					for (var j = 0;j<headers.length;j++) {
-						var headersplit = headers[j].split(":");
-						if (headersplit[0].match(/last-modified/i)) {
-							headersplit.shift();
-							break;
-						}
-					}
+		if (work.options.debugutilconsole) {
+			log.logc(work.options.loginfo + " util.head(): Finished head check.", work.options.logcolor)
+		}
+		var fname = getCachePath(work)
 
-					if (j==headers.length) {
-						if (work.options.debugutil) {
-							log.logc("No last-modified in cached header.")
-						}
-						callback(work);
-						return;
+		if (fs.existsSync(fname+".header")) {
+			if (work.options.debugutilconsole) {
+				log.logc(work.options.loginfo + " util.head(): Reading cached header file " + fname+".header", work.options.logcolor)
+			}
+			var header = fs.readFileSync(fname+".header").toString()
+			var headers = header.split("\n")
+			for (var j = 0;j < headers.length;j++) {
+				var headersplit = headers[j].split(":")
+				if (headersplit[0].match(/last-modified/i)) {
+					headersplit.shift()
+					break
+				}
+			}
+
+			if (j == headers.length) {
+				if (work.options.debugutilconsole) {
+					log.logc(work.options.loginfo + " util.head(): No last-modified in cached header.", work.options.logcolor)
+				}
+				work.headCheckFinishTime = new Date()
+				callback(work)
+				return
+			}
+			
+			var lmcache = headersplit.join(":")
+			if (work.options.debugutilconsole) {
+				log.logc(work.options.loginfo + " util.head(): last-modified of cache file: " + lmcache, work.options.logcolor)
+			}
+			var mslmcache = new Date(lmcache).getTime()
+			work.lastModified = lmcache
+			var  lmnow = res.headers["last-modified"]
+			if (lmnow) {
+				if (work.options.debugutilconsole) {
+					log.logc(work.options.loginfo + " util.head(): last-modified of from head: " + lmnow, work.options.logcolor)
+				}
+				var mslmnow = new Date(lmnow).getTime();
+				if (mslmnow > mslmcache) {
+					if (work.options.debugutilconsole) {
+						log.logc(work.options.loginfo + " util.head(): Cache has expired.", work.options.logcolor)
 					}
-					
-					var lmcache = headersplit.join(":")
-					if (work.options.debugutil) {
-						log.logc("last-modified of cache:   " + lmcache)
-					}
-					var mslmcache = new Date(lmcache).getTime();
-					work.lastModified = lmcache;
-					var  lmnow = res.headers["last-modified"];
-					if (lmnow) {
-						if (work.options.debugutil) {
-							log.logc("last-modified of response: " + lmnow)
-						}
-						var mslmnow = new Date(lmnow).getTime();
-						if (mslmnow > mslmcache) {
-							if (work.options.debugutil) {
-								log.logc("Cache has expired.")
-							}
-							work.isExpired = true;
-						} else {
-							if (work.options.debugutil) {
-								log.logc("Cache has not expired.")
-							}
-						}
-					} else {
-						if (work.options.debugutil) {
-							log.logc("No last-modified in response header.")
-						}
-					}
+					work.isExpired = true
 				} else {
-					if (work.options.debugutil) {
-						log.logc("No cached header file.")
+					if (work.options.debugutilconsole) {
+						log.logc(work.options.loginfo + " util.head(): Cache has not expired.", work.options.logcolor)
 					}
 				}
-				callback(work);
-			});
-		req.on('end',function () {
-			if (work.options.debugutil) {
-				log.logc("Finished HEAD check of " + urlo)
+			} else {
+				if (work.options.debugutilconsole) {
+					log.logc(work.options.loginfo + " util.head(): No last-modified in response header.", work.options.logcolor)
+				}
 			}
+		} else {
+			if (work.options.debugutilconsole) {
+				log.logc(work.options.loginfo + " util.head(): No cached header file.", work.options.logcolor)
+			}
+		}
+		work.headCheckFinishTime = new Date()
+		callback(work)
+	})
+
+	req.setTimeout(work.options.respectHeadersTimeout, function () {
+			if (work.options.debugutilconsole) {
+				log.logc(work.options.loginfo + " util.head(): Timeout ("+work.options.respectHeadersTimeout+" ms) when attempting head check.", work.options.logcolor)
+				log.logc(work.options.loginfo + " util.head(): setting headCheckTimeout=true, isExpired=false.", work.options.logcolor)
+			}
+			work.headCheckTimeout = true
+			work.isExpired = false
+			work.headCheckFinishTime = new Date()
+			callback(work)
 		})
-		req.on('error', function(e) {callback(e)})
-		req.end();
+	req.on('error', function (err) {
+		if (work.options.debugutilconsole) {
+			log.logc(work.options.loginfo + " util.head(): Error when attempting head check: " + JSON.stringify(err), work.options.logcolor)
+		}
+		work.isExpired = false
+		work.headCheckError = true
+		work.headCheckFinishTime = new Date()
+		callback(work)
+	})
 }
-exports.head = head;
+exports.head = head
 
 // Determine if request is in cache.
 var isCached = function isCached(work, callback) {
+	if (work.options.debugutilconsole) {
+		log.logc(work.options.loginfo + " util.isCached(): Checking cache.", work.options.logcolor)
+	}
 	fs.exists(getCachePath(work) + ".data", function (exist) {
 		if (exist) {
-			work.foundInCache = true;
-			work.dir = getCacheDir(work,true);
+			work.foundInCache = true
+			work.dir = getCacheDir(work, true)
 		}
 		if (work.options.respectHeaders) {
-			head(work,callback)
+			head(work, callback)
 		} else {
-			callback(work);
+			callback(work)
 		}
-	});
+	})
 }
 exports.isCached = isCached;
 
 // Determine if zip file is cached.
-var isZipCached = function isZipCached(work){
+var isZipCached = function isZipCached(work) {
 	return fs.existsSync(getZipCachePath(work) + ".data");
 }
 exports.isZipCached = isZipCached;
 
 // Directory of md5.* files
-function getCacheDir(work,relative){
+function getCacheDir(work, relative) {
 	prefix = __dirname;
 	if (arguments.length > 1 && relative) {
 		prefix = "";
 	}
-	if (work.options.dir==="/cache/"){
-		return prefix + work.options.dir + work.url.split("/")[2]+"/";
+	if (work.options.dir === "/cache/") {
+		return prefix + work.options.dir + work.url.split("/")[2] + "/";
 	} else {
-		return prefix + "/cache"+work.options.dir;
+		return prefix + "/cache" + work.options.dir;
 	}
 }
 exports.getCacheDir = getCacheDir;
@@ -271,12 +304,11 @@ function getCachedData(work, callback) {
 			if (typeof(finished.z) == 'undefined') {
 				finished.z = 0;
 			} 
-			finished.z = finished.z+1;			
-			//log.logc(msg);
+			finished.z = finished.z+1;
 			if (finished.z == 4) {
 				work.isFinished = true;
 				callback(err);
-			};
+			}
 		}
 		
 		function getHeader() {
@@ -355,6 +387,10 @@ var writeCache = function(work, callback) {
 
 	var logcolor = work.options.logcolor;		
 
+	if (work.options.debugutil) {
+		log.logc(work.options.loginfo + " util.writeCache(): Called.", logcolor)
+	}
+
 	var fname = getCachePath(work);
 
 	if (!writeCache.memLock) {
@@ -378,17 +414,13 @@ var writeCache = function(work, callback) {
 	// No other process should be writing to cache directory, so no need to check lock
 	// before writing.
 
-//setTimeout(function () {
 	if ((writeCache.memLock[filename] == 0 || typeof(writeCache.memLock[filename]) === "undefined") && (app.stream.streaming[filename] == 0 || typeof(app.stream.streaming[filename]) === "undefined")) {
 
 		writeCache.memLock[filename] = writeCache.memLock[filename] + 1;
 		var tmp = writeCache.memLock[filename];
-		//writeLock[fname] = writeLock[fname] + 1;
 		if (work.options.debugutil) {
 			log.logc(work.options.loginfo + " util.writeCache(): Locking "+filename.replace(__dirname,"") + " " + tmp,logcolor)
 		}
-		//if (work.options.debugutil) log.logc(work.options.loginfo + " util.writeCache(): wrieLock[fname] = "+writeLock[fname],logcolor);
-
 		memLock[work.id] = 6; // 6 is number of writes associated with each request.
 		work.writeStartTime = new Date();
 
@@ -397,20 +429,20 @@ var writeCache = function(work, callback) {
 			if (!exist) {
 				mkdirp(directory, function (err) {
 					if (err) {
-						log.logc(err);
+						log.logc(work.options.loginfo + " util.writeCache() mkdirp error: " + JSON.stringify(err), 160)
 					}
 					else {
-						writeCacheFiles();
+						writeCacheFiles()
 					}
-				});
+				})
 			} else {
-				writeCacheFiles();
+				writeCacheFiles()
 			}
 		});
 	} else {
 		if (writeCache.memLock[filename] != 0) {
 			if (work.options.debugutil) {
-				log.logc(work.options.loginfo + " util.writeCache(): File is being written already by writeCache().",logcolor)
+				log.logc(work.options.loginfo + " util.writeCache(): File is being written already by writeCache().", logcolor)
 			}
 		}
 		if ( !(typeof(app.stream.streaming[filename]) === "undefined") || app.stream.streaming[filename] != 0) {
@@ -420,7 +452,7 @@ var writeCache = function(work, callback) {
 		}
 		callback(work);
 	}
-//},Math.round(10*Math.random()));
+
 	function writeCacheFiles() {
 
 		// If .data does not exist, create it.
@@ -433,13 +465,17 @@ var writeCache = function(work, callback) {
 					  writeFiles();
 				  } else {
 					  // If this fails, another process has moved it to the archive directory.
-					  if (work.options.debugutil) log.logc(work.options.loginfo+" util.writeCacheFiles(): Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1"),logcolor);
+					  if (work.options.debugutil) {
+					  	log.logc(work.options.loginfo+" util.writeCacheFiles(): Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1"),logcolor)
+					  }
 					  //dataMd5old = md5(fs.readFileSync(filename+".data"));
 					  try {
 						  dataMd5old = md5(fs.readFileSync(filename+".data"));
 					  } catch (e) {
 						  debugger
-						  if (work.options.debugutil) log.logc(work.options.loginfo+" util.writeCacheFiles(): Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1" + " failed."),logcolor);
+						  if (work.options.debugutil) {
+						  	log.logc(work.options.loginfo+" util.writeCacheFiles(): Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1" + " failed."),logcolor)
+						  }
 						  dataMd5old = "";
 					  }
 					  if ( (work.dataMd5 != dataMd5old) || work.options.forceWrite || (work.options.respectHeaders && work.isExpired)) {
@@ -459,7 +495,7 @@ var writeCache = function(work, callback) {
 
 			
 			if (work.options.debugutil) {
-				log.logc(work.options.loginfo + " util.writeCacheFiles(): Maybe writing: "+filename.replace(/.*\/(.*)/,"$1")+".data",logcolor)
+				log.logc(work.options.loginfo + " util.writeCacheFiles(): Maybe writing: " + filename.replace(/.*\/(.*)/,"$1")+".data",logcolor)
 				log.logc(work.options.loginfo + " util.writeCacheFiles(): fs.exists: " + fs.existsSync(filename+".data"),logcolor)
 			}
 	
@@ -482,7 +518,7 @@ var writeCache = function(work, callback) {
 			//fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".lck",work.dir);
 
 			if (work.options.debugutil) {
-				log.logc(work.options.loginfo + " util.writeCacheFiles(): Writing "+filename.replace(__dirname,"")+".*. .out size = "+work.body.length+" .data size = "+work.data.length,logcolor)
+				log.logc(work.options.loginfo + " util.writeCacheFiles(): Writing " + filename.replace(__dirname,"")+".*. .out size = "+work.body.length+" .data size = "+work.data.length,logcolor)
 			}
 			//log.logc("work.data.length: "+work.data.length)
 			fs.writeFile(filename+".data", work.data, finish);
@@ -500,10 +536,8 @@ var writeCache = function(work, callback) {
 
 		function finish(err) {
 			if (err) {
-				//logger.log("error", work);
 				console.trace(err)
 			}
-			//log.logc(memLock[work.id])
 			memLock[work.id]--;
 			work.writeFinishedTime = new Date();
 			if (memLock[work.id]==0) {
@@ -535,8 +569,8 @@ var writeCache = function(work, callback) {
 				fs.renameSync(filename+".data"  , filename+"/"+dataMd5old+".data");			
 			} catch (e) {
 				if (work.options.debugutil) {
-					log.logc(work.options.loginfo  + " Could not move " + filename.replace(/.*\/(.*)/,"$1") + ".  forceUpdate=true may have unexpected results.",logcolor);
-					log.logc(work.options.loginfo  + " It was probably moved by another request.");
+					log.logc(work.options.loginfo  + " util.tryrename(): Could not move " + filename.replace(/.*\/(.*)/,"$1") + ".  forceUpdate=true may have unexpected results.",logcolor);
+					log.logc(work.options.loginfo  + " util.tryrename(): It was probably moved by another request.");
 				}
 			}		
 		}
@@ -544,14 +578,14 @@ var writeCache = function(work, callback) {
 			var newdir = filename + "/";
 			mkdirp(newdir, function (err) {
 					if (work.options.debugutil) {
-						log.logc(work.options.loginfo  + " Created directory " + newdir,logcolor)
+						log.logc(work.options.loginfo  + " util.rename(): Created directory " + newdir,logcolor)
 					}
 					//log.logc("filename: " + filename);
 					if (err) {
 						log.logc(err)
 					}
 					if (work.options.debugutil) {
-						log.logc(work.options.loginfo  + " Tring to move files to: " + newdir,logcolor);
+						log.logc(work.options.loginfo  + " util.rename(): Tring to move files to: " + newdir,logcolor);
 					}
 					tryrename(filename+".data");					
 					tryrename(filename+".bin");					
