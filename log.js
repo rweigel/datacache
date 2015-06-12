@@ -8,7 +8,7 @@ function init(config) {
 
 	// Base log directory
 	if (!config.LOGDIR.match(/^\//)) {
-		// If relative path given for CACHEDIR, prepend with __dirname.
+		// If relative path given for LOGDIR, prepend with __dirname.
 		config.LOGDIR   = __dirname+"/log/"
 	}
 	config.LOGDIRAPPPRIVATE = config.LOGDIR + "application-private/";
