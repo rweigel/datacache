@@ -1,5 +1,5 @@
 // To run a single test, use
-// node streamTests.js true 20 false 1 http://localhost:7999/
+// node streamTests.js --sync=true --n=20 --all=false --n=1 --server=http://localhost:7999/
 
 var fs      = require("fs");
 var md5     = require("./lib/util").md5;
@@ -15,6 +15,7 @@ var argv    = require('yargs')
 						'n':10,
 						'server':"http://localhost:7999/",
 						'serverdata':"http://mag.gmu.edu/datacache/",
+						'showdiffs':true
 					})
 					.argv;
 
@@ -30,6 +31,7 @@ var all        = s2b(argv.all);					// Run all tests after start number
 var n          = argv.n;     					// Number of runs per test
 var server     = argv.server;					// DataCache server to test
 var serverdata = argv.serverdata;				// Remote server to get data from
+var showdiffs  = s2b(argv.showdiffs);
 
 var testsuite = [
                  "streamTests.js --sync=true  --start=0 --all=true --n=" + n + " --server=" + argv.server + " --serverdata="+argv.server, 
@@ -138,6 +140,8 @@ function command(j,k) {
 }
 
 function diff(f1,f2) {
+		if (showdiffs) return
+
 		child = exec('diff ' + f1 + ' ' + f2, function (error, stdout, stderr) {
 			if (stdout.length > 0) {
 				//console.log("Writing to stdout");
