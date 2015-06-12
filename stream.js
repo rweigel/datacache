@@ -334,7 +334,7 @@ function stream(source, options, res) {
 				});
 				streamer.on('error',function(err) {
 					if (options.debugstreamconsole) {
-						log.logc(JSON.stringify(err), 160)
+						log.logc(options.loginfo+" stream.processwork(): streamer error event: " + JSON.stringify(err), 160)
 					}
 				})
 				if (options.debugstream) {
@@ -446,7 +446,7 @@ function stream(source, options, res) {
 				log.logres("columns translated " + outcolumns.join(","),res)
 			}
 			if (options.debugstreamconsole) {
-				log.logc(options.loginfo+": stream.processwork():  columns translated " + outcolumns.join(","),logcolor)
+				log.logc(options.loginfo+" stream.processwork():  columns translated " + outcolumns.join(","),logcolor)
 			}
 	
 			function onlyUnique(value, index, self) { 
@@ -613,7 +613,7 @@ function stream(source, options, res) {
 				}
 
 				mkdirp(streamdir+streamsignature, function (err) {
-					if (err) log.logc(JSON.stringify(err), 160)
+					if (err) log.logc(options.loginfo+" stream.readcallback(): mkdirp error: " + JSON.stringify(err), 160)
 					if (options.debugstream) {
 						log.logres("Created " + streamdir.replace(__dirname,"")+streamsignature, res)
 					}
@@ -768,7 +768,7 @@ function stream(source, options, res) {
 					zlib.createGzip({level:1})
 					zlib.gzip(data, function (err, buffer) {
 						if (err) {
-							log.logc(JSON.stringify(err), 160)
+							log.logc(rnd+" stream.readcallback(): gzip error: " + JSON.stringify(err), 160)
 						}
 						if (cachepart) {
 							cachestream(streamfilepart,buffer)
@@ -784,7 +784,7 @@ function stream(source, options, res) {
 					zlib.createGzip({level:1})
 					zlib.gzip(data, function (err, buffer) {
 						if (err) {
-							log.logc(JSON.stringify(err), 160)
+							log.logc(options.loginfo+" stream.readcallback(): gzip error: " + JSON.stringify(err), 160)
 						}
 						if (options.debugstream) {
 							log.logres("Compression finished. Sending buffer of length "+buffer.length, res)
