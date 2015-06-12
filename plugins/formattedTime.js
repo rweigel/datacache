@@ -12,6 +12,9 @@ exports.extractSignature = function (options) {
 
 function plugininfo(options,what) {
 
+	var debug = options.debuglineformatter;
+	//debug = true;
+
 	var scheduler = require("../scheduler.js");
 	var plugin = scheduler.getPlugin(options);
 
