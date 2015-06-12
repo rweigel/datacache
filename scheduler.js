@@ -15,14 +15,14 @@ var worksQueue   = [];
 function addURLs(source, options, callback){
 	callback = callback || function () {};
 	var finished = [];
-	source.forEach(function(url){
+	source.forEach(function (url) {
 		addURL(url, options, function (work) {
-			finished.push(work);
+			finished.push(work)
 			if (finished.length == source.length) {
-				finished.sort(function (a,b){
+				finished.sort(function (a,b) {
 					return +a.id.split("-")[1] - b.id.split("-")[1];
-				});
-				callback(finished);
+				})
+				callback(finished)
 			}
 			//callback(finished);
 			//callback(work);
@@ -32,99 +32,110 @@ function addURLs(source, options, callback){
 exports.addURLs = addURLs;
 
 function addURL(url, options, callback) {
-	var rnd        = options.loginfo;
-	var logcolor   = options.logcolor;
+	var loginfo  = options.loginfo
+	var logcolor = options.logcolor
 
 	if (options.debugschedulerconsole) {
-		log.logc(options.loginfo + " scheduler.addURL(): Called with url = "+url,logcolor);
+		log.logc(options.loginfo + " scheduler.addURL(): Called with url = " + url, logcolor)
 	}
-	options  = options || {};
-	var work = newWork(url, options, callback);
-	exports.emit("submit", work);
-	worksQueue.push(work);
+	options  = options || {}
+	var work = newWork(url, options, callback)
+	exports.emit("submit", work)
+	worksQueue.push(work)
+	if (work.options.debugschedulerconsole) {
+		log.logc(options.loginfo + " addURL: calling run().", options.logcolor)
+	}
 	run();
 }
 exports.addURL = addURL;
 
-var plugins = [];
-var defaultPlugin = require("./plugins/default.js");
+var plugins = []
+var defaultPlugin = require("./plugins/default.js")
 fs.readdir(__dirname+"/plugins", function (err, files) {
 	if (!err) {
 		files.forEach(function (file) {
 			if (file !== "default.js") {
-				var p = require("./plugins/"+file);
-				p.__proto__ = defaultPlugin;
-				plugins.push(p);
+				var p = require("./plugins/"+file)
+				p.__proto__ = defaultPlugin
+				plugins.push(p)
 			}
-		});
+		})
 	}
 })
 exports.plugins = plugins;
 
 function run() {
 
-	//logger.d("scheduler: "+runningWorks.length + ", " + params.concurrency);
-	//util.logc(options.loginfo + " scheduler.run(): Called.",logcolor);
 	while (runningWorks.length < params.concurrency && worksQueue.length > 0) {
-		var work = worksQueue.shift();
+		var work     = worksQueue.shift()
+		var loginfo  = work.options.loginfo
+		var logcolor = work.options.logcolor
 
-		var rnd        = work.options.loginfo;
-		var logcolor   = work.options.logcolor;
-		if (work.options.debugschedulerconsole) {
-			log.logc(rnd + " scheduler.run(): Called.",logcolor)
+		runningWorks.push(work)
+
+		if (work.options.respectHeaders) {
+			work.cacheCheckStartTime = new Date();
 		}
-		runningWorks.push(work);
-		//logger.d("scheduler.run(): Processing work");
-
-		work.cacheCheckStartTime = new Date();
+		if (work.options.debugschedulerconsole) {
+			log.logc(loginfo + " scheduler.run(): Calling util.isCached.", logcolor)
+		}
 		util.isCached(work, function (work) {
-			work.cacheCheckFinishedTime = new Date();
-			if (!work.foundInCache || work.options.forceUpdate || (work.options.respectHeaders && work.isExpired)) {
-				
+			work.cacheCheckFinishedTime = new Date()
+			if (work.options.debugschedulerconsole) {
+				log.logc(loginfo + " scheduler.run(): util.isCached() callback.", logcolor)
+			}
+			if (!work.foundInCache || work.options.forceUpdate || (work.options.respectHeaders && work.isExpired)) {				
 			    work.preprocess(function (err, work) {
-				    work.processStartTime = new Date();
+				    work.processStartTime = new Date()
 				    work.process(function (err, work) {
 					    work.postprocess(function (err, work) {
-						    work.processFinishedTime = new Date();
-						    workFinish();
-						});
-					});
+						    work.processFinishedTime = new Date()
+						    workFinish()
+						})
+					})
 				})
 			} else {
-			    work.isFromCache = true;
-			    workFinish();
+				if (work.options.debugschedulerconsole) {
+					log.logc(loginfo + " scheduler.run(): Cache hit.", logcolor)
+				}
+			    work.isFromCache = true
+			    workFinish()
 			}
 
 			function workFinish() {
-				work.finishStartTime = new Date();
-				runningWorks.remove(work);
+				work.finishStartTime = new Date()
+				runningWorks.remove(work)
+				if (work.options.debugschedulerconsole) {
+					log.logc(loginfo + " scheduler.workFinish(): Called.", logcolor)
+				}
 				if (work.error && work.retries < work.options.maxTries) {
-					work.retries += 1;
-					worksQueue.push(work);
+					if (work.retries == work.options.maxTries) {
+						log.logc(loginfo + "  scheduler.workFinish(): Retrying " + work.url, 160)
+					}
+					work.retries += 1
+					worksQueue.push(work)
 				} else {
 					if (work.retries == work.options.maxTries) {
-						console.warn("scheduler.run.workFinish(): Number of tries (" + work.options.maxTries + ") exceeded.  Aborting and returing cached data if found. URL = \n\t"+work.url);
+						log.logc(loginfo + " scheduler.run.workFinish(): Number of tries (" + work.options.maxTries + ") exceeded.", 160)
+						log.logc(loginfo + " scheduler.run.workFinish(): Aborting and returing cached data if found. URL = " + work.url, 160)
 					}
-					if(work.data){
-						work.callback(work2result(work));
+					if (work.data) {
+						work.callback(work2result(work))
 					} else {
 						util.getCachedData(work, function (err) {
-							exports.emit("finish", work);
-							//logger.log("finish", work);
-							work.callback(work2result(work));
+							exports.emit("finish", work)
+							work.callback(work2result(work))
 						})
 					}
 				}
-				work.finishFinishedTime = new Date();				
-				run();
+				work.finishFinishedTime = new Date()			
+				run()
 			}
-	
 		})		
 	}
 	if (worksQueue.length > 0) {
-	    l//ogger.d("scheduler.run(): Delaying");
 	    if (typeof(setImmediate) !== "undefined") {
-	    	setImmediate(run);
+	    	setImmediate(run)
 	    } else {
 	    	process.nextTick(run);
 	    }
@@ -133,16 +144,14 @@ function run() {
 
 function work2result(work) {
 
-	work.work2ResultStartTime = new Date();
-	var ret = {};
-	//console.log(work.header);
+	work.work2ResultStartTime = new Date()
+	var ret = {}
+
 	for (var key in work) {
 
 		if (key!=="data" && key!=="dataBinary" && key!=="dataJson" && key!=="datax" && key!=="meta" && key!=="metaJson" && key!=="body") {
 			ret[key] = work[key];
 		}
-
-		//console.log(work);
 		if (work.options.includeData) {
 		    if (Object.keys(work["dataJson"]).length == 0) {
 			ret["data"] = work["data"];
@@ -243,77 +252,79 @@ function newWork(url, options, callback){
 	// scheduler should check to see if urlMd5base.out exists.
 	
 	var work = {
-		id: getId(),
-		plugin : plugin,
-		url : url,
-		options : options ? options : {},
-		dataMd5 : "",
-		dataLength : -1,
-		urlMd5 : util.md5(url+extractSignature),
-		urlMd5base: util.md5(url),
-		time: 0,
-		data: "",
-		header: {},
-		dir: "",
-		lstat: {},
-		versions: [],
-		isFromCache : false,
-		isExpired : false,
-		isFinished : false,
-		foundInCache: false,
-		error : pluginerror,
-		jobStartTime : new Date(),
-		processStartTime : 0,
-		cacheCheckStartTime : 0,
-		cacheCheckFinishedTime : 0,
-		getFirstChunkTime: 0,
-		finishStartTime: 0,
-		work2ResultStartTime: 0,
-		work2ResultFinishedTime: 0,
-		finishFinishedTime: 0,
-		writeStartTime : 0,
-		writeFinishedTime : 0,
-		processFinishedTime : 0,
-		jobFinishedTime : 0,
-		getEndTime : 0,
-		retries : 0,
-		callback : callback || function(){},
-		process : function (callback) {
-			exports.emit("process", this);
-			this.plugin.process(this, callback);
-		},
-		preprocess : function (callback) {
-			exports.emit("preprocess", this);
-			this.plugin.preprocess(this, callback);
-		},
-		postprocess : function (callback) {
-			exports.emit("postprocess", this);
-			this.plugin.postprocess(this, callback);
-		},
-		extractData: function (data, options) {
-			exports.emit("extractdata", this);
-			if (data.length == 0) {
-				return "\n";
+				id: getId(),
+				plugin : plugin,
+				url : url,
+				options : options ? options : {},
+				dataMd5 : "",
+				dataLength : -1,
+				urlMd5 : util.md5(url+extractSignature),
+				urlMd5base: util.md5(url),
+				time: 0,
+				data: "",
+				header: {},
+				dir: "",
+				lstat: {},
+				versions: [],
+				isFromCache : false,
+				isExpired : false,
+				isFinished : false,
+				foundInCache: false,
+				headCheckError: false,
+				error: pluginerror,
+				jobStartTime : new Date(),
+				processStartTime : 0,
+				cacheCheckStartTime : 0,
+				cacheCheckFinishedTime : 0,
+				headCheckStartTime : 0,
+				headCheckFinishedTime : 0,
+				getFirstChunkTime: 0,
+				finishStartTime: 0,
+				work2ResultStartTime: 0,
+				work2ResultFinishedTime: 0,
+				finishFinishedTime: 0,
+				writeStartTime : 0,
+				writeFinishedTime : 0,
+				processFinishedTime : 0,
+				jobFinishedTime : 0,
+				getEndTime : 0,
+				retries : 0,
+				callback : callback || function(){},
+				process : function (callback) {
+					exports.emit("process", this);
+					this.plugin.process(this, callback);
+				},
+				preprocess : function (callback) {
+					exports.emit("preprocess", this);
+					this.plugin.preprocess(this, callback);
+				},
+				postprocess : function (callback) {
+					exports.emit("postprocess", this);
+					this.plugin.postprocess(this, callback);
+				},
+				extractData: function (data, options) {
+					exports.emit("extractdata", this);
+					if (data.length == 0) {
+						return "\n";
+					}
+					return this.plugin.extractData(data, options);
+				},
+				extractDataBinary: function (data, options) {
+					exports.emit("extractdatabinary", this);
+					return this.plugin.extractDataBinary(data, options);
+				},
+				extractDataJson: function (data, options) {
+					return this.plugin.extractDataJson(data, options);
+				},
+				extractMeta: function(data, options) {
+					return this.plugin.extractMeta(data, options);
+				},
+				extractMetaJson: function (data, options) {
+					return this.plugin.extractMetaJson(data, options);
+				},
+				extractRem: function(data, options) {
+					return this.plugin.extractRem(data, options);
+				}
 			}
-			return this.plugin.extractData(data, options);
-		},
-		extractDataBinary: function (data, options) {
-			exports.emit("extractdatabinary", this);
-			return this.plugin.extractDataBinary(data, options);
-		},
-		extractDataJson: function (data, options) {
-			return this.plugin.extractDataJson(data, options);
-		},
-		extractMeta: function(data, options) {
-			return this.plugin.extractMeta(data, options);
-		},
-		extractMetaJson: function (data, options) {
-			return this.plugin.extractMetaJson(data, options);
-		},
-		extractRem: function(data, options) {
-			return this.plugin.extractRem(data, options);
-		}
-	}
-	//logger.log("submit", work);
 	return work;
 }
