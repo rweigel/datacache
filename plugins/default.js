@@ -1,14 +1,16 @@
-var request   = require("request");
-var zlib      = require('zlib');
-var localeval = require("localeval");
-var jsdom     = require("jsdom");
-var jquery    = require("jquery");
+var request   = require("request")
+var zlib      = require('zlib')
+var localeval = require("localeval")
+var jsdom     = require("jsdom")
+var jquery    = require("jquery")
 
-var util      = require("../util.js");
-var log       = require("../log.js");
+var util      = require("../util.js")
+var log       = require("../log.js")
 
-exports.name  = "default";
-exports.version = "1.0.0";
+var Magic = require('mmmagic').Magic
+var magic = new Magic()
+exports.name    = "default"
+exports.version = "1.0.0"
 
 exports.match = function (url) {return false}
 
@@ -19,21 +21,22 @@ exports.process = function (work, callback) {
 	// TODO: If work.urlMd5base exists, set work.body to be
 	// urlMd5base.out, work.dataBinary to be urlMd5base.bin, etc. and return.
 	
-	debug = work.options.debugplugin;
-	debugconsole = work.options.debugpluginconsole;
-
-	var logcolor   = work.options.logcolor;
+	var debug        = work.options.debugplugin;
+	var debugconsole = work.options.debugpluginconsole;
+	var logcolor     = work.options.logcolor;
 
 	if (work.url.match(/^http/)) {
 		if (debugconsole) {
 			log.logc(work.options.loginfo + " default.process(): Called with work.url = " + work.url,logcolor)
 		}
-		var headers = work.options.acceptGzip ? {"accept-encoding" : "gzip, deflate"} : {};
+		var headers = work.options.acceptGzip ? {"accept-encoding": "gzip, deflate"} : {};
 		var sz = 0;
 		if (debugconsole) {
 			log.logc(work.options.loginfo + " default.process(): Getting: " + work.url,logcolor)
 		}
+
 		util.get(work.url, function (error, response, body) {
+
 			if (error || response.statusCode !== 200) {
 				work.error = "Can't fetch data";
 				if (debugconsole) {
@@ -46,17 +49,27 @@ exports.process = function (work, callback) {
 					log.logc(work.options.loginfo + " default.process(): Headers: " + JSON.stringify(response.headers),logcolor)
 				}
 				if (response.headers["content-encoding"] === "gzip" || response.headers["content-type"] === "application/x-gzip") {
-				    if (debugconsole) {
-				    	console.log("Content-Type is application/x-gzip")
-				    }
+					if (debugconsole) {
+						console.log("Content-Type is application/x-gzip")
+					}
 				    zlib.gunzip(body,cb);
 				} else {
-					//console.log("Content-Type is not application/x-gzip")
-					cb("",body);
+					magic.detect(body, function(err, result) {
+						if (result.match(/^gzip/)) {
+							if (debugconsole) {
+								console.log("Content-Encoding is not gzip and Content-Type is not application/x-gzip, but buffer is gzipped.")
+							}
+							if (err) throw err;
+							zlib.gunzip(body,cb)
+						} else {
+							cb("",body)
+						}
+					})
 				}
 					
 				function cb(err,res) {
 					if (err) console.log(err);
+
 					work.body       = res || "";
 					work.data       = work.extractData(work.body, work.options);
 					work.dataMd5    = util.md5(work.data);
@@ -66,7 +79,7 @@ exports.process = function (work, callback) {
 					work.meta       = work.extractMeta(work.body, work.options);
 					work.metaJson   = work.extractMetaJson(work.body, work.options);
 					work.header     = response.headers;
-	
+
 					util.writeCache(work, function () {callback(false, work)})
 				}
 			}
@@ -174,29 +187,40 @@ exports.extractSignature = function (options) {
 
 exports.extractData = function (body, options) {
 
-	var logcolor   = work.options.logcolor
-	var lineRegExp = options.lineRegExp
+	var debug        = options.debugplugin
+	var debugconsole = options.debugpluginconsole
+	var logcolor     = options.logcolor
+	var lineRegExp   = options.lineRegExp
 
 	if (options.lineFormatter !== "") {
+		if (debugconsole) {
+			log.logc(options.loginfo + " default.extractData(): Reading " + __dirname + "/" + options.lineFormatter + ".js", logcolor)
+		}
 		var lineFormatter = require(__dirname + "/" + options.lineFormatter + ".js")
 	}
 	
 	if (options.unsafeEval) {
-		log.logc(work.options.loginfo + " default.extractData(): Using unsafe eval", logcolor)
+		if (debugconsole) {
+			log.logc(options.loginfo + " default.extractData(): Using unsafe eval because extractData and lineRegExp are default values.", logcolor)
+			log.logc(options.loginfo + " Evaluating " + options.extractData, logcolor)
+			log.logc(options.loginfo + " lineRegExp = " + lineRegExp, logcolor)
+	    }
 	    return eval(options.extractData)
 	}
 
 	var window
-	var $;
+	var $
 	try {
 		window = jsdom.jsdom(body).createWindow()
 		$ = jquery.create(window)
 	} catch(e) {
-		log.logc(work.options.loginfo + " default.extractData(): Error when trying to parse data as html, probably it is not in valid html format.", 160)
+		log.logc(options.loginfo + " default.extractData(): Error when trying to parse data as html, probably it is not in valid html format.", 160)
 	}
 	
 	try {
-		log.logc(work.options.loginfo + " default.extractData(): Using safe eval", logcolor)
+		if (debugconsole) {
+			log.logc(options.loginfo + " default.extractData(): Using safe eval because extractData or lineRegExp specified as input.", logcolor)
+		}
 		return localeval(options.extractData.replace(/jQuery/g,"\$"), {
 			$: $,
 			document: window.document,
@@ -207,7 +231,7 @@ exports.extractData = function (body, options) {
 		    options: options
 		})
 	} catch(e) {
-		log.logc(work.options.loginfo + " default.extractData(): Error in trying to eval options.extractData: " + JSON.stringify(e), logcolor)
+		log.logc(options.loginfo + " default.extractData(): Error in trying to eval options.extractData: " + JSON.stringify(e), 160)
 		return "Error occurred while extracting data\n";
 	}
 }
