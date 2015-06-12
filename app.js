@@ -291,7 +291,9 @@ function syncSummary(source, options, res) {
 	// http://codereview.stackexchange.com/questions/20069/monkey-patching-extra-events-in-node-js-http-express
 	var end = res.end
 	res.end = function () {
-		log.logc(options.loginfo + " app.syncSummary(): Response end event.", options.logcolor)
+		if (options.debugappconsole) {
+			log.logc(options.loginfo + " app.syncSummary(): Response end event.", options.logcolor)
+		}
 		res.end = end
 		res.emit('end')
 		res.end.apply(this, arguments)
@@ -464,7 +466,9 @@ function parseOptions(req, res) {
 	options.streamOrder    = s2b(req.query.streamOrder  || req.body.streamOrder  || "true");
 	options.streamFilter   =     req.query.streamFilter || req.body.streamFilter || "";
 
-	//options.respectHeaders = s2b(req.query.respectHeaders) || s2b(req.body.respectHeaders) || true;
+	options.respectHeaders        = s2b(req.query.respectHeaders        || req.body.respectHeaders        || "true")
+	options.respectHeadersTimeout = s2i(req.query.respectHeadersTimeout || req.body.respectHeadersTimeout || "300")
+
 	//options.streamFilterBinary   = req.query.streamFilterBinary        || req.body.streamFilterBinary        || "";
 
 	options.streamFilterReadBytes       = s2i(req.query.streamFilterReadBytes       || req.body.streamFilterReadBytes         || "0");
