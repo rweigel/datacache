@@ -12,6 +12,7 @@ mkdir -p $LOG
 
 case $1 in
         start)
+                ulimit -n 1024
                 sudo -u www-data $NODE $MEMORY $APP $PORT -id 1 >> $LOG/datacache.log 2>&1 &
         ;;
         stop)
