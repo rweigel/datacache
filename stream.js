@@ -628,9 +628,9 @@ function stream(source, options, res) {
 						log.logc(options.loginfo+" stream.readcallback(): Writing "+streamfilepart.replace(".gz","").replace(__dirname,"")+".lck", logcolor)
 					}
 					fs.writeFile(streamfilepart.replace(".gz","")+".lck","",function (err) {
-						if (options.debugstream) {
-							log.logc("Wrote   "+streamfilepart.replace(".gz","").replace(__dirname,"")+".lck", logcolor)
-							log.logc("Writing " + streamfilepart.replace(__dirname,""),logcolor)
+						if (options.debugstreamconsole) {
+							log.logc(options.loginfo+"Wrote   "+streamfilepart.replace(".gz","").replace(__dirname,"")+".lck", logcolor)
+							log.logc(options.loginfo+"Writing " + streamfilepart.replace(__dirname,""),logcolor)
 						}
 						if (options.debugstreamconsole) {
 							log.logc(options.loginfo+" stream.readcallback(): Wrote   "+streamfilepart.replace(".gz","").replace(__dirname,"")+".lck", logcolor)

@@ -387,7 +387,7 @@ var writeCache = function(work, callback) {
 
 	var logcolor = work.options.logcolor;		
 
-	if (work.options.debugutil) {
+	if (work.options.debugutilconsole) {
 		log.logc(work.options.loginfo + " util.writeCache(): Called.", logcolor)
 	}
 
@@ -418,7 +418,7 @@ var writeCache = function(work, callback) {
 
 		writeCache.memLock[filename] = writeCache.memLock[filename] + 1;
 		var tmp = writeCache.memLock[filename];
-		if (work.options.debugutil) {
+		if (work.options.debugutilconsole) {
 			log.logc(work.options.loginfo + " util.writeCache(): Locking "+filename.replace(__dirname,"") + " " + tmp,logcolor)
 		}
 		memLock[work.id] = 6; // 6 is number of writes associated with each request.
@@ -441,12 +441,12 @@ var writeCache = function(work, callback) {
 		});
 	} else {
 		if (writeCache.memLock[filename] != 0) {
-			if (work.options.debugutil) {
+			if (work.options.debugutilconsole) {
 				log.logc(work.options.loginfo + " util.writeCache(): File is being written already by writeCache().", logcolor)
 			}
 		}
 		if ( !(typeof(app.stream.streaming[filename]) === "undefined") || app.stream.streaming[filename] != 0) {
-			if (work.options.debugutil) {
+			if (work.options.debugutilconsole) {
 				log.logc(work.options.loginfo + " util.writeCache(): Stream lock found.  Not writing file.",logcolor)
 			}
 		}
@@ -465,7 +465,7 @@ var writeCache = function(work, callback) {
 					  writeFiles();
 				  } else {
 					  // If this fails, another process has moved it to the archive directory.
-					  if (work.options.debugutil) {
+					  if (work.options.debugutilconsole) {
 					  	log.logc(work.options.loginfo+" util.writeCacheFiles(): Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1"),logcolor)
 					  }
 					  //dataMd5old = md5(fs.readFileSync(filename+".data"));
@@ -473,7 +473,7 @@ var writeCache = function(work, callback) {
 						  dataMd5old = md5(fs.readFileSync(filename+".data"));
 					  } catch (e) {
 						  debugger
-						  if (work.options.debugutil) {
+						  if (work.options.debugutilconsole) {
 						  	log.logc(work.options.loginfo+" util.writeCacheFiles(): Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1" + " failed."),logcolor)
 						  }
 						  dataMd5old = "";
@@ -494,20 +494,20 @@ var writeCache = function(work, callback) {
 		function writeFiles() {
 
 			
-			if (work.options.debugutil) {
+			if (work.options.debugutilconsole) {
 				log.logc(work.options.loginfo + " util.writeCacheFiles(): Maybe writing: " + filename.replace(/.*\/(.*)/,"$1")+".data",logcolor)
 				log.logc(work.options.loginfo + " util.writeCacheFiles(): fs.exists: " + fs.existsSync(filename+".data"),logcolor)
 			}
 	
 			if (app.stream.streaming[filename] > 0) {
-				if (work.options.debugutil) {
+				if (work.options.debugutilconsole) {
 					log.logc(work.options.loginfo + " util.writeCacheFiles(): A stream lock was found.  Aborting write.",logcolor);
 					log.logc(work.options.loginfo + " util.writeCacheFiles(): Presumably, an update was recently performed.  forceUpdate=true may have unexpected results.",logcolor);
 				}
 				finish();finish();finish();finish();finish();finish();
 				return;
 			} else {
-				if (work.options.debugutil) {
+				if (work.options.debugutilconsole) {
 					log.logc(work.options.loginfo + " util.writeCacheFiles(): No stream lock was found.  Writing.",logcolor)
 				}
 			}
@@ -517,7 +517,7 @@ var writeCache = function(work, callback) {
 			//fs.writeFileSync(filename+".lck","");
 			//fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".lck",work.dir);
 
-			if (work.options.debugutil) {
+			if (work.options.debugutilconsole) {
 				log.logc(work.options.loginfo + " util.writeCacheFiles(): Writing " + filename.replace(__dirname,"")+".*. .out size = "+work.body.length+" .data size = "+work.data.length,logcolor)
 			}
 			//log.logc("work.data.length: "+work.data.length)
@@ -543,19 +543,19 @@ var writeCache = function(work, callback) {
 			if (memLock[work.id]==0) {
 
 				var filename  = getCachePath(work);
-				if (work.options.debugutil) {
+				if (work.options.debugutilconsole) {
 					log.logc(work.options.loginfo + " util.writeCacheFiles(): Finished writing "+filename.replace(__dirname,"")+".*",logcolor)
 				}
 				// Will not exist if write was aborted because stream lock was found.
 				if (fs.existsSync(filename+".lck")) {
-					if (work.options.debugutil) {
+					if (work.options.debugutilconsole) {
 						log.logc(work.options.loginfo + " util.writeCacheFiles(): Removing "+filename.replace(__dirname,"")+".lck",logcolor)
 					}
 					fs.unlinkSync(filename+".lck");
 				}
 				writeCache.memLock[filename] = writeCache.memLock[filename]-1;
 				var tmp = writeCache.memLock[filename];
-				if (work.options.debugutil) {
+				if (work.options.debugutilconsole) {
 					log.logc(work.options.loginfo + " util.writeCache(): Unlocking "+filename.replace(__dirname,"") + " " + tmp,logcolor)
 				}
 				//writeLock[fname] = writeLock[fname] - 1;
@@ -568,7 +568,7 @@ var writeCache = function(work, callback) {
 			try {
 				fs.renameSync(filename+".data"  , filename+"/"+dataMd5old+".data");			
 			} catch (e) {
-				if (work.options.debugutil) {
+				if (work.options.debugutilconsole) {
 					log.logc(work.options.loginfo  + " util.tryrename(): Could not move " + filename.replace(/.*\/(.*)/,"$1") + ".  forceUpdate=true may have unexpected results.",logcolor);
 					log.logc(work.options.loginfo  + " util.tryrename(): It was probably moved by another request.");
 				}
@@ -577,14 +577,14 @@ var writeCache = function(work, callback) {
 		function renameFiles(callback) {
 			var newdir = filename + "/";
 			mkdirp(newdir, function (err) {
-					if (work.options.debugutil) {
+					if (work.options.debugutilconsole) {
 						log.logc(work.options.loginfo  + " util.rename(): Created directory " + newdir,logcolor)
 					}
 					//log.logc("filename: " + filename);
 					if (err) {
 						log.logc(err)
 					}
-					if (work.options.debugutil) {
+					if (work.options.debugutilconsole) {
 						log.logc(work.options.loginfo  + " util.rename(): Tring to move files to: " + newdir,logcolor);
 					}
 					tryrename(filename+".data");					

@@ -374,7 +374,7 @@ function handleRequest(req, res) {
 		log.logres("options = " + JSON.stringify(options), res)
 	}
 	if (argv.debugappconsole) {
-		log.logc(options.loginfo + " app.handleRequest(): Handling req.originalUrl = " + JSON.stringify(req.originalUrl), logcolor)
+		log.logc((new Date()).toISOString() + " - [datacache] Request: " + JSON.stringify(req.originalUrl), logcolor)
 	}
 	if (options.debugappconsole) {
 		log.logc(options.loginfo + " app.handleRequest(): parseSource() returned source = " + source.toString().replace(/,/g,"\n\t"),logcolor)
@@ -439,13 +439,22 @@ function parseOptions(req, res) {
 	options.debuglineformatter  = req.query.debuglineformatter || req.body.debuglineformatter || argv.debuglineformatter;
 	options.debugscheduler      = req.query.debugscheduler     || req.body.debugscheduler     || argv.debugscheduler;
 
-	options.debugappconsole       = argv.debugappconsole;
-	options.debugstreamconsole    = argv.debugstreamconsole;
-	options.debugutilconsole      = argv.debugutilconsole;
-	options.debugpluginconsole    = argv.debugpluginconsole;
-	options.debugtemplateconsole  = argv.debugtemplateconsole;
-	options.debuglineformatterconsole  = argv.debuglineformatterconsole;
-	options.debugschedulerconsole      = argv.debugschedulerconsole;
+	options.debugall       = s2b(req.query.debugall || req.body.debugall)     || argv.debugall;
+	
+	if (!options.debugall) {
+		options.debugapp = options.debugall
+		options.debugappconsole = options.debugall
+		options.debugutil = options.debugall
+		options.debugutilconsole = options.debugall
+		options.debugstream = options.debugall
+		options.debugstreamconsole = options.debugall
+		options.debugplugin = options.debugall
+		options.debugpluginconsole = options.debugall
+		options.debugtemplate = options.debugall
+		options.debugscheduler = options.debugall
+		options.debugschedulerconsole = options.debugall
+		//argv.debuglineformatter = true;
+	}
 	
 	if (options.lineFormatter === "") {
 		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){return line.search(lineRegExp)!=-1;}";
