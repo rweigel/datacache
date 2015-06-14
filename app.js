@@ -56,9 +56,41 @@ var scheduler = require("./scheduler.js")
 var stream    = require("./stream.js")
 var log       = require("./log.js")
 
-var tsdsetpath            = "./node_modules/tsdset/lib/expandtemplate"
-var expandtemplate        = require(tsdsetpath).expandtemplate
-var expandISO8601Duration = require(tsdsetpath).expandISO8601Duration
+if (0) {
+// sudo apt-get install inotify-tools
+var filemon = require('filemonitor');
+
+var onFileEvent = function (ev) {
+	console.log("File " + ev.filename + " triggered event " + ev.eventId + " on " + ev.timestamp.toString());
+}
+
+var onFileCreation = function (ev) {
+	console.log("File " + ev.filename + " was created on " + ev.timestamp.toString());
+}
+
+var options = {
+	recursive: true,
+	target: "./cache/",
+	listeners: {
+		all_events: onFileEvent,
+		create: onFileCreation
+	}
+}
+filemon.watch(options);
+}
+
+if (fs.existsSync("../tsdset/lib/expandtemplate.js")) {
+	var develtsdset = true;
+	// Development
+	var expandtemplate        = require("../tsdset/lib/expandtemplate.js").expandtemplate
+	var expandISO8601Duration = require("../tsdset/lib/expandtemplate.js").expandISO8601Duration
+} else {
+	// Production
+	var develtsdset = false;
+	var expandtemplate        = require("./node_modules/tsdset/lib/expandtemplate").expandtemplate
+	var expandISO8601Duration = require("./node_modules/tsdset/lib/expandtemplate").expandISO8601Duration
+}
+
 
 // http://stackoverflow.com/questions/9768444/possible-eventemitter-memory-leak-detected
 process.setMaxListeners(0)
@@ -67,6 +99,7 @@ process.on('uncaughtException', function(err) {
 	if (err.errno === 'EADDRINUSE') {
 		console.log("[datacache] - Address already in use.")
 	} else {
+		console.log("[datacache] - Uncaught Exception:")
 		console.log(err)
 	}
 	process.exit(1)
@@ -107,6 +140,7 @@ setInterval(function () {
 		old.call(app, route, function (req, res) {
 			var d = domain.create();
 			d.on('error', function (err) {
+				console.log('[datacache] - Error: ');
 				console.log(err)
 				res.send(500, "")
 
@@ -284,7 +318,15 @@ server.setTimeout(config.TIMEOUT,
 // Start the server
 server.listen(argv.port)
 
-log.logc((new Date()).toISOString() + " - [datacache] listening on port "+argv.port, 10)
+var msg = "";
+if (develtsdset) {
+	var msg = "; Using devel version of:"
+}
+if (develtsdset) {
+	msg = msg + " tsdset"
+}
+
+log.logc((new Date()).toISOString() + " - [datacache] Listening on port "+argv.port + msg, 0)
 
 function syncSummary(source, options, res) {
 
@@ -373,7 +415,7 @@ function handleRequest(req, res) {
 		log.logres("req.originalUrl = " + JSON.stringify(req.originalUrl), res)
 		log.logres("options = " + JSON.stringify(options), res)
 	}
-	if (argv.debugappconsole) {
+	if (options.debugappconsole) {
 		log.logc((new Date()).toISOString() + " - [datacache] Request: " + JSON.stringify(req.originalUrl), logcolor)
 	}
 	if (options.debugappconsole) {

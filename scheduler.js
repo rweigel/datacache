@@ -117,7 +117,7 @@ function run() {
 				} else {
 					if (work.retries == work.options.maxTries) {
 						log.logc(loginfo + " scheduler.run.workFinish(): Number of tries (" + work.options.maxTries + ") exceeded.", 160)
-						log.logc(loginfo + " scheduler.run.workFinish(): Aborting and returing cached data if found. URL = " + work.url, 160)
+						log.logc(loginfo + " scheduler.run.workFinish(): URL = " + work.url, 160)
 					}
 					if (work.data) {
 						work.callback(work2result(work))
