@@ -182,6 +182,111 @@ function stream(source, options, res) {
 		}
 	}
 
+	function catstreamparts() {
+		if (reqstatus[rnd].Nx == N) {
+			if (options.debugstreamconsole) {
+				log.logc(options.loginfo+" stream.readcallback.cachestream(): Not creating concatenated gzip stream file because of bug in node.js.", logcolor)
+			}
+			return
+
+			var streamfile = streamdir.replace(streamsignature,"") + streamsignature + ".stream.gz";
+			if (options.debugstream) {
+				log.logres("Reading dir " + streamdir.replace(__dirname,""), res)
+			}
+			if (options.debugstreamconsole) {
+				log.logc(options.loginfo+" stream.readcallback.cachestream(): Reading dir " + streamdir.replace(__dirname,"")+streamsignature,logcolor)
+			}
+			var files = fs.readdirSync(streamdir);
+			var files2 = [];
+			var k = 0;
+			for (var z = 0;z<files.length;z++) {
+				if (!files[z].match(".lck")) {
+					files2[k] = ""+k+".stream.gz";
+					k = k+1;
+				}
+			}
+			if (options.debugstream) {
+				log.logres("Found " + files2.length + " files", res)
+			}
+			if (options.debugstreamconsole) {
+				log.logc(options.loginfo+" stream.readcallback.cachestream(): Found " + files2.length + " files", logcolor)
+			}
+
+			if (files2.length != N) {
+				if (options.debugstreamconsole) {
+					log.logc(options.loginfo+" stream.readcallback.cachestream(): Not creating concatenated gzip stream file all parts not ready.", logcolor)
+				}
+				return
+			}
+
+
+			if (files.length > 1) {
+				if (options.debugstream) {
+					log.logres("Concatenating " + files2.length + " stream parts into ../" + streamsignature + ".stream.gz", res)
+				}
+				if (options.debugstreamconsole) {
+					log.logc(options.loginfo+" stream.readcallback.cachestream(): Concatenating " + files2.length + " stream parts into ../" + streamsignature + ".stream.gz",logcolor)
+				}
+
+				// TODO: Make this async
+				// If part is being concatenated
+				if (fs.existsSync("../" + streamsignature + ".lck")) {
+					if (options.debugstreamconsole) {
+						log.logc(options.loginfo+" stream.readcallback.cachestream(): Aborting write because lock on cat file exists: " + "../" + streamsignature + ".lck", logcolor)
+					}
+				}
+
+				fs.writeFile("../" + streamsignature + ".lck", '', function () {
+					var com = "cd " + streamdir + streamsignature + "; cat " + files2.join(" ") + " > ../" + streamsignature + ".stream.gz; rm ../"+streamsignature+".lck";
+					if (options.debugstream) {
+						log.logres("Evaluating: " + com, res)
+					}
+					if (options.debugstreamconsole) {
+						log.logc(options.loginfo+" stream.readcallback.cachestream(): Evaluating: " + com,logcolor)
+					}
+					child = exec(com,function (error, stdout, stderr) {
+						if (options.debugstream) {
+							log.logres("Evaluated: " + com, res)
+						}
+						if (options.debugstreamconsole) {
+							log.logc(options.loginfo+" stream.readcallback.cachestream(): Evaluated: " + com,logcolor)
+						}
+						if (error) {
+							log.logres(JSON.stringify(error), res)
+							log.logc(options.loginfo+" stream.readcallback.cachestream(): Error: " + JSON.stringify(error), 160)
+							if (stderr) {
+								log.logc(stderr, 160)
+							}
+						}
+					})
+				})
+			} else {
+				var com = "cd " + streamdir + streamsignature + "; touch ../" + streamsignature + ".lck" + "; ln -s " + streamsignature + files2[0] + " ../" + streamsignature + ".stream.gz; rm ../"+streamsignature+".lck";
+				if (options.debugstream) {
+					log.logres("Evaluating " + com, res)
+				}
+				if (options.debugstreamconsole) {
+					log.logc(options.loginfo+" stream.readcallback.cachestream(): Evaluating " + com,logcolor)
+				}
+				child = exec(com,function (error, stdout, stderr) {
+					if (options.debugstream) {
+						log.logres("Evaluated  " + com, res)
+					}
+					if (options.debugstreamconsole) {
+						log.logc(options.loginfo+" stream.readcallback.cachestream(): Evaluated  " + com,logcolor)
+					}
+					if (error) {
+						log.logres(JSON.stringify(error), res)
+						log.logc(options.loginfo+" stream.readcallback.cachestream(): Error: " + JSON.stringify(error), 160)
+						if (stderr) {
+							log.logc(stderr, 160)
+						}
+					}
+				})								
+			}
+		}
+	}
+
 	function finished(inorder) {
 		if (options.debugstream) {
 			log.logres("Incremening Nx from " + reqstatus[rnd].Nx + " to " + (reqstatus[rnd].Nx+1),res)
@@ -263,7 +368,6 @@ function stream(source, options, res) {
 			}
 			stream.streaming[fname] = stream.streaming[fname] + 1;
 		}
-
 
 		if (fs.existsSync(streamfilepartlck)) {
 			if (options.debugstream) {
@@ -347,8 +451,7 @@ function stream(source, options, res) {
 				if (options.debugstreamconsole) {
 					log.logc(options.loginfo+" stream.processwork(): It does not.",logcolor)
 				}
-			}
-			
+			}			
 		}
 
 		// Create new stream.
@@ -462,7 +565,6 @@ function stream(source, options, res) {
 			if (options.debugstreamconsole) {
 				log.logc(options.loginfo+" stream.processwork(): columns final " + outcolumns.join(","),logcolor)
 			}
-
 		}
 
 		var line   = '';
@@ -659,109 +761,7 @@ function stream(source, options, res) {
 								}
 								if (options.debugstreamconsole) {
 									log.logc(options.loginfo+" stream.readcallback.cachestream(): Removed     " + streamfilepartlck.replace(__dirname,""), logcolor)
-								}
-								if (reqstatus[rnd].Nx == N) {
-									if (options.debugstreamconsole) {
-										log.logc(options.loginfo+" stream.readcallback.cachestream(): Not creating concatenated gzip stream file because of bug in node.js.", logcolor)
-									}
-									return
-
-									var streamfile = streamdir.replace(streamsignature,"") + streamsignature + ".stream.gz";
-									if (options.debugstream) {
-										log.logres("Reading dir " + streamdir.replace(__dirname,""), res)
-									}
-									if (options.debugstreamconsole) {
-										log.logc(options.loginfo+" stream.readcallback.cachestream(): Reading dir " + streamdir.replace(__dirname,"")+streamsignature,logcolor)
-									}
-									var files = fs.readdirSync(streamdir);
-									var files2 = [];
-									var k = 0;
-									for (var z = 0;z<files.length;z++) {
-										if (!files[z].match(".lck")) {
-											files2[k] = ""+k+".stream.gz";
-											k = k+1;
-										}
-									}
-									if (options.debugstream) {
-										log.logres("Found " + files2.length + " files", res)
-									}
-									if (options.debugstreamconsole) {
-										log.logc(options.loginfo+" stream.readcallback.cachestream(): Found " + files2.length + " files", logcolor)
-									}
-
-									if (files2.length != N) {
-										if (options.debugstreamconsole) {
-											log.logc(options.loginfo+" stream.readcallback.cachestream(): Not creating concatenated gzip stream file all parts not ready.", logcolor)
-										}
-										return
-									}
-
-
-									if (files.length > 1) {
-										if (options.debugstream) {
-											log.logres("Concatenating " + files2.length + " stream parts into ../" + streamsignature + ".stream.gz", res)
-										}
-										if (options.debugstreamconsole) {
-											log.logc(options.loginfo+" stream.readcallback.cachestream(): Concatenating " + files2.length + " stream parts into ../" + streamsignature + ".stream.gz",logcolor)
-										}
-
-										// TODO: Make this async
-										// If part is being concatenated
-										if (fs.existsSync("../" + streamsignature + ".lck")) {
-											if (options.debugstreamconsole) {
-												log.logc(options.loginfo+" stream.readcallback.cachestream(): Aborting write because lock on cat file exists: " + "../" + streamsignature + ".lck", logcolor)
-											}
-										}
-
-										fs.writeFile("../" + streamsignature + ".lck", '', function () {
-											var com = "cd " + streamdir + streamsignature + "; cat " + files2.join(" ") + " > ../" + streamsignature + ".stream.gz; rm ../"+streamsignature+".lck";
-											if (options.debugstream) {
-												log.logres("Evaluating: " + com, res)
-											}
-											if (options.debugstreamconsole) {
-												log.logc(options.loginfo+" stream.readcallback.cachestream(): Evaluating: " + com,logcolor)
-											}
-											child = exec(com,function (error, stdout, stderr) {
-												if (options.debugstream) {
-													log.logres("Evaluated: " + com, res)
-												}
-												if (options.debugstreamconsole) {
-													log.logc(options.loginfo+" stream.readcallback.cachestream(): Evaluated: " + com,logcolor)
-												}
-												if (error) {
-													log.logres(JSON.stringify(error), res)
-													log.logc(options.loginfo+" stream.readcallback.cachestream(): Error: " + JSON.stringify(error), 160)
-													if (stderr) {
-														log.logc(stderr, 160)
-													}
-												}
-											})
-										})
-									} else {
-										var com = "cd " + streamdir + streamsignature + "; touch ../" + streamsignature + ".lck" + "; ln -s " + streamsignature + files2[0] + " ../" + streamsignature + ".stream.gz; rm ../"+streamsignature+".lck";
-										if (options.debugstream) {
-											log.logres("Evaluating " + com, res)
-										}
-										if (options.debugstreamconsole) {
-											log.logc(options.loginfo+" stream.readcallback.cachestream(): Evaluating " + com,logcolor)
-										}
-										child = exec(com,function (error, stdout, stderr) {
-											if (options.debugstream) {
-												log.logres("Evaluated  " + com, res)
-											}
-											if (options.debugstreamconsole) {
-												log.logc(options.loginfo+" stream.readcallback.cachestream(): Evaluated  " + com,logcolor)
-											}
-											if (error) {
-												log.logres(JSON.stringify(error), res)
-												log.logc(options.loginfo+" stream.readcallback.cachestream(): Error: " + JSON.stringify(error), 160)
-												if (stderr) {
-													log.logc(stderr, 160)
-												}
-											}
-										})								
-									}
-								}
+								}								
 							})
 						})
 					})
