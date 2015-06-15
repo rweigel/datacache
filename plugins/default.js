@@ -3,6 +3,8 @@ var zlib      = require('zlib')
 var localeval = require("localeval")
 var jsdom     = require("jsdom")
 var jquery    = require("jquery")
+var url       = require('url');
+var http      = require('http');
 
 var util      = require("../util.js")
 var log       = require("../log.js")
@@ -30,34 +32,46 @@ exports.process = function (work, callback) {
 			log.logc(work.options.loginfo + " default.process(): Called with work.url = " + work.url,logcolor)
 		}
 		var headers = work.options.acceptGzip ? {"accept-encoding": "gzip, deflate"} : {};
+		
 		var sz = 0;
+		var body;
+
 		if (debugconsole) {
 			log.logc(work.options.loginfo + " default.process(): Getting: " + work.url,logcolor)
 		}
 
+		var options = {
+						method: 'GET',
+						host: url.parse(work.url).hostname,
+						port: url.parse(work.url).port || 80,
+						encoding: null,
+						path: url.parse(work.url).pathname
+					}
+
 		util.get(work.url, function (error, response, body) {
 
-			if (error || response.statusCode !== 200) {
+			if (response.statusCode !== 200) {
 				work.error = "Can't fetch data";
 				if (debugconsole) {
 					log.logc(work.options.loginfo + " default.process(): Error when attempting to GET " + work.url, logcolor)
 				}
 				callback(true, work);
 			} else {
+
 				if (debugconsole)  {
 					log.logc(work.options.loginfo + " default.process(): Got " + work.url,logcolor)				
-					log.logc(work.options.loginfo + " default.process(): Headers: " + JSON.stringify(response.headers),logcolor)
+					log.logc(work.options.loginfo + " default.process(): Headers: " + JSON.stringify(response.headers), logcolor)
 				}
 				if (response.headers["content-encoding"] === "gzip" || response.headers["content-type"] === "application/x-gzip") {
 					if (debugconsole) {
-						console.log("Content-Type is application/x-gzip")
+						log.logc(work.options.loginfo + " default.process(): Content-Type is application/x-gzip", logcolor)
 					}
 				    zlib.gunzip(body,cb);
 				} else {
 					magic.detect(body, function(err, result) {
 						if (result.match(/^gzip/)) {
 							if (debugconsole) {
-								console.log("Content-Encoding is not gzip and Content-Type is not application/x-gzip, but buffer is gzipped.")
+								log.logc(work.options.loginfo + " default.process(): Content-Encoding is not gzip and Content-Type is not application/x-gzip, but buffer is gzipped.")
 							}
 							if (err) throw err;
 							zlib.gunzip(body,cb)
@@ -66,47 +80,49 @@ exports.process = function (work, callback) {
 						}
 					})
 				}
-					
-				function cb(err,res) {
-					if (err) console.log(err);
+			}
+			function cb(err,res) {
+				if (err) console.log(err);
 
-					work.body       = res || "";
-					work.data       = work.extractData(work.body, work.options);
-					work.dataMd5    = util.md5(work.data);
-					work.dataBinary = work.extractDataBinary(work.body, "bin");
-					work.dataJson   = work.extractDataJson(work.body, work.options);
-					work.datax      = work.extractRem(work.body, work.options);
-					work.meta       = work.extractMeta(work.body, work.options);
-					work.metaJson   = work.extractMetaJson(work.body, work.options);
-					work.header     = response.headers;
+				work.body       = res || "";
+				work.data       = work.extractData(work.body, work.options);
+				work.dataMd5    = util.md5(work.data);
+				work.dataBinary = work.extractDataBinary(work.body, "bin");
+				work.dataJson   = work.extractDataJson(work.body, work.options);
+				work.datax      = work.extractRem(work.body, work.options);
+				work.meta       = work.extractMeta(work.body, work.options);
+				work.metaJson   = work.extractMetaJson(work.body, work.options);
+				work.header     = response.headers;
 
-					util.writeCache(work, function () {callback(false, work)})
-				}
+				util.writeCache(work, function () {callback(false, work)})
 			}
 		})
-		.on("error", function(data){
-			if (debugconsole) {
-				log.logc(work.options.loginfo + " default.process(): On error event.", logcolor)
-			}
-		})
-		.on("end", function(data){
-			if (debugconsole) {
-				log.logc(work.options.loginfo + " default.process(): On end event.  Size [bytes]     " + sz, logcolor)
-			}
-			if (!work.getEndTime) {
-			    work.getEndTime = new Date();
-			}
-		})
-		.on("data", function(data){
-			sz = sz + data.length;
-			
-			if (!work.getFirstChunkTime) {
+			.on("error", function (err) {
 				if (debugconsole) {
-					log.logc(work.options.loginfo + " default.process(): Got first chunk of size [bytes] " + data.length, logcolor)
+					log.logc(work.options.loginfo + " default.process(): On error event.", logcolor)
 				}
-			    work.getFirstChunkTime = new Date();
-			}
-		});
+				console.log(err)
+			})
+			.on("data", function (data) {
+				sz = sz + data.length;
+				
+				if (!work.getFirstChunkTime) {
+					if (debugconsole) {
+						log.logc(work.options.loginfo + " default.process(): Got first chunk of size [bytes] " + data.length, logcolor)
+					}
+				    work.getFirstChunkTime = new Date();
+				}
+			})
+			.on("end", function () {
+				if (debugconsole) {
+					log.logc(work.options.loginfo + " default.process(): On end event.  Size [bytes]     " + sz, logcolor)
+				}
+				if (!work.getEndTime) {
+				    work.getEndTime = new Date();
+				}
+			})
+
+
 	} else if (work.url.match(/^ftp/)) {
 		var FtpClient  = require("ftp");
 		var conn = new FtpClient();
