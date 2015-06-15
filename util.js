@@ -10,9 +10,12 @@ var http      = require('http');
 
 var log       = require("./log.js");
 
-http.globalAgent.maxSockets = 100;  // Most Apache servers have this set at 100.	
+// maxSockets Number Maximum number of sockets to allow per host. Default = Infinity.
+// Most Apache servers have this set at 100.
+http.globalAgent.maxSockets = 100;  
+//http.globalAgent.keepAlive = false;
 
-//var TIMEOUT = 20000;
+//var TIMEOUT = 2000;
 var TIMEOUT = 1000*60*15;
 var MAXCONNECTION = 1000;
 
@@ -29,84 +32,23 @@ Array.prototype.find = function (match) {
 	return null;
 }
 
-// Download a resource via http or ftp
-function download(url, callback){
-	if (url.match(/^http/)) {
-		return downloadHttp(url, callback);
-	} else if(url.match(/^ftp/)){
-		return downloadFtp(url, callback);
-	} else {
-		callback("Error.  Protocol" + url.replace(/^(.*)\:.*/,"$1") + " is not supported.");
-	}
-}
-exports.download = download;
-
-var downloadHttp = function(url, callback) {
-	return get(url, function(err, response, body){
-		return callback(err, body);
-	});
-};
-
-var downloadFtp = function(url, callback) { 
-	var conn = new FtpClient();
-	conn.on("ready", function(){
-		conn.get(work.url.split("/").slice(3).join("/"), function(err, stream){
-			if(err){
-				callback("Ftp download error");
-			} else{
-				var buff = "";
-				stream.on("data", function(data){
-					buff+=data.toString();
-				})
-				.on("error", function(e){work.error=e;callback(true, work);conn.end();})
-				.on("end", function(){
-					callback(false, buff);
-				});
-			}
-		});
-	})
-	.on("error", function(e){callback(e, work);conn.end();})
-	.connect({host: url.split("/")[2]});
-	return conn;
-}
-
 function get(url, callback) {
 	var options = {	
 					url: url,
 					timeout: TIMEOUT,
-					encoding: null,
-					pool: {maxSockets : MAXCONNECTION}
+					encoding: null
 				  }
 
 	//TODO: Create .out file here
-	//var outfile = fs.createWriteStream('doodle.png')
-	//outfile.on('finish', function(){ work.tmpfile = rnd })
-	//return request.get(options, callback).pipe(outfile)
-	//In default.js, if work.tmpfile exists, don't create .out file, just rename it
-	//Will need to move code for unzipping to extractData in default.js
+	// var outfile = fs.createWriteStream('doodle.png')
+	// outfile.on('finish', function(){ work.tmpfile = rnd })
+	// return request.get(options, callback).pipe(outfile)
+	// In default.js, if work.tmpfile exists, don't create .out file, just rename it
+	// Will need to move code for unzipping to extractData in default.js
+
 	return request.get(options, callback)
 }
 exports.get = get;
-
-
-// Time formatting for logging.
-function formatTime(date) {
-
-	if (!date) {return;}
-	return [date.getFullYear(), pad(date.getMonth()+1,2), pad(date.getDate(), 2),
-			pad(date.getHours(), 2), pad(date.getMinutes(), 2), pad(date.getSeconds(), 2),
-			pad(date.getMilliseconds(), 3)].join(" ");
-
-	function pad(str, num) {
-		// Convert to string
-		str = str + "";
-		while (str.length < num) {
-			str = "0" + str;
-		}
-		return str;
-	}   
-}
-exports.formatTime = formatTime;
 
 function md5(str) {
 	if (!str) return ""
@@ -143,11 +85,13 @@ var head = function head(work,callback) {
 		return
 	}
 	
+	// IMPORTANT: Connection: Close.  Otherwise socket is kept open.
 	var options = {
 					method: 'HEAD',
 					host: url.parse(work.url).hostname,
-					port: url.parse(work.url).port,
-					path: url.parse(work.url).pathname
+					port: url.parse(work.url).port || 80,
+					path: url.parse(work.url).pathname,
+					headers: { 'Connection':'Close' }
 				}
 
 	var req = http.request(options, function (res) {
@@ -214,8 +158,9 @@ var head = function head(work,callback) {
 		}
 		work.headCheckFinishTime = new Date()
 		callback(work)
-	})
+	}).end()
 
+	if (0) {
 	req.setTimeout(work.options.respectHeadersTimeout, function () {
 			if (work.options.debugutilconsole) {
 				log.logc(work.options.loginfo + " util.head(): Timeout ("+work.options.respectHeadersTimeout+" ms) when attempting head check.", work.options.logcolor)
@@ -235,6 +180,8 @@ var head = function head(work,callback) {
 		work.headCheckFinishTime = new Date()
 		callback(work)
 	})
+	}
+
 }
 exports.head = head
 
@@ -529,7 +476,7 @@ var writeCache = function(work, callback) {
 			fs.writeFile(filename+".out", work.body, finish);
 
 			fs.appendFile(filename+".log", 
-				formatTime(work.jobStartTime) + 
+				(new Date()).toISOString() + 
 				"\t" + work.body.length + "\t" + 
 				work.data.length + "\n", finish);
 		}
