@@ -57,26 +57,24 @@ var stream    = require("./stream.js")
 var log       = require("./log.js")
 
 if (0) {
-// sudo apt-get install inotify-tools
-var filemon = require('filemonitor');
-
-var onFileEvent = function (ev) {
-	console.log("File " + ev.filename + " triggered event " + ev.eventId + " on " + ev.timestamp.toString());
-}
-
-var onFileCreation = function (ev) {
-	console.log("File " + ev.filename + " was created on " + ev.timestamp.toString());
-}
-
-var options = {
-	recursive: true,
-	target: "./cache/",
-	listeners: {
-		all_events: onFileEvent,
-		create: onFileCreation
+	// sudo apt-get install inotify-tools
+	var filemon = require('filemonitor');
+	var onFileEvent = function (ev) {
+		console.log("File " + ev.filename + " triggered event " + ev.eventId + " on " + ev.timestamp.toString());
 	}
-}
-filemon.watch(options);
+	var onFileCreation = function (ev) {
+		console.log("File " + ev.filename + " was created on " + ev.timestamp.toString());
+	}
+
+	var options = {
+		recursive: true,
+		target: "./cache/",
+		listeners: {
+			all_events: onFileEvent,
+			create: onFileCreation
+		}
+	}
+	filemon.watch(options);
 }
 
 if (fs.existsSync("../tsdset/lib/expandtemplate.js")) {
@@ -114,7 +112,7 @@ process.on('exit', function () {
 })
 process.on('SIGINT', function () {
 	process.exit();
-});
+})
 
 // Create cache dir if it does not exist.
 if (!fs.existsSync(__dirname+"/cache")) {fs.mkdirSync(__dirname+"/cache");}
@@ -482,20 +480,19 @@ function parseOptions(req, res) {
 	options.debugscheduler      = req.query.debugscheduler     || req.body.debugscheduler     || argv.debugscheduler;
 
 	options.debugall       = s2b(req.query.debugall || req.body.debugall)     || argv.debugall;
+
+	for (key in argv) {
+		if (key.match("debugstream") && !key.match("lineformatter")) {
+			options[key] = argv[key]
+		}			
+	}
 	
-	if (!options.debugall) {
-		options.debugapp = options.debugall
-		options.debugappconsole = options.debugall
-		options.debugutil = options.debugall
-		options.debugutilconsole = options.debugall
-		options.debugstream = options.debugall
-		options.debugstreamconsole = options.debugall
-		options.debugplugin = options.debugall
-		options.debugpluginconsole = options.debugall
-		options.debugtemplate = options.debugall
-		options.debugscheduler = options.debugall
-		options.debugschedulerconsole = options.debugall
-		//argv.debuglineformatter = true;
+	if (options.debugall) {
+		for (key in argv) {
+			if (key.match("debug") && !key.match("lineformatter")) {
+				options[key] = true
+			}			
+		}
 	}
 	
 	if (options.lineFormatter === "") {
