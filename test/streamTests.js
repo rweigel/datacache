@@ -33,11 +33,17 @@ var server     = argv.server;					// DataCache server to test
 var serverdata = argv.serverdata;				// Remote server to get data from
 var showdiffs  = s2b(argv.showdiffs);
 
+
 var testsuite = [
                  "streamTests.js --sync=true  --start=0 --all=true --n=" + n + " --server=" + argv.server + " --serverdata="+argv.server, 
+                 "streamTests.js --sync=false  --start=0 --all=true --n=" + n + " --server=" + argv.server + " --serverdata="+argv.server, 
+                 "streamTests.js --sync=true --start=0 --all=true --n=" + n + " --server=" + argv.server + " --serverdata="+argv.serverdata, 
                  "streamTests.js --sync=false --start=0 --all=true --n=" + n + " --server=" + argv.server + " --serverdata="+argv.serverdata, 
+                 ];
+
+var testsuite = [
                  "streamTests.js --sync=true  --start=0 --all=true --n=" + n + " --server=" + argv.server + " --serverdata="+argv.server, 
-                 "streamTests.js --sync=false --start=0 --all=true --n=" + n + " --server=" + argv.server + " --serverdata="+argv.serverdata, 
+                 "streamTests.js --sync=false  --start=0 --all=true --n=" + n + " --server=" + argv.server + " --serverdata="+argv.server, 
                  ];
 
 eval(fs.readFileSync(__dirname + '/streamTestsInput.js','utf8'))
@@ -70,13 +76,13 @@ function runsuite(j) {
 }
 
 function runtest(j) {
-		if (sync) {
-			checkmd5(j,1,true,all);
-		} else {
-			for (k = 1;k < tests[j].n+1;k++) {
-				checkmd5(j,k,false,all);
-			}
-		}		
+	if (sync) {
+		checkmd5(j,1,true,all);
+	} else {
+		for (k = 1;k < tests[j].n+1;k++) {
+			checkmd5(j,k,false,all);
+		}
+	}		
 }
 
 function checkmd5(j,k,sync,all) {
@@ -86,12 +92,15 @@ function checkmd5(j,k,sync,all) {
 			tic = (new Date()).getTime();
 			//console.log(tic);
 		}
-		child = exec(command(j,k), function (error, stdout, stderr) {
+		child = exec(command(j,k,sync), function (error, stdout, stderr) {
 			checkmd5.completed[j] = checkmd5.completed[j]+1;
 			console.log(k + "\t" + stdout.substring(0,32));
 			
 			if (tests[j].md5 !== stdout.substring(0,32)) {
-				logc("Error.  Response md5 changed from reference response.  Diff of " + "data-stream/out." + j + ".0" + " data-stream/out." + j + "." + k + ":",9);
+				logc("Error.  Response md5 changed from reference response.",9)
+				if (showdiffs) {
+					logc("Diff of " + "data-stream/out." + j + ".0" + " data-stream/out." + j + "." + k + ":",9);
+				}
 				diff("data-stream/out." + j + ".0","data-stream/out." + j + "." + k);
 				fs.appendFile("streamTests.txt", tests[j].com + "\n", 
 				function(err){
@@ -99,7 +108,7 @@ function checkmd5(j,k,sync,all) {
 				});
 
 			}
-			if (sync == true && k < tests[j].n) {					
+			if (sync && k < tests[j].n) {					
 				checkmd5(j,k+1,true,all);
 			}
 			if (checkmd5.completed[j] == tests[j].n) {
@@ -116,7 +125,7 @@ function checkmd5(j,k,sync,all) {
 		});
 }
 
-function command(j,k) {
+function command(j,k,sync) {
 		var fname = "data-stream/out." + j + "." + k;
 		if (tests[j].url.match("streamGzip=true")) {
 			var com = 'curl -s -g "' + tests[j].url + '" | gunzip';
@@ -129,7 +138,7 @@ function command(j,k) {
 			com = com + "| tee " + fname;
 		}
 		com = com + " | " + md5com;
-		com2 = "node streamTests.js --sync=true  --start="+j+" --all=false --n=" + n + " --server=" + argv.server + " --serverdata="+argv.serverdata;
+		com2 = "node streamTests.js --sync="+sync+" --start="+j+" --all=false --n=" + n + " --server=" + argv.server + " --serverdata="+argv.serverdata;
 		if (k == 1) {
 			logc("_____________________________________________________________________________________________________________________________________",11);
 			logc(com2,11);
@@ -140,7 +149,7 @@ function command(j,k) {
 }
 
 function diff(f1,f2) {
-		if (showdiffs) return
+		if (!showdiffs) return
 
 		child = exec('diff ' + f1 + ' ' + f2, function (error, stdout, stderr) {
 			if (stdout.length > 0) {
