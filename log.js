@@ -45,21 +45,26 @@ exports.logc = logc;
 // Log request information to file
 function logres(message, res) {
 
-	var tmp = arguments.callee.caller.toString().match(/function ([^\(]+)/) || '';
-	callfn = 'main';
+	var tmp = arguments.callee.caller.toString().match(/function ([^\(]+)/) || ''
+	var callfn = 'main'
+
 	if (tmp.length > 1) {
-		callfn = tmp[1];
+		callfn = tmp[1]
 	}
+
 	if (!res) {
 		console.error("logres() function requires two arguments.")
 	}
 
-	var entry = (new Date()).toISOString() + ","+callfn+"," + message + "\n";
-	//console.log(res.config.LOGDIRRES+res._headers[res.config.LOGHEADER])
+	var entry = (new Date()).toISOString() + ","+callfn+"," + message + "\n"
+
 	fs.appendFile(res.config.LOGDIRRES+res._headers[res.config.LOGHEADER], entry, 
-			function (err) {
-				if (err) console.log(err);
-			})
+		function (err) {
+			if (err) {
+				console.log("log.js: Error when attempting to append to response log: ")
+				console.log(err)
+			}
+		})
 }
 exports.logres = logres;
 
@@ -93,17 +98,19 @@ function logapp(message, res) {
 
 		fs.appendFile(fileprivate, logapp.entriesprivate, 
 			function(err){
-				logapp.entriesprivate = "";
-				logapp.nwriting = logapp.nwriting - 1;
-				if (err) console.log(err);
+				logapp.entriesprivate = ""
+				logapp.nwriting = logapp.nwriting - 1
+				if (err) console.log(err)
 			});
 		fs.appendFile(filepublic, logapp.entriespublic, 
-				function(err){
-					logapp.entriespublic = "";
-					logapp.nwriting = logapp.nwriting - 1;
-					if (err) console.log(err);
-				});
-
+			function (err) {
+				logapp.entriespublic = ""
+				logapp.nwriting = logapp.nwriting - 1
+				if (err) {
+					console.log("log.js: Error when attempting to append to response log: ")
+					console.log(err)
+				}
+			})
 	}
 }
 exports.logapp = logapp;
