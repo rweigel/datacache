@@ -12,22 +12,24 @@ var	whiskers = require("whiskers")
 var	domain   = require("domain")
 var qs       = require('querystring')
 var mmm      = require('mmmagic')
+var clc      = require('cli-color')
 var argv     = require('yargs')
 					.default({
 						'port': 7999,
-						'debugall': false,
-						'debugapp': false,
-						'debugappconsole': false,
-						'debugutil': false,
-						'debugutilconsole': false,
-						'debugstream': false,
-						'debugstreamconsole': false,
-						'debugplugin': false,
-						'debugpluginconsole': false,
-						'debugtemplate': false,
-						'debugscheduler': false,
-						'debugschedulerconsole': false,
-						'debuglineformatter': false
+						'debugall': "false",
+						'debugapp': "false",
+						'debugappconsole': "false",
+						'debugutil': "false",
+						'debugutilconsole': "false",
+						'debugstream': "false",
+						'debugstreamconsole': "false",
+						'debugplugin': "false",
+						'debugpluginconsole': "false",
+						'debugtemplate': "false",
+						'debugtemplateconsole': "false",
+						'debugscheduler': "false",
+						'debugschedulerconsole': "false",
+						'debuglineformatter': "false"
 					})
 					.argv
 
@@ -36,25 +38,26 @@ if (argv.help || argv.h) {
 	return
 }
 
+for (key in argv) {
+	if (key.match("debug")) {
+		argv[key] = s2b(argv[key])
+	}			
+}
 if (argv.debugall) {
-	argv.debugapp = true;
-	argv.debugappconsole = true;
-	argv.debugutil = true;
-	argv.debugutilconsole = true;
-	argv.debugstream = true;
-	argv.debugstreamconsole = true;
-	argv.debugplugin = true;
-	argv.debugpluginconsole = true;
-	argv.debugtemplate = true;
-	argv.debugscheduler = true;
-	argv.debugschedulerconsole = true;
-	//argv.debuglineformatter = true;
+	for (key in argv) {
+		if (key.match("debug") && !key.match("lineformatter")) {
+			argv[key] = argv[key]
+		}			
+	}
 }
 
 var util      = require('./util.js')
 var scheduler = require("./scheduler.js")
 var stream    = require("./stream.js")
 var log       = require("./log.js")
+
+function s2b(str) {if (str === "true") {return true} else {return false}}
+function s2i(str) {return parseInt(str)}
 
 if (0) {
 	// sudo apt-get install inotify-tools
@@ -98,7 +101,7 @@ process.on('uncaughtException', function(err) {
 		console.log("[datacache] - Address already in use.")
 	} else {
 		console.log("[datacache] - Uncaught Exception:")
-		console.log(err)
+		console.log(err.stack)
 	}
 	process.exit(1)
 })
@@ -324,7 +327,7 @@ if (develtsdset) {
 	msg = msg + " tsdset"
 }
 
-log.logc((new Date()).toISOString() + " - [datacache] Listening on port "+argv.port + msg, 0)
+console.log((new Date()).toISOString() + " [datacache] Listening on port "+argv.port + clc.blue(msg))
 
 function syncSummary(source, options, res) {
 
@@ -414,7 +417,7 @@ function handleRequest(req, res) {
 		log.logres("options = " + JSON.stringify(options), res)
 	}
 	if (options.debugappconsole) {
-		log.logc((new Date()).toISOString() + " - [datacache] Request: " + JSON.stringify(req.originalUrl), logcolor)
+		log.logc((new Date()).toISOString() + " [datacache] Request: " + JSON.stringify(req.originalUrl), logcolor)
 	}
 	if (options.debugappconsole) {
 		log.logc(options.loginfo + " app.handleRequest(): parseSource() returned source = " + source.toString().replace(/,/g,"\n\t"),logcolor)
@@ -446,9 +449,6 @@ function handleRequest(req, res) {
 
 function parseOptions(req, res) {
 
-	function s2b(str) {if (str === "true") {return true} else {return false}}
-	function s2i(str) {return parseInt(str)}
-
  	var options = {};
 
  	// TODO: Copy req.body to req.query.
@@ -470,19 +470,19 @@ function parseOptions(req, res) {
 	options.plugin         = req.query.plugin        || req.body.plugin        || "";
 	options.lineRegExp     = req.query.lineRegExp    || req.body.lineRegExp    || ".";	
 	options.lineFormatter  = req.query.lineFormatter || req.body.lineFormatter || "";
-	
-	options.debugapp       = req.query.debugapp      || req.body.debugapp      || argv.debugapp;
-	options.debugstream    = req.query.debugstream   || req.body.debugstream   || argv.debugstream;
-	options.debugutil      = req.query.debugutil     || req.body.debugutil     || argv.debugutil;
-	options.debugplugin    = req.query.debugplugin   || req.body.debugplugin   || argv.debugplugin;
-	options.debugtemplate  = req.query.debugtemplate || req.body.debugtemplate || argv.debugtemplate;
-	options.debuglineformatter  = req.query.debuglineformatter || req.body.debuglineformatter || argv.debuglineformatter;
-	options.debugscheduler      = req.query.debugscheduler     || req.body.debugscheduler     || argv.debugscheduler;
 
-	options.debugall       = s2b(req.query.debugall || req.body.debugall)     || argv.debugall;
+	options.debugall            = s2b(req.query.debugall || req.body.debugall)     || argv.debugall;
+
+	options.debugapp       = s2b(req.query.debugapp      || req.body.debugapp)      || argv.debugapp;
+	options.debugstream    = s2b(req.query.debugstream   || req.body.debugstream)   || argv.debugstream;
+	options.debugutil      = s2b(req.query.debugutil     || req.body.debugutil)     || argv.debugutil;
+	options.debugplugin    = s2b(req.query.debugplugin   || req.body.debugplugin)   || argv.debugplugin;
+	options.debugtemplate  = s2b(req.query.debugtemplate || req.body.debugtemplate) || argv.debugtemplate;
+	options.debuglineformatter  = s2b(req.query.debuglineformatter || req.body.debuglineformatter) || argv.debuglineformatter;
+	options.debugscheduler      = s2b(req.query.debugscheduler     || req.body.debugscheduler)     || argv.debugscheduler;
 
 	for (key in argv) {
-		if (key.match("debugstream") && !key.match("lineformatter")) {
+		if (key.match("debugconsole") && !key.match("lineformatter")) {
 			options[key] = argv[key]
 		}			
 	}
@@ -494,7 +494,7 @@ function parseOptions(req, res) {
 			}			
 		}
 	}
-	
+
 	if (options.lineFormatter === "") {
 		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){return line.search(lineRegExp)!=-1;}";
 		options.extractData = req.query.extractData  || req.body.extractData   || 'body.toString().split("\\n").filter('+options.lineFilter+').join("\\n") +"\\n"';	

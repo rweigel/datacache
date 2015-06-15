@@ -132,7 +132,10 @@ function stream(source, options, res) {
 	}
 
 	function streamcat() {
-					
+		// http://stackoverflow.com/questions/16868052/concatenating-gzip-deflate-data-on-node-js-request
+		// https://groups.google.com/forum/#!topic/nodejs/4qkRR867nZg
+		// https://github.com/joyent/node/issues/6032
+		// https://github.com/oorabona/node-liblzma/commit/684ec73beb7059b6e12d955ca3788547fabb98a0
 		res.setHeader('Content-Disposition', streamfilecat.replace(/.*\/(.*)/,"$1"))
 
 		if (fs.existsSync(streamfilecatlck)) {
@@ -301,7 +304,7 @@ function stream(source, options, res) {
 				log.logres("Processing next URL.",res)
 			}
 			if (options.debugstreamconsole) {
-				log.logc(rnd+ "Processing next URL.",logcolor)
+				log.logc(rnd+ " Processing next URL.",logcolor)
 			}
 			scheduler.addURL(source[reqstatus[rnd].Nx], options, function (work) {processwork(work,true)});
 		}
