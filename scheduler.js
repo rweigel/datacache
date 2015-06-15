@@ -43,7 +43,7 @@ function addURL(url, options, callback) {
 	exports.emit("submit", work)
 	worksQueue.push(work)
 	if (work.options.debugschedulerconsole) {
-		log.logc(options.loginfo + " addURL: calling run().", options.logcolor)
+		log.logc(options.loginfo + " scheduler.addURL: calling run().", options.logcolor)
 	}
 	run();
 }
