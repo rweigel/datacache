@@ -1,10 +1,12 @@
-exports.filterSignature = function(options) {
+var log = require("../log.js")
+
+exports.filterSignature = function (options) {
 	return options.streamFilterComputeWindow + options.streamFilterComputeFunction;
 }
 
-exports.stats = function stats(datas,options) {
+exports.stats = function stats(datas, options) {
 
-	var datas = datas.split(/\n/g);
+	var datas   = datas.split(/\n/g);
 	var dataave = [];
 	var datastd = [];
 	var datamax = [];
@@ -21,13 +23,21 @@ exports.stats = function stats(datas,options) {
 
 	var data = datas[0].split(/\s+/g);
 
+	if (options.debuglinefilterconsole) {
+		log.logc(options.loginfo + " stats.js: # rows: = "+datas.length, options.logcolor)
+	}
+	if (options.debuglinefilterconsole) {
+		log.logc(options.loginfo + " stats.js: # cols in first row: = "+data.length, options.logcolor)
+	}
+
 	if (options.streamFilterExcludeColumnValues.match(",")) {
 		excludeso = options.streamFilterExcludeColumnValues.split(",");
-		for (j = 0;j<data.length-1;j++) {
+		for (j = 0;j < data.length-1;j++) {
 			excludes[j] = parseFloat(excludeso[j]);
 		}	
 	} else {
-		for (j = 0;j<data.length-1;j++) {
+		// Use same exclude value for all columns if only one was given.
+		for (j = 0;j < data.length-1;j++) {
 			excludes[j] = parseFloat(options.streamFilterExcludeColumnValues);
 		}		
 	}
@@ -52,12 +62,17 @@ exports.stats = function stats(datas,options) {
 	t  = new Date(data[0]).getTime();
 
 	// Iterate over all rows except first.
-	for (i = 1;i<datas.length;i++) {
+	for (i = 1;i < datas.length;i++) {
+
+		if (options.debuglinefilterconsole) {
+			log.logc(options.loginfo + " stats.js: datas[i] = " + datas[i], options.logcolor)
+		}
 
 		data = datas[i].split(/\s+/g);
 		t  = t + new Date(data[0]).getTime()
 
-		for (j = 1;j<data.length;j++) {
+		// Iterate over all columns except first
+		for (j = 1;j < data.length;j++) {
 			tmp = parseFloat(data[j]);			
 			if (tmp != excludes[j-1]) {
 				if (tmp > datamax[j-1]) {
@@ -73,7 +88,7 @@ exports.stats = function stats(datas,options) {
 		}
 	}
 
-	for (j = 1;j<data.length;j++) {
+	for (j = 1;j < data.length;j++) {
 		if (Nvalid[j-1] > 0) {
 			datastd[j-1] = (datastd[j-1]-(dataave[j-1]*dataave[j-1]/Nvalid[j-1]))/Nvalid[j-1];
 			dataave[j-1] = dataave[j-1]/Nvalid[j-1];
@@ -85,23 +100,26 @@ exports.stats = function stats(datas,options) {
 
 	t = new Date(t/datas.length).toISOString();
 
-	//console.log(datastd.join(" "));
 	if (options.streamFilterComputeFunction.match(/stats/)) {
-		return t+" "+dataave.join(" ")+" "+datastd.join(" ")+" "+datamax.join(" ")+" "+datamin.join(" ")+" "+Nvalid.join(" ")+"\n";
+		ret = t+" "+dataave.join(" ")+" "+datastd.join(" ")+" "+datamax.join(" ")+" "+datamin.join(" ")+" "+Nvalid.join(" ")+"\n";
 	}
 	if (options.streamFilterComputeFunction.match(/max/)) {
-		return t+" "+datamax.join(" ")+"\n";
+		ret = t+" "+datamax.join(" ")+"\n";
 	}
 	if (options.streamFilterComputeFunction.match(/min/)) {
-		return t+" "+datamin.join(" ")+"\n";
+		ret = t+" "+datamin.join(" ")+"\n";
 	}
 	if (options.streamFilterComputeFunction.match(/mean/)) {
-		return t+" "+dataave.join(" ")+"\n";
+		ret = t+" "+dataave.join(" ")+"\n";
 	}
 	if (options.streamFilterComputeFunction.match(/std/)) {
-		return t+" "+datastd.join(" ")+"\n";
+		ret = t+" "+datastd.join(" ")+"\n";
 	}
 	if (options.streamFilterComputeFunction.match(/Nvalid/)) {
-		return t+" "+Nvalid.join(" ")+"\n";
+		ret = t+" "+Nvalid.join(" ")+"\n";
 	}
+	if (options.debuglinefilterconsole) {
+		log.logc(options.loginfo + " stats.js: returning " + ret, options.logcolor)
+	}
+	return ret
 }
