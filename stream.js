@@ -32,6 +32,7 @@ function stream(source, options, res) {
 	reqstatus[rnd].dt       = 0;
 	
 	var plugin = scheduler.getPlugin(options,source[0])
+	var filterSignature = ""; 
 	
 	if (options.streamFilterComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
 		if (options.debugstream) {
@@ -40,7 +41,8 @@ function stream(source, options, res) {
 		if (options.debugstreamconsole) {
 			log.logc(options.loginfo+" stream.js: Reading ./filters/stats.js",logcolor)
 		}
-		var filter = require("./filters/stats.js");
+		var statsfilter = require("./filters/stats.js");
+		filterSignature = filterSignature + statsfilter.filterSignature(options);
 	}
 
 	if (options.streamFilterComputeFunction.match(/regrid/)) {
@@ -50,8 +52,8 @@ function stream(source, options, res) {
 		if (options.debugstreamconsole) {
 			log.logc(options.loginfo+" stream.js: Reading ./filters/regrid.js",logcolor)
 		}
-
-		var filter = require("./filters/regrid.js");
+		var regridfilter = require("./filters/regrid.js");
+		filterSignature = filterSignature + regridfilter.filterSignature(options);
 	}
 	
 	extractSignature = source.join(",");	
@@ -63,7 +65,6 @@ function stream(source, options, res) {
 		log.logc(options.loginfo+" stream.js: plugin signature: " + util.md5(extractSignature),logcolor)
 	}
 
-	filterSignature = ""; 
 	//if (filter.filterSignature) filterSignature = filter.filterSignature(options);
 	//if (options.debugapp) if (options.debugstreamconsole) log.logc(options.loginfo+" filter signature: " + filterSignature);
 
@@ -485,12 +486,12 @@ function stream(source, options, res) {
 			    		})})
 		} else if (options.streamFilterReadLines > 0 || options.streamFilterReadColumns !== "0" ) {
 		    if (options.debugstream) {
-		    	log.logres("Reading lines of "+ fname.replace(__dirname,""),res)
+		    	log.logres("Reading lines of "+ fname.replace(__dirname,"") + ".data",res)
 		    }
 	    	if (options.debugstreamconsole) {
-	    		log.logc(rnd+" stream.processwork(): Reading lines of "+ fname.replace(__dirname,""),logcolor)
+	    		log.logc(rnd+" stream.processwork(): Calling readlines() with "+ fname.replace(__dirname,"") + ".data",logcolor)
 	    	}
-			readline(fname + ".data")
+			readlines(fname + ".data")
 		} else {	
 		    if (options.debugstream) {
 		    	log.logres("Reading all of "+fname.replace(__dirname,""),res)
@@ -570,36 +571,47 @@ function stream(source, options, res) {
 			}
 		}
 
-		var line   = '';
-		var lines  = '';
-		var linesx = ''; // Modified kept lines.
-		var linesa = ''; // Accumulated lines.
 
-		var lr = 0; // Lines kept.
-		var k = 1;  // Lines read.
-		
-		var done = false;
-		var fnamesize = -1;
+		function readlines(fnamefull) {
 
-		function readline(fnamefull) {	
+			var line   = ''; 
+			var lines  = ''; // Accumulated lines.
+			var linesx = ''; // Modified kept lines.
+
+			var lk = 0; // Lines kept.
+			var lr = 1; // Lines read.
+			
+			var fnamesize = -1;
+
+			if (options.debugstreamconsole) {
+				log.logc(options.loginfo + " Reading lines of " + fnamefull.replace(__dirname,""), logcolor)
+			}
+
+			// https://github.com/nickewing/line-reader
 			lineReader.eachLine(fnamefull, function(line, last) {
 
 				if (false) {
-					var stats = fs.statSync(fnamefull);
-	 				var fnamesize = stats["size"];
+					var stats = fs.statSync(fnamefull)
+	 				var fnamesize = stats["size"]
 	 				if (fnamesize != fnamesizelast && fnamesizelast != -1) {
 						if (options.debugstreamconsole) {
-							log.logc(options.loginfo + " stream.readline(): writeCache lock status: " + util.writeCache.memLock[fname],logcolor)
-	 						log.logc(options.loginfo + " stream.readline(): Error: "+fname.replace(/.*\/(.*)/,"$1")+" size has changed while reading.",logcolor)
-	 						log.logc(options.loginfo + " stream.readline(): Current size: "+fnamesize,logcolor)
-	 						log.logc(options.loginfo + " stream.readline(): Last size   : "+fnamesizelast,logcolor)
+							log.logc(options.loginfo + " stream.readlines(): writeCache lock status: " + util.writeCache.memLock[fname], 160)
+	 						log.logc(options.loginfo + " stream.readlines(): Error: " + fname.replace(/.*\/(.*)/,"$1")+" size has changed while reading.", 160)
+	 						log.logc(options.loginfo + " stream.readlines(): Current size: " + fnamesize, 160)
+	 						log.logc(options.loginfo + " stream.readlines(): Last size   : " + fnamesizelast, 160)
 	 					}	
 	 				}
-	 				fnamesizelast = fnamesize;
+	 				fnamesizelast = fnamesize
  				}
 
-				if (done) {
-					return "";
+ 				if (options.debugstreamconsole) {
+					if (lr == 1) {
+						log.logc(options.loginfo + " First line: " + line, logcolor)
+					} else if (last) {
+						log.logc(options.loginfo + " Last line: " + line, logcolor)
+					} else {
+						log.logc(options.loginfo + " Line: " + line, logcolor)
+					}
 				}
 				
 				var stopline = options.streamFilterReadLines;
@@ -607,89 +619,147 @@ function stream(source, options, res) {
 					stopline = Infinity;
 				}
 
-				if (k >= options.streamFilterReadPosition) {				  		
-					if (lr == stopline) {	
+				if (lr >= options.streamFilterReadPosition) {
+
+					if (lk == stopline) {	
 						if (options.debugstream) {
-							log.logres("Callback due to reaching stop line.",res)
+							log.logres("Reached stop line.",res)
+							log.logres(options.loginfo + " stream.readlines(): Line: " + line, res)
 						}
 						if (options.debugstreamconsole) {
-							log.logc(options.loginfo+" stream.readline(): Callback due to reaching stop line.",logcolor)
+							log.logc(options.loginfo+" stream.readlines(): Reached stop line.",logcolor)
+							log.logc(options.loginfo + " stream.readlines(): Line: " + line, logcolor)
 						}
-						readcallback("",lines);
-						lines = "";
-						done = true;
+						return false
 					}
 					
 					if (options.streamFilterReadColumns !== "0") {
-						
-						//if (options.debugstream) if (options.debugstreamconsole) log.logc("Before " + line)
-						line = lineFormatter.formatLine(line,options);
-						//if (options.debugstream) if (options.debugstreamconsole) log.logc("After " + line)
-						
-						if (line == "END_OF_TIMERANGE") {	
-							if (options.debugstream) {
-								log.logres("Callback due to end of time range.", res)
-							}
-							if (options.debugstreamconsole) {
-								log.logc(options.loginfo+" stream.readline(): Callback due to end of time range.", logcolor)
-							}
-							readcallback("",lines)
-							lines = ""
-							done = true
-							return;
+
+						if (options.debugstream && (lr == 1 || last)) {
+							log.logres("Before calling formatLine: " + line, res)
+						}
+						if (options.debugstreamconsole && lr == 1) {
+							log.logc(options.loginfo + " Before calling formatLine: " + line, logcolor)
 						}
 
-						tmparr = line.split(/\s+/g);
-						line = "";
+						line = lineFormatter.formatLine(line,options);
 
-						for (var z = 0;z < outcolumns.length; z++) {
+						if (options.debugstream && (lr == 1 || last)) {
+							log.logres("After calling formatLine: " + line, res)
+						}						
+						if (options.debugstreamconsole && (lr == 1 || last)) {
+							log.logc(options.loginfo + " After calling formatLine: " + line, logcolor)
+						}
+
+						if (line == "END_OF_TIMERANGE") {	
+							if (options.debugstream) {
+								log.logres("Reached end of time range.", res)
+							}
+							if (options.debugstreamconsole) {
+								log.logc(options.loginfo+" stream.readlines(): Reached end of time range.", logcolor)
+							}
+							return false
+						}
+
+						if (options.debugstreamconsole && (lr == 1 || last)) {
+							log.logc(options.loginfo+" stream.readlines(): Splitting line on \\s+", logcolor)
+						}
+						
+						tmparr = line.split(/\s+/g)
+						line = ""
+
+						if (options.debugstreamconsole && (lr == 1 || last)) {
+							log.logc(options.loginfo+" stream.readlines(): Line has " + tmparr.length + " elements.", logcolor)
+						}
+						if (options.debugstreamconsole && (lr == 1 || last)) {
+							log.logc(options.loginfo+" stream.readlines(): Extracting outcolumns.", logcolor)
+						}
+						for (var z = 0;z < outcolumns.length-1; z++) {
 							line = line + tmparr[outcolumns[z]-1] + " ";
-						}							
+						}
+
+						line = line + tmparr[outcolumns[z]-1];
+
 					}
 
-					line = line.substring(0,line.length-1);
-
+					// lineReader only removes trailing \n.  Remove trailing \r.
+					line = line.replace(/\r$/,"")
 					if (!line.match("undefined")) {
 						lines = lines + line + "\n";
-						linesa = linesa + line + "\n";
+					} else {
+						console.log("line is undefined.")
 					}
 
-					lr = lr + 1;
+					lk = lk + 1;
 
 					if (options.streamFilterComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
-						if (lr % options.streamFilterComputeWindow == 0) {
-							linesx = linesx + filter.stats(linesa.replace(/\n$/,""),options)
-							linesa = ''
+						if (!options.streamFilterComputeFunction.match(/regrid/)) {
+							if (lk % options.streamFilterComputeWindow == 0) {
+								linesx = linesx + statsfilter.stats(lines.replace(/\n$/,""),options)
+								lines = ''
+							}
 						}
 					}
 					
 				}
-				k = k+1;
+				lr = lr+1;
 			}).then(function () {
-				if (!done) {
-					if (options.streamFilterComputeFunction.match(/stats|mean|max|min|std|Nvalid/) && linesx !== '') {
+				if (options.debugstreamconsole) {
+					log.logc(options.loginfo+" stream.readlines(): lineReader.eachLine.then() called.", logcolor)
+				}
+
+				if (options.streamFilterComputeFunction.match(/regrid/)) {
+					// Not tested.
+					if (options.debugstream) {
+						log.logres("stream.js: Calling regrid()", res)
+					}
+					if (options.debugstreamconsole) {
+						log.logc(options.loginfo + " stream.readlines(): stream.js: Calling regrid() with:", logcolor)
+						console.log(lines)
+					}
+					lines = regridfilter.regrid(lines, options)
+					if (options.debugstreamconsole) {
+						log.logc(options.loginfo + " stream.readlines(): stream.js: regrid() returned:", logcolor)
+						console.log(lines)
+					}
+
+					// If regrid is requested, stats were not computed.  Compute them here if requested.
+					if (options.streamFilterComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
+						var linesv = lines.join(/\n/)
+						var h = options.streamFilterComputeWindow
+						var Nb = Math.floor(linesv.length/h)
+						linesx = '';
+						if (options.debugstreamconsole) {
+							log.logc(options.loginfo + " stream.readlines(): stream.js: Nblocks = " + Nb, logcolor)
+							log.logc(options.loginfo + " stream.readlines(): stream.js: Block height = " + h, logcolor)
+						}
+						for (var b = 0; b < Nb-1;b++) {
+							linesx = linesx + statsfilter.stats(linesv.slice(b*h,(b+1)*h).join(/\n/).replace(/\n$/,""),options)
+						}
+						readcallback("", linesx);
+					} else {
+						readcallback("", lines);
+					}
+					return
+				}
+
+				if (linesx === '') {
+					readcallback("",lines)
+				} else {
+					if (lines === '') {
+						readcallback("",linesx)
+					} else {
 						if (options.debugstream) {
 							log.logres("Last window not full.", res)
 						}
 						if (options.debugstreamconsole) {
-							log.logc(options.loginfo+" stream.readline(): Last window not full.", logcolor)
+							log.logc(options.loginfo+" stream.readlines(): Last window not full.", logcolor)
 						}
-						linesx = linesx + filter.stats(linesa.replace(/\n$/,""), options)
+						linesx = linesx + statsfilter.stats(lines.replace(/\n$/,""), options)
 						readcallback("",linesx)
-					} else {
-						if (options.streamFilterComputeFunction.match(/regrid/) && lines !== '') {
-							if (options.debugstream) {
-								log.logres("stream.js: Calling regrid()", res)
-							}
-							if (options.debugstreamconsole) {
-								log.logc(options.loginfo + " stream.readline(): stream.js: Calling regrid()", logcolor)
-							}
-							lines = filter.regrid(lines, options)
-						}
-						readcallback("", lines);
 					}
 				}
-			});
+			})
 		}
 		
 		function readcallback(err, data, cachepart) {
