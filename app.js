@@ -29,7 +29,10 @@ var argv     = require('yargs')
 						'debugtemplateconsole': "false",
 						'debugscheduler': "false",
 						'debugschedulerconsole': "false",
-						'debuglineformatter': "false"
+						'debuglineformatter': "false",
+						'debuglineformatterconsole': "false",
+						'debuglinefilter': "false",
+						'debuglinefilterconsole': "false"
 					})
 					.argv
 
@@ -45,7 +48,8 @@ for (key in argv) {
 }
 if (argv.debugall) {
 	for (key in argv) {
-		if (key.match("debug") && !key.match("lineformatter")) {
+		//if (key.match("debug") && !key.match("lineformatter")) {
+		if (key.match("debug")) {
 			argv[key] = argv[key]
 		}			
 	}
@@ -132,6 +136,7 @@ setInterval(function () {
 	fs.appendFile(file, tmp.toISOString() + " " + mem.rss + " " + mem.heapTotal + " " + mem.heapUsed + "\n")
 },1000);
 
+if (0) {
 // Middleware
 // Wrap app.VERB to handle exceptions: send 500 back to the client before crashing
 ["get", "post", "put"].forEach(function (verb) {
@@ -142,7 +147,7 @@ setInterval(function () {
 			var d = domain.create();
 			d.on('error', function (err) {
 				console.log('[datacache] - Error: ');
-				console.log(err)
+				console.log(err.stack)
 				res.send(500, "")
 
 				// TODO: needs a better error handling, like let other works
@@ -157,6 +162,7 @@ setInterval(function () {
 		})
 	}
 })
+}
 
 app.use(express.limit('4mb')); // Max POST size
 app.use(express.methodOverride());
@@ -179,9 +185,8 @@ app.use(function (req, res, next) {
 });
 
 app.get('/', function (req, res) {
-	res.contentType("html");
-	fs.readFile(__dirname+"/async.htm", "utf8", 
-		function (err, data) {res.send(data);});
+	res.contentType("html")
+	res.send("DataCache")
 })
 
 app.get("/report", function (req,res) {
@@ -235,11 +240,12 @@ app.get("/plugins", function (req, res) {
 
 Magic = mmm.Magic;
 var magic = new Magic(mmm.MAGIC_MIME_TYPE);
-app.use(function(req, res, next){
+app.use(function(req, res, next) {
 	magic.detectFile(__dirname + req.path, function (err, result) {
 		if (!err) {
 			res.contentType(result)
 		} else {
+			console.log('Magic')
 			console.log(err)
 		}
 		next()
@@ -452,7 +458,7 @@ function parseOptions(req, res) {
  	var options = {};
 
  	// TODO: Copy req.body to req.query.
-	options.req = {};
+	options.req            = {};
 	options.req.query      = req.query;
 	
 	options.forceUpdate    = s2b(req.query.forceUpdate    || req.body.forceUpdate    || "false");
@@ -471,15 +477,14 @@ function parseOptions(req, res) {
 	options.lineRegExp     = req.query.lineRegExp    || req.body.lineRegExp    || ".";	
 	options.lineFormatter  = req.query.lineFormatter || req.body.lineFormatter || "";
 
-	options.debugall            = s2b(req.query.debugall || req.body.debugall)     || argv.debugall;
-
+	options.debugall       = s2b(req.query.debugall      || req.body.debugall)      || argv.debugall;
 	options.debugapp       = s2b(req.query.debugapp      || req.body.debugapp)      || argv.debugapp;
 	options.debugstream    = s2b(req.query.debugstream   || req.body.debugstream)   || argv.debugstream;
 	options.debugutil      = s2b(req.query.debugutil     || req.body.debugutil)     || argv.debugutil;
 	options.debugplugin    = s2b(req.query.debugplugin   || req.body.debugplugin)   || argv.debugplugin;
 	options.debugtemplate  = s2b(req.query.debugtemplate || req.body.debugtemplate) || argv.debugtemplate;
-	options.debuglineformatter  = s2b(req.query.debuglineformatter || req.body.debuglineformatter) || argv.debuglineformatter;
-	options.debugscheduler      = s2b(req.query.debugscheduler     || req.body.debugscheduler)     || argv.debugscheduler;
+	options.debuglineformatter = s2b(req.query.debuglineformatter || req.body.debuglineformatter) || argv.debuglineformatter;
+	options.debugscheduler     = s2b(req.query.debugscheduler     || req.body.debugscheduler)     || argv.debugscheduler;
 
 	for (key in argv) {
 		if (key.match("debugconsole") && !key.match("lineformatter")) {
@@ -496,11 +501,11 @@ function parseOptions(req, res) {
 	}
 
 	if (options.lineFormatter === "") {
-		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){return line.search(lineRegExp)!=-1;}";
-		options.extractData = req.query.extractData  || req.body.extractData   || 'body.toString().split("\\n").filter('+options.lineFilter+').join("\\n") +"\\n"';	
+		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){return line.search(lineRegExp)!=-1}";
+		options.extractData = req.query.extractData  || req.body.extractData   || 'body.toString().split("\\n").filter('+options.lineFilter+').join("\\n") + "\\n"';	
 	} else {
 		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){if (line.search(options.lineRegExp) != -1) return lineFormatter.formatLine(line,options);}"
-		options.extractData = '(body.toString().split("\\n").map(function(line){if (line.search(options.lineRegExp) != -1) {return lineFormatter.formatLine(line,options);}}).join("\\n")+"\\n").replace(/^\\n+/,"").replace(/\\n\\n+/g,"\\n")';
+		options.extractData = '(body.toString().split("\\n").map(function(line){if (line.search(options.lineRegExp) != -1) {return lineFormatter.formatLine(line,options)}}).join("\\n")+"\\n").replace(/^\\n+/,"").replace(/\\n\\n+/g,"\\n")';
 	}
 
 	if (req.query.extractData || req.body.extractData || req.query.lineFilter || req.body.lineFilter) {
@@ -525,33 +530,33 @@ function parseOptions(req, res) {
 	options.streamFilterReadColumns     =     req.query.streamFilterReadColumns     || req.body.streamFilterReadColumns       || "0";
 	options.streamFilterExcludeColumnValues = req.query.streamFilterExcludeColumnValues || req.body.streamFilterExcludeColumnValues    || "";
 	options.streamFilterTimeFormat      =     req.query.streamFilterTimeFormat      || req.body.streamFilterTimeFormat        || "0";
-	options.streamFilterComputeWindow   = s2i(req.query.streamFilterComputeWindow   || req.body.streamFilterComputeWindow    || "1"); 
-	options.streamFilterComputeFunction =     req.query.streamFilterComputeFunction || req.body.streamFilterComputeFunction  || ""; 
+	options.streamFilterComputeWindow   = s2i(req.query.streamFilterComputeWindow   || req.body.streamFilterComputeWindow     || "1"); 
+	options.streamFilterComputeFunction =     req.query.streamFilterComputeFunction || req.body.streamFilterComputeFunction   || ""; 
 
-	options.streamFilterRegridDt        = s2i(req.query.streamFilterRegridDt	       || req.body.streamFilterRegridDt) ||  "";
+	options.streamFilterRegridDt        = s2i(req.query.streamFilterRegridDt	    || req.body.streamFilterRegridDt)        ||  "";
 	options.streamFilterRegridTimeRange = s2i(req.query.streamFilterRegridTimeRange || req.body.streamFilterRegridTimeRange) || "";
     
     options.timeRange = req.body.timeRange || req.query.timeRange || "";
 	if (options.timeRange !== "") {
-		options.timeRangeExpanded  = expandISO8601Duration(options.timeRange,{debug:options.debugtemplate})
+		options.timeRangeExpanded = expandISO8601Duration(options.timeRange,{debug:options.debugtemplate})
 	} else {
-		options.timeRangeExpanded  = options.timeRange;
+		options.timeRangeExpanded = options.timeRange
 	}
 
 	if (options.dir) {
 	    if (options.dir[0] !== '/') {
-			options.dir = '/'+options.dir;
+			options.dir = '/' + options.dir
 	    }
-	    if (options.dir[options.dir.length-1] !== '/'){
-			options.dir = options.dir + '/';
+	    if (options.dir[options.dir.length-1] !== '/') {
+			options.dir = options.dir + '/'
 	    }
 	}
 	
 	if (argv.debugapp) {
-		log.logres("options after parseOptions:"+JSON.stringify(options), res);
+		log.logres("options after parseOptions:"+JSON.stringify(options), res)
 	}
 	
-	return options;
+	return options
 }
 
 function parseSource(req, res) {
