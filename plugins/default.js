@@ -50,12 +50,22 @@ exports.process = function (work, callback) {
 
 		util.get(work.url, function (error, response, body) {
 
+			if (error) {
+				work.error = "Can't fetch data";
+				if (debugconsole) {
+					log.logc(work.options.loginfo + " default.process(): Error when attempting GET : " + error, logcolor)
+				}
+				callback(true, work);
+				return
+			}
+
 			if (response.statusCode !== 200) {
 				work.error = "Can't fetch data";
 				if (debugconsole) {
-					log.logc(work.options.loginfo + " default.process(): Error when attempting to GET " + work.url, logcolor)
+					log.logc(work.options.loginfo + " default.process(): Non-200 status code when attempting to GET: " + response.statusCode, logcolor)
 				}
-				callback(true, work);
+				callback(true, work)
+				return
 			} else {
 
 				if (debugconsole)  {
@@ -97,30 +107,30 @@ exports.process = function (work, callback) {
 				util.writeCache(work, function () {callback(false, work)})
 			}
 		})
-			.on("error", function (err) {
+		.on("error", function (err) {
+			if (debugconsole) {
+				log.logc(work.options.loginfo + " default.process(): On error event.", logcolor)
+			}
+			//console.log(err)
+		})
+		.on("data", function (data) {
+			sz = sz + data.length;
+			
+			if (!work.getFirstChunkTime) {
 				if (debugconsole) {
-					log.logc(work.options.loginfo + " default.process(): On error event.", logcolor)
+					log.logc(work.options.loginfo + " default.process(): Got first chunk of size [bytes] " + data.length, logcolor)
 				}
-				console.log(err)
-			})
-			.on("data", function (data) {
-				sz = sz + data.length;
-				
-				if (!work.getFirstChunkTime) {
-					if (debugconsole) {
-						log.logc(work.options.loginfo + " default.process(): Got first chunk of size [bytes] " + data.length, logcolor)
-					}
-				    work.getFirstChunkTime = new Date();
-				}
-			})
-			.on("end", function () {
-				if (debugconsole) {
-					log.logc(work.options.loginfo + " default.process(): On end event.  Size [bytes]     " + sz, logcolor)
-				}
-				if (!work.getEndTime) {
-				    work.getEndTime = new Date();
-				}
-			})
+			    work.getFirstChunkTime = new Date();
+			}
+		})
+		.on("end", function () {
+			if (debugconsole) {
+				log.logc(work.options.loginfo + " default.process(): On end event.  Size [bytes]     " + sz, logcolor)
+			}
+			if (!work.getEndTime) {
+			    work.getEndTime = new Date();
+			}
+		})
 
 
 	} else if (work.url.match(/^ftp/)) {
@@ -218,10 +228,10 @@ exports.extractData = function (body, options) {
 	if (options.unsafeEval) {
 		if (debugconsole) {
 			log.logc(options.loginfo + " default.extractData(): Using unsafe eval because extractData and lineRegExp are default values.", logcolor)
-			log.logc(options.loginfo + " Evaluating " + options.extractData, logcolor)
-			log.logc(options.loginfo + " lineRegExp = " + lineRegExp, logcolor)
-	    }
-	    return eval(options.extractData)
+			log.logc(options.loginfo + " default.extractData(): Evaluating " + options.extractData, logcolor)
+			log.logc(options.loginfo + " default.extractData(): lineRegExp = " + lineRegExp, logcolor)
+		}
+		return eval(options.extractData)
 	}
 
 	var window
