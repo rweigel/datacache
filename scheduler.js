@@ -43,7 +43,7 @@ function addURL(url, options, callback) {
 	exports.emit("submit", work)
 	worksQueue.push(work)
 	if (work.options.debugschedulerconsole) {
-		log.logc(options.loginfo + " scheduler.addURL: calling run().", options.logcolor)
+		log.logc(options.loginfo + " scheduler.addURL: Calling run().", options.logcolor)
 	}
 	run();
 }
@@ -83,6 +83,11 @@ function run() {
 			work.cacheCheckFinishedTime = new Date()
 			if (work.options.debugschedulerconsole) {
 				log.logc(loginfo + " scheduler.run(): util.isCached() callback.", logcolor)
+				log.logc(loginfo + " scheduler.run(): work.foundInCache      = " + work.foundInCache, logcolor)
+				log.logc(loginfo + " scheduler.run(): options.forceUpdate    = " + work.options.forceUpdate, logcolor)
+				log.logc(loginfo + " scheduler.run(): options.forceWrite     = " + work.options.forceWrite, logcolor)
+				log.logc(loginfo + " scheduler.run(): options.respectHeaders = " + work.options.respectHeaders, logcolor)
+				log.logc(loginfo + " scheduler.run(): work.isExpired         = " + work.isExpired, logcolor)
 			}
 			if (!work.foundInCache || work.options.forceUpdate || (work.options.respectHeaders && work.isExpired)) {				
 			    work.preprocess(function (err, work) {
