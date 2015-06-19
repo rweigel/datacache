@@ -1,4 +1,5 @@
-var moment = require('moment');
+var moment = require('moment')
+var log    = require('../log.js')
 
 exports.extractSignature = function (options) {
 	var version = "1.0.0";
@@ -12,21 +13,22 @@ exports.extractSignature = function (options) {
 
 function plugininfo(options,what) {
 
-	var debug = options.debuglineformatter;
-	//debug = true;
+	var debug = options.debuglineformatterconsole;
 
 	var scheduler = require("../scheduler.js");
 	var plugin = scheduler.getPlugin(options);
 
 	if (plugin === "") {
-		console.log("Error: plugin "+options.plugin+" not found.");
+		log.logc(options.loginfo + "Error: plugin "+options.plugin+" not found.", 160);
 	}
 
 	if (what === "timeFormat") {
 		var timeFormat = "";
 		if (plugin.timeFormat) {
 			timeFormat = plugin.timeFormat();
-			if (debug) console.log("formattedTime: Plugin has time format of: "+timeFormat);
+			if (debug) {
+				log.logc(options.loginfo + " formattedTime.plugininfo(): Plugin has time format of: "+timeFormat, options.logcolor);
+			}
 		}
 		return timeFormat;
 	}
@@ -34,7 +36,9 @@ function plugininfo(options,what) {
 		var timeColumns = "";
 		if (plugin.timeColumns) {
 			timeColumns = plugin.timeColumns();
-			if (debug) console.log("formattedTime: Plugin has time columns of: "+timeColumns);
+			if (debug) {
+				log.logc(options.loginfo + " formattedTime.plugininfo(): Plugin has time columns of: "+timeColumns, options.logcolor);
+			}
 		}
 		return timeColumns;
 	}
@@ -75,8 +79,21 @@ exports.columnTranslator = function(col,options) {
 
 exports.formatLine = function (line, options) {
 
-	var debug = options.debuglineformatter;
-	//debug = true;
+	var debug = options.debuglineformatterconsole;
+
+	// Only show debug information for first line.
+	if (exports.formatLine.wascalled)
+		if (exports.formatLine.wascalled[options.loginfo]) {
+		debug = false
+	}
+	if (!exports.formatLine.wascalled) {
+		exports.formatLine.wascalled = {};
+		if (!exports.formatLine.wascalled[options.loginfo]) {
+			exports.formatLine.wascalled[options.loginfo] = true;
+		} 
+	}
+	
+	exports.formatLine.wascalled[options.loginfo] = exports.formatLine.wascalled[options.loginfo] + 1;
 
 	var timeformat  = options.req.query.timeformat   || "$Y-$m-$dT$H:$M$SZ";//"YYYY-MM-DDTHH:mm:ss.SSSZ";
 	var timecolumns = options.req.query.timecolumns  || "1";
@@ -91,16 +108,18 @@ exports.formatLine = function (line, options) {
 
 	//timeformat = timeformat.replace("yyyy","YYYY").replace("yy","YY").replace("dd",'DD').replace("S","SSS").replace("SS","SSS").replace("j","DDD");
 	timeformat = timeformat.replace("$Y","YYYY").replace("$m","MM").replace("$H","HH").replace("$M","mm").replace("$d",'DD').replace("$S","ss").replace("$j","DDD").replace("$(millis)","SSS");
-	if (debug) console.log("formattedTime: timeformat: " + timeformat);
-	if (debug) console.log("formattedTime: timecolumns: " + timecolumns);
+	if (debug) {
+		log.logc(options.loginfo + " formattedTime.formatLine(): timeformat: " + timeformat, options.logcolor);
+		log.logc(options.loginfo + " formattedTime.formatLine(): timecolumns: " + timecolumns, options.logcolor);
+	}
 
 	var timeformata  = timeformat.split(/,|\s+/);
 	var timecolumnsa = timecolumns.split(/,/);
-
-	if (debug) console.log("formattedTime: line: "+line);
 		       
 	if (line === "") {
-		if (debug) console.log("formattedTime: Empty line.");
+		if (debug) {
+			log.logc(options.loginfo + " formattedTime().formatLine: formattedTime: Empty line.", options.logcolor);
+		}
 		return "";
 	}
 	
@@ -110,10 +129,10 @@ exports.formatLine = function (line, options) {
 	datav      = line.split(/,|\s+/).slice(parseInt(timecolumnsa[timecolumnsa.length-1]));
 
 	if (debug) {
-		console.log("formattedTime: line: " + line);
-		console.log("formattedTime: timeformat array: " + timeformata.join(","));
-		console.log("formattedTime: time array: " + timev.join(","))
-		console.log("formattedTime: data array: " + datav.join(","));
+		log.logc(options.loginfo + " formattedTime.formatLine(): line: " + line, options.logcolor);
+		log.logc(options.loginfo + " formattedTime.formatLine(): timeformat array: " + timeformata.join(","), options.logcolor);
+		log.logc(options.loginfo + " formattedTime.formatLine(): time array: " + timev.join(","), options.logcolor)
+		log.logc(options.loginfo + " formattedTime.formatLine(): data array: " + datav.join(","), options.logcolor);
 	}
 	
 	var startdate = options.timeRangeExpanded.split("/")[0];
@@ -133,17 +152,23 @@ exports.formatLine = function (line, options) {
 	d[6] = ((""+d[6]).length == 1) ? "0"+d[6] : d[6];
 	d[6] = ((""+d[6]).length == 2) ? "0"+d[6] : d[6];
 	
-	if (debug) console.log("formattedTime: formatted date: " + d)
+	if (debug) {
+		log.logc(options.loginfo + " formattedTime.formatLine(): formatted date: " + d, options.logcolor)
+	}
 	var timestamp = d[0]+"-"+d[1]+"-"+d[2]+"T"+d[3]+":"+d[4]+":"+d[5]+"."+d[6]+"Z";
 
 	var currms = new Date(timestamp).getTime();
 
 	if (currms < startms) {
-		if (debug) console.log("formattedTime: time of " + tmp._d + " is less than requested start time " + startdate)
+		if (debug) {
+			log.logc(options.loginfo + " formattedTime.formatLine(): time of " + tmp._d + " is less than requested start time " + startdate, options.logcolor)
+		}
 		return "";
 	}
 	if (currms >= stopms) {
-		if (debug) console.log("formattedTime: time of " + tmp._d + " is greater than requested stop time " + stopdate)
+		if (debug) {
+			log.logc(options.loginfo + " formattedTime.formatLine(): time of " + tmp._d + " is greater than requested stop time " + stopdate, options.logcolor)
+		}
 		return "END_OF_TIMERANGE";
 	}
 
@@ -156,10 +181,14 @@ exports.formatLine = function (line, options) {
 	}
 	//console.log(d)
 	if (outformat === "1") {		
-		if (debug) console.log("formattedTime: Formatted date: " + d)
+		if (debug) {
+			log.logc(options.loginfo + " formattedTime.formatLine(): formattedTime: Formatted date: " + d, options.logcolor)
+		}
 		var timestamp = d[0]+"-"+d[1]+"-"+d[2]+"T"+d[3]+":"+d[4]+":"+d[5]+"."+d[6]+"Z";
 
-		if (debug) console.log("formattedTime: Returning: "+timestamp + " " + datav.join(" "))
+		if (debug) {
+			log.logc(options.loginfo + " formattedTime.formatLine(): Returning: "+timestamp + " " + datav.join(" "), options.logcolor)
+		}
 	}
 	if (outformat === "2") {
 		var timestamp = d[0]+" "+d[1]+" "+d[2]+" "+d[3]+" "+d[4]+" "+d[5]+"."+d[6];

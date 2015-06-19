@@ -249,7 +249,9 @@ function newWork(url, options, callback){
 	plugin = getPlugin(options,url);
 	
 	if (plugin.extractSignature) extractSignature = plugin.extractSignature(options);
-	if (options.debugapp && extractSignature !== "") console.log("plugin extractSignature: " + extractSignature);
+	if (options.debugschedulerconsole && extractSignature !== "") {
+		log.logc(options.loginfo + " scheduler.run(): plugin extractSignature: " + extractSignature, options.logcolor)
+	}
 
 	// TODO:  If extractSignature was provided, the plugin modifies the returned data.  For example if a time range was specified, it
 	// subsets the returned file.  Because the urlMd5 depends on the signature, the original file will be re-downloaded each time the signature

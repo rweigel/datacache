@@ -487,14 +487,14 @@ function parseOptions(req, res) {
 	options.debugscheduler     = s2b(req.query.debugscheduler     || req.body.debugscheduler)     || argv.debugscheduler;
 
 	for (key in argv) {
-		if (key.match("debugconsole") && !key.match("lineformatter")) {
+		if (key.match("debugconsole")) {
 			options[key] = argv[key]
 		}			
 	}
 	
 	if (options.debugall) {
 		for (key in argv) {
-			if (key.match("debug") && !key.match("lineformatter")) {
+			if (key.match("debug")) {
 				options[key] = true
 			}			
 		}
@@ -524,10 +524,13 @@ function parseOptions(req, res) {
 
 	//options.streamFilterBinary   = req.query.streamFilterBinary        || req.body.streamFilterBinary        || "";
 
-	options.streamFilterReadBytes       = s2i(req.query.streamFilterReadBytes       || req.body.streamFilterReadBytes         || "0");
-	options.streamFilterReadLines       = s2i(req.query.streamFilterReadLines       || req.body.streamFilterReadLines         || "0");
-	options.streamFilterReadPosition    = s2i(req.query.streamFilterReadPosition    || req.body.streamFilterReadPosition      || "1");
-	options.streamFilterReadColumns     =     req.query.streamFilterReadColumns     || req.body.streamFilterReadColumns       || "0";
+	options.streamFilterReadBytes        = s2i(req.query.streamFilterReadBytes       || req.body.streamFilterReadBytes         || "0");
+	options.streamFilterReadLines        = s2i(req.query.streamFilterReadLines       || req.body.streamFilterReadLines         || "0");
+	options.streamFilterReadPosition     = s2i(req.query.streamFilterReadPosition    || req.body.streamFilterReadPosition      || "1");
+	options.streamFilterReadColumns      =     req.query.streamFilterReadColumns     || req.body.streamFilterReadColumns       || "0";
+	
+	//options.streamFilterColumnsDelimiter =     req.query.streamFilterColumnDelimiter || req.body.streamFilterColumnDelimiter   || " ";
+	
 	options.streamFilterExcludeColumnValues = req.query.streamFilterExcludeColumnValues || req.body.streamFilterExcludeColumnValues    || "";
 	options.streamFilterTimeFormat      =     req.query.streamFilterTimeFormat      || req.body.streamFilterTimeFormat        || "0";
 	options.streamFilterComputeWindow   = s2i(req.query.streamFilterComputeWindow   || req.body.streamFilterComputeWindow     || "1"); 

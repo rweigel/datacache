@@ -1,4 +1,4 @@
-var fs     = require("fs") ;
+var fs     = require("fs");
 var clc    = require('cli-color');
 var mkdirp = require("mkdirp");
 var crypto = require("crypto");
