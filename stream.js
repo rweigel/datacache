@@ -785,7 +785,7 @@ function stream(source, options, res) {
 					if (options.streamFilterWriteComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
 						if (!options.streamFilterWriteComputeFunction.match(/regrid/)) {
 							if (lk % options.streamFilterWriteComputeFunctionWindow == 0) {
-								console.log(lines)
+								//console.log(lines)
 								linesx = linesx + statsfilter.stats(lines.replace(/\n$/,""), options)
 								lines = ''
 							}
