@@ -6,9 +6,8 @@ var zlib       = require('zlib');
 var	fs 		   = require("fs");
 var	crypto     = require("crypto");
 
-// Object containing names of cached files that are being streamed.
+// Object containing names/number of times being streamed of cached files that are being streamed.
 stream.streaming = {};
-
 function stream(source, options, res) {
 
 	var scheduler     = require("./scheduler.js");
