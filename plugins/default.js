@@ -16,6 +16,16 @@ exports.version = "1.0.0"
 
 exports.match = function (url) {return false}
 
+exports.extractSignature = function (options) {
+	if (options.lineFormatter !== "") {
+	    var lineFormatter = require(__dirname + "/" + options.lineFormatter + ".js")
+		var tmp = lineFormatter.extractSignature(options)
+	}
+	var tmp2 = exports.extractData.toString()
+	var ret = "\n-----\n" + tmp + "\n-----\n" + tmp2 + "\n-----\n" + options.lineRegExp + "\n-----\n" + options.lineFilter + "\n-----\n" + options.extractData + "\n-----\n"
+	return ret.replace(/\s+/g,"")
+}
+
 exports.preprocess = function (work, callback) {callback(false, work)}
 
 exports.process = function (work, callback) {
@@ -51,37 +61,37 @@ exports.process = function (work, callback) {
 		util.get(work.url, function (error, response, body) {
 
 			if (error) {
-				work.error = "Can't fetch data";
+				work.error = error;
 				if (debugconsole) {
-					log.logc(work.options.loginfo + " default.process(): Error when attempting GET : " + error, logcolor)
+					log.logc(work.options.loginfo + " default.process.util.get(): Error when attempting GET: " + error, logcolor)
 				}
 				callback(true, work);
 				return
 			}
 
 			if (response.statusCode !== 200) {
-				work.error = "Can't fetch data";
+				work.error = "HTTP Error " + response.statusCode;
 				if (debugconsole) {
-					log.logc(work.options.loginfo + " default.process(): Non-200 status code when attempting to GET: " + response.statusCode, logcolor)
+					log.logc(work.options.loginfo + " default.process.util.get(): Non-200 status code when attempting to GET: " + response.statusCode, logcolor)
 				}
 				callback(true, work)
 				return
 			} else {
 
 				if (debugconsole)  {
-					log.logc(work.options.loginfo + " default.process(): Got " + work.url,logcolor)				
-					log.logc(work.options.loginfo + " default.process(): Headers: " + JSON.stringify(response.headers), logcolor)
+					log.logc(work.options.loginfo + " default.process.util.get(): Got " + work.url,logcolor)				
+					log.logc(work.options.loginfo + " default.process.util.get(): Headers: " + JSON.stringify(response.headers), logcolor)
 				}
 				if (response.headers["content-encoding"] === "gzip" || response.headers["content-type"] === "application/x-gzip") {
 					if (debugconsole) {
-						log.logc(work.options.loginfo + " default.process(): Content-Type is application/x-gzip", logcolor)
+						log.logc(work.options.loginfo + " default.process.util.get(): Content-Type is application/x-gzip", logcolor)
 					}
 				    zlib.gunzip(body,cb);
 				} else {
 					magic.detect(body, function(err, result) {
 						if (result.match(/^gzip/)) {
 							if (debugconsole) {
-								log.logc(work.options.loginfo + " default.process(): Content-Encoding is not gzip and Content-Type is not application/x-gzip, but buffer is gzipped.")
+								log.logc(work.options.loginfo + " default.process.util.get(): Content-Encoding is not gzip and Content-Type is not application/x-gzip, but buffer is gzipped.")
 							}
 							if (err) throw err;
 							zlib.gunzip(body,cb)
@@ -92,8 +102,26 @@ exports.process = function (work, callback) {
 				}
 			}
 			function cb(err,res) {
-				if (err) console.log(err);
+				if (err) {
+					log.logc(work.options.loginfo + " default.process.util.get.cb(): " + err, 160)
+					work.error = err
+					callback(true, work)
+				}
 
+				// TODO: The extraction here should be of form
+				// 
+				// work.extractData(work, finished)
+				// work.extractDataBinary(work, finished)
+				// work.extractDataJson(work, finished)
+				// work.extractRem(work, finished)
+				// work.extractMeta(work, finished)
+				// work.extractMetaJson(work, finished)
+				// 
+				// var ndone = 0
+				// function finished(err) {
+				//      if (!err) {ndone = ndone + 1} else {work.error = err; callback(true, work)}
+				//      if (ndone == 6) util.writeCache(work, function () {callback(false, work)}) }
+				// }
 				work.body       = res || "";
 				work.data       = work.extractData(work.body, work.options);
 				work.dataMd5    = util.md5(work.data);
@@ -107,12 +135,13 @@ exports.process = function (work, callback) {
 				util.writeCache(work, function () {callback(false, work)})
 			}
 		})
-		.on("error", function (err) {
-			if (debugconsole) {
-				log.logc(work.options.loginfo + " default.process(): On error event.", logcolor)
-			}
-			//console.log(err)
-		})
+		// Not needed.  Caught by callback to util.get.
+		//.on("error", function (err) {
+		//	if (debugconsole) {
+		//		log.logc(work.options.loginfo + " default.process(): On error event." + err, logcolor)
+		//	}
+		//	console.log(err)
+		//})
 		.on("data", function (data) {
 			sz = sz + data.length;
 			
@@ -131,8 +160,6 @@ exports.process = function (work, callback) {
 			    work.getEndTime = new Date();
 			}
 		})
-
-
 	} else if (work.url.match(/^ftp/)) {
 		var FtpClient  = require("ftp");
 		var conn = new FtpClient();
@@ -201,15 +228,6 @@ exports.process = function (work, callback) {
 }
 
 exports.extractDataBinary = function (body, options) {return ""}
-
-exports.extractSignature = function (options) {
-	if (options.lineFormatter !== "") {
-	    var lineFormatter = require(__dirname + "/" + options.lineFormatter + ".js")
-		return lineFormatter.extractSignature(options)
-	} else {
-		return ""
-	}
-}
 
 exports.extractData = function (body, options) {
 

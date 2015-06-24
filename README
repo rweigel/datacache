@@ -1,1 +1,216 @@
-http://datacache.org/
+<center><font size="+2"><code>DataCache</code></font></center>
+
+= About =
+
+DataCache is used to preprocess and cache data returned from a list of URLs or a list of URLs specified by a template.
+
+Its primary use case is retrieving, extracting, filtering, reducing, and caching large amounts of numerical data and its associated metadata in parallel.  It was developed initially as a back-end to [http://tsds.org/ TSDS].   It has many features in common with [http://curl.haxx.se/ cURL] and [https://www.gnu.org/software/wget/ wget], but the primary interface is a URL instead of the command line. 
+
+It works by, and may be used to
+# Download a list (POST or GET) of URLs synchronously or asynchronously;
+# [http://datacache.org/dc/sync?source=http://datacache.org/dc/demo/file1.txt%0Ahttp://datacache.org/dc/demo/file2.txt Return] a JSON<sup>[http://json.org]</sup> string containing information about each URL;
+# The content of each URL is saved as ''hostname''/''md5url''.out, where ''md5url'' is the MD5 checksum<sup>[http://en.wikipedia.org/wiki/MD5]</sup> of the URL and code that processes contents of  ''md5url''.out before it is written to disk and ''hostname'' is the domain name of the URL;
+# ''md5url''.data (typically numbers found in ''md5url''.out) and ''md5url''.datax (typically metadata found in ''md5url''.out) files are optionally created either using a [[#Plug-ins|plug-in]] or setting a parameter in the request such as <code>extractData</code>; and
+# [[#Plug-ins|Plug-ins]] may also create ''md5url''.json and ''md5url''.jsonx, which are JSON representations of the data in ''md5url''.data and metadata in ''md5url''.datax.
+
+See [[#Install]] for installation instructions.
+
+Use cases include
+
+* URLs return data (typically numbers) in an HTML page.
+* The HTML page may change (time stamps, style, overview text, etc.), but the data do not often change.
+* Future requests for the same URL with same processing code that creates the .data file will result in a cache hit if the HTML page has not been modified (according to its Last-Modified header) or if the HTML page does not return Last-Modified information or if a flag is set to ignore any Last-Modified information (for example, when it is not meaningful).
+* Client may request a concatenated stream based on the .data files created for each URL in a request.  Streams are cached, and streamed content may be filtered.
+
+= Examples =
+
+== Sync ==
+
+Submit a list of URLs and wait for completion
+
+'''Command line''' GET (response is JSON string):
+<source lang="bash">
+curl "http://datacache.org/dc/sync?source=http://datacache.org/dc/demo/file1.txt%0Ahttp://datacache.org/dc/demo/file2.txt"
+</source>
+'''Command line''' GET (response is data):
+<source lang="bash">
+curl "http://datacache.org/dc/sync?return=stream&source=http://datacache.org/dc/demo/file1.txt%0Ahttp://datacache.org/dc/demo/file2.txt"
+</source>
+
+'''Command line''' POST (response is JSON string):
+<source lang="bash">
+echo "http://datacache.org/dc/demo/file1.txt" > list.txt;
+echo "http://datacache.org/dc/demo/file2.txt" >> list.txt;
+# Both curl commands should return JSON array with two elements
+curl --data-urlencode "source@list.txt" "http://datacache.org/dc/sync"
+curl --data-urlencode "source@list.txt" "http://datacache.org/dc/sync&forceUpdate=true"
+</source>
+
+'''Command line''' POST (response is data):
+<source lang="bash">
+echo "http://datacache.org/dc/demo/file1.txt" > list.txt;
+echo "http://datacache.org/dc/demo/file2.txt" >> list.txt;
+# Both curl commands should return a data file
+curl --data-urlencode "source@list.txt" "http://datacache.org/dc/sync&return=stream"
+curl --data-urlencode "source@list.txt" "http://datacache.org/dc/sync&return=stream&forceUpdate=true"
+</source>
+
+== Async ==
+Submit a list of URLs and return immediately
+
+'''Command line''' GET:
+<source lang="bash">
+curl "http://datacache.org/dc/async?source=http://datacache.org/dc/demo/file1.txt%0Ahttp://datacache.org/dc/demo/file2.txt"
+</source>
+'''Command line''' POST of URLs:
+<source lang="bash">
+echo "http://datacache.org/dc/demo/file1.txt" > list.txt;
+echo "http://datacache.org/dc/demo/file2.txt" >> list.txt;
+# Should return "OK" 
+curl --data-urlencode "source@list.txt" "http://datacache.org/dc/async"
+</source>
+
+= API =
+
+POST or GET to /sync and /async
+
+== /sync and /async ==
+
+* <code>source</code> newline separated list of URL-encoded URLs.  (When using GET, separate URLs with URL-encoded newline entity <code>%0A</code>, for example: [http://datacache.org/dc/sync?source=http://datacache.org/dc/demo/file1.txt%0Ahttp://datacache.org/dc/demo/file2.txt].)
+* <code>prefix</code> A prefix to which all URLs are appended.  For example, [http://datacache.org/dc/sync?prefix=http://datacache.org/dc/demo/&source=file1.txt%0Afile2.txt] is the same as [http://datacache.org/dc/sync?source=http://datacache.org/dc/demo/file1.txt%0Ahttp://datacache.org/dc/demo/file2.txt].
+* <code>template</code> - A URL template with sprintf (%d) and/or strftime (%Y, %m, %d) format strings.  $ may be used instead of %.
+* <code>timeRange</code> - e.g, 1999-01-01/1999-01-03. [http://datacache.org/dc/sync?template=http://datacache.org/dc/demo/file$Y$m$d.txt&timeRange=1999-01-01/1999-01-03 Example]
+* <code>indexRange</code> - e.g., 1/10.  [http://datacache.org/dc/sync?template=http://datacache.org/dc/demo/file%d.txt&indexRange=1/2 Example]
+* <code>forceUpdate</code> [false] or true.  Re-requests data if true.  If false, only re-requests if ''md5url''.out is not found.  If md5 of the data is the same as the md5 of the cached data, data are not re-written to disk.
+* <code>forceWrite</code> [false] or true.  Forces writing of new data unless data are being streamed, in which case no write is performed.
+* <code>respectHeaders</code> [true] or false.  If the URL responds to a HEAD request with a last-modified time, update cache if it is expired.  (Such information is rarely available from data served via an API, but is usually available when files are served over HTTP and FTP.).  
+* <code>plugin</code> The [https://github.com/rweigel/datacache/tree/master/plugins plug-in] to use. ([https://github.com/rweigel/datacache/tree/master/plugins/default.js Default]).
+* <code>lineRegExp</code> [<code>.</code>].  Lines from the response that match this regular expression are placed in the .data file.
+:Examples:
+: <nowiki>http://datacache.org/dc/sync?source=http://datacache.org/dc/demo/file1.txt&lineRegExp=[A-Z]&return=stream&forceUpdate=true</nowiki>
+: <nowiki>http://datacache.org/dc/sync?source=http://datacache.org/dc/demo/file1.txt&lineRegExp=02-01-2005%2000:04:00.000&return=stream&forceUpdate=true</nowiki>
+* <code>lineFormatter</code> The name of a plugin with method formatLine.  (See [https://github.com/rweigel/datacache/tree/master/plugins/formattedTime.js] for an example).  Each line is modified prior to being written to the .data file.
+: Example:
+: <nowiki>http://datacache.org/dc/sync?source=http://localhost:8000/demo/file1.txt&return=stream&forceUpdate=true&lineRegExp=^[0-9]&lineFormatter=formattedTime&timeformat=DD-MM-YYYY,HH:mm:ss.SSS&timecols=1,2</nowiki>
+* <code>lineFilter</code> If <code>lineFormatter</code> is not defined, is <code>function(line){return line.search(lineRegExp)!=-1;}</code>.  If <code>lineFormatter</code> is defined, is <code>function(line){if (line.search(lineRegExp) != -1) return lineFormatter.formatLine(line,options);}</code>.
+* <code>extractData</code> [<code>out.toString().split("\n").filter(lineFilter).join("\n") + "\n";</code>].   Code that is executed to extract data from the response.  <code>out</code> is the contents of the .out file.
+: Example:
+: <nowiki>http://localhost:8000/sync?source=http://www.google.com%0Ahttp://www.yahoo.com&extractData=$(%22a%22).text()&return=stream&forceUpdate=true</nowiki>
+
+== /sync only options ==
+* <code>includeData</code> [false] or true.  Include ''md5url.data'' in JSON response.  If [[#Plug-in|plug-in]] has a method for converting data to a JSON string, the JSON version of ''md5url.data'' is returned.
+* <code>includeMeta</code> [false] or true.  Includes any metadata created by plugin.  If [[#plug-in|plug-in]] has a method for converting data to a JSON string, the JSON version of ''md5url.meta'' is returned.
+* <code>includeLstat</code> [false] or true.  If file is found in cache, its size and md5 are not checked returned information will have dataLength=-1 and md5Data="".
+* <code>return</code> [json] or 
+** json -  returns a JSON string containing information about each URL. 
+** xml - an XML representation of the JSON string.
+** jsons - returns a JSON string containing information about the stream that would be returned if <code>return=stream</code>.
+** report - returns an html page that when loaded in a browser makes a request to /async with <code>return=json</code> and summarizes the results when the request is complete.
+** stream - the ''md5url.data'' files are streamed to the client.  
+
+'''<code>return=stream</code>''' options:
+* <code>streamOrder</code> [true] or [false].  Stream .data files (after applying filter) in the same order given in request.  If false, response may be faster.
+* <code>streamGzip</code> [false] or true.  After filter is applied to each URL, compress result.  An integer is given in the gzip metadata to indicate the url the content is associated with.  Response headers will not indicate that the content has been gzipped - sorting and uncompressing is the responsibility of the client.  If streamGzip is false, the content will be compressed if the request headers from the client indicate that gzip responses are accepted.
+* <code>streamFilter</code> Javascript.  Before streaming each .data file, process it (only operations that would run in a browser are supported).  (Example: <code>replace(/\\n/g,' ')</code> would remove all newlines.)  The actual statement that is evaluated is <code>"data=data." + Javascript</code>.
+* <code>streamFilterReadBytes</code> [0] - If greater than zero, read only this number of bytes from the .data file.
+* <code>streamFilterReadPosition</code> [1] - The byte number or line number of the file to start read (1=first byte or line of file).
+
+'''<code>return=stream</code>''' options ''for case where processed data (by plugin or <code>extractData</code>) results in ASCII separated by newlines'':
+* <code>streamFilterReadLines</code> [0] - The number of lines to read.  Ignored if <code>streamFilterReadBytes</code> > 0.
+* <code>streamFilterReadPosition</code> [1] - The line number of the file to start read (1=first byte or line of file).
+* <code>streamFilterReadColumns</code> - A comma-separated list of columns to return.  (Default is all columns.)
+* <code>streamFilterColumnDelimiter</code> - [\s]
+
+* <code>streamFilterExcludeColumnValues</code> - 
+* <code>streamFilterComputeWindow</code> - How many lines to pass to streamFilterComputeFunction.  If this number is larger than the number of records, nothing is returned.  To apply a filter over multiple URLs, set the source to be the URL for a DataCache stream request over multiple URLs and apply the filter to the concatenated and unfiltered stream.
+* <code>streamFilterComputeFunction</code> - A function to evaluate for all lines in ComputeWindow.  See [https://github.com/rweigel/datacache/blob/master/filters/].
+
+If the .data file contains lines in a format of an timestamp and then columns,
+* <code>streamFilterTimeFormat</code> - The time format of the data file (it is assumed that the time stamps are in column 1 and are contiguous.
+* <code>streamFilterTimeRange</code> - 
+
+* <code>streamFilterComputeWindowDt</code> - Use blocks of size Dt for each compute.
+
+* <code>streamFilterRegridDt</code> - 
+
+
+
+Examples: See https://github.com/rweigel/datacache/blob/master/test/streamTestsInput.js
+
+= Plug-ins =
+
+[https://github.com/rweigel/datacache/tree/master/plugins Plug-ins] may do any of the following:
+* Split the response ''md5url''.out into a data file (''md5url''.data) and metadata file (''md5url''.datax).
+* Convert the data ''md5url''.data and metadata ''md5url''.datax files to JSON strings.
+
+The list of available plug-in names is available at http://datacache.org/dc/plugins.
+
+= Install =
+
+== Download ==
+
+Download and unzip the datacache zip file:
+ cd /tmp
+ curl -L https://github.com/rweigel/datacache/archive/master.zip > datacache-master.zip
+ unzip datacache-master.zip
+ sudo mv datacache-master /usr/local/datacache
+
+Install latest version of node.js and NPM (Node Package Management):
+ sudo apt-get install python-software-properties
+ sudo add-apt-repository ppa:chris-lea/node.js
+ sudo apt-get update; sudo apt-get install nodejs npm
+
+Install DataCache dependencies (described in package.json):
+ cd /usr/local/datacache; sudo /usr/bin/npm install
+
+== Configure ==
+
+Edit paths and port number in <code>datacache.sh</code>.
+
+== Run ==
+
+=== As system service ===
+
+Edit paths and port number in <code>datacache.sh</code> and then
+ sudo chown www-data:www-data /usr/local/datacache/cache
+ sudo mkdir /var/log/datacache
+ 
+ sudo chown www-data:www-data /var/log/datacache
+ sudo ln -s /var/log/datacache /usr/local/datacache/log
+ 
+ sudo cp /usr/local/datacache.sh /etc/init.d/datacache
+ sudo /etc/init.d/datacache start
+
+Then open http://localhost:8000/ in a browser.
+
+If it does not work, see <code>/var/log/datacache/datacache.log</code>
+
+=== As user ===
+
+<code>nohup sudo -u www-data node app.js 8000 &</code>
+
+or 
+
+Change ownership of directory cache and its subdirectories so that user executing app.js has write permission.
+
+<code>nohup node app.js 8000 &</code>
+
+or
+
+ screen
+ node app.js 8000
+ CTRL+A
+ CTRL+D
+Attach to the screen again after logging out and then re-logging in:
+
+<code>screen -r</code>
+
+= Development =
+
+# Install git:
+#* <code>sudo apt-get install git-core</code>
+# Download source code:
+#* <code>git clone https://github.com/rweigel/datacache.git</code>
+# Optionally: Install and use <code>nodemon</code>.  It watches source code and automatically restarts the server when the source changes.
+#* <code>sudo npm install -g nodemon</code>
+#* <code>cd /usr/local/datacache; nodemon app.js 8000</code>; you will never need to manually restart the server during development.

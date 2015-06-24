@@ -3,7 +3,7 @@
 PORT=7998
 echo "Starting datacache server on port $PORT"
 
-node app.js --port=$PORT &
+node app.js --port=$PORT --debugall=true&
 
 PID=$!
 

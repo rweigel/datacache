@@ -1,7 +1,7 @@
 var log = require("../log.js")
 
 exports.filterSignature = function (options) {
-	return options.streamFilterComputeWindow + options.streamFilterComputeFunction;
+	return options.streamFilterWriteComputeFunctionWindow + options.streamFilterComputeFunction;
 }
 
 exports.stats = function stats(datas, options) {
@@ -24,21 +24,21 @@ exports.stats = function stats(datas, options) {
 	var data = datas[0].split(/\s+/g);
 
 	if (options.debuglinefilterconsole) {
-		log.logc(options.loginfo + " stats.js: # rows: = "+datas.length, options.logcolor)
+		log.logc(options.loginfo + " stats.js: # rows input = "+datas.length, options.logcolor)
 	}
 	if (options.debuglinefilterconsole) {
-		log.logc(options.loginfo + " stats.js: # cols in first row: = "+data.length, options.logcolor)
+		log.logc(options.loginfo + " stats.js: # cols in first row = "+data.length, options.logcolor)
 	}
 
-	if (options.streamFilterExcludeColumnValues.match(",")) {
-		excludeso = options.streamFilterExcludeColumnValues.split(",");
+	if (options.streamFilterWriteComputeFunctionExcludes.match(",")) {
+		excludeso = options.streamFilterWriteComputeFunctionExcludes.split(",");
 		for (j = 0;j < data.length-1;j++) {
 			excludes[j] = parseFloat(excludeso[j]);
 		}	
 	} else {
 		// Use same exclude value for all columns if only one was given.
 		for (j = 0;j < data.length-1;j++) {
-			excludes[j] = parseFloat(options.streamFilterExcludeColumnValues);
+			excludes[j] = parseFloat(options.streamFilterWriteComputeFunctionExcludes);
 		}		
 	}
 	
@@ -100,22 +100,22 @@ exports.stats = function stats(datas, options) {
 
 	t = new Date(t/datas.length).toISOString();
 
-	if (options.streamFilterComputeFunction.match(/stats/)) {
+	if (options.streamFilterWriteComputeFunction.match(/stats/)) {
 		ret = t+" "+dataave.join(" ")+" "+datastd.join(" ")+" "+datamax.join(" ")+" "+datamin.join(" ")+" "+Nvalid.join(" ")+"\n";
 	}
-	if (options.streamFilterComputeFunction.match(/max/)) {
+	if (options.streamFilterWriteComputeFunction.match(/max/)) {
 		ret = t+" "+datamax.join(" ")+"\n";
 	}
-	if (options.streamFilterComputeFunction.match(/min/)) {
+	if (options.streamFilterWriteComputeFunction.match(/min/)) {
 		ret = t+" "+datamin.join(" ")+"\n";
 	}
-	if (options.streamFilterComputeFunction.match(/mean/)) {
+	if (options.streamFilterWriteComputeFunction.match(/mean/)) {
 		ret = t+" "+dataave.join(" ")+"\n";
 	}
-	if (options.streamFilterComputeFunction.match(/std/)) {
+	if (options.streamFilterWriteComputeFunction.match(/std/)) {
 		ret = t+" "+datastd.join(" ")+"\n";
 	}
-	if (options.streamFilterComputeFunction.match(/Nvalid/)) {
+	if (options.streamFilterWriteComputeFunction.match(/Nvalid/)) {
 		ret = t+" "+Nvalid.join(" ")+"\n";
 	}
 	if (options.debuglinefilterconsole) {

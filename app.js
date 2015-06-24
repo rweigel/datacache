@@ -15,7 +15,7 @@ var mmm      = require('mmmagic')
 var clc      = require('cli-color')
 var argv     = require('yargs')
 					.default({
-						'port': 7999,
+						'port': "7999",
 						'debugall': "false",
 						'debugapp': "false",
 						'debugappconsole': "false",
@@ -323,7 +323,7 @@ server.setTimeout(config.TIMEOUT,
 	})
 
 // Start the server
-server.listen(argv.port)
+server.listen(s2i(argv.port))
 
 var msg = "";
 if (develtsdset) {
@@ -397,8 +397,12 @@ function handleRequest(req, res) {
 		var message = req.headers['X-Forwarded-For'].replace(",",";") + req.originalUrl + ",";
 	} 
 
-	// Create detailed log file name based on current time and other information.
-	var loginfo = crypto.createHash("md5").update((new Date()).toISOString() + message).digest("hex");
+	// Create detailed log file name based on current time, originalUrl, and request IP address
+	var loginfo = crypto
+					.createHash("md5")
+					.update((new Date()).toISOString() + message)
+					.digest("hex")
+					.substring(0,4)
 
 	// Set log file name as response header
 	res.header(config.LOGHEADER,loginfo)
@@ -455,20 +459,24 @@ function handleRequest(req, res) {
 
 function parseOptions(req, res) {
 
- 	var options = {};
+ 	var options = {}
 
- 	// TODO: Copy req.body to req.query.
-	options.req            = {};
-	options.req.query      = req.query;
+ 	// TODO: Copy req.body to req.query when req.query === "" and request.body !== ""
+	options.req            = {}
+	options.req.query      = req.query
 	
-	options.forceUpdate    = s2b(req.query.forceUpdate    || req.body.forceUpdate    || "false");
-	options.forceWrite     = s2b(req.query.forceWrite     || req.body.forceWrite     || "false");
-	options.maxTries       = s2i(req.query.maxTries       || req.body.maxTries       || "2");
+	options.forceUpdate           = s2b(req.query.forceUpdate           || req.body.forceUpdate           || "false")
+	options.forceWrite            = s2b(req.query.forceWrite            || req.body.forceWrite            || "false")
+	options.maxTries              = s2i(req.query.maxTries              || req.body.maxTries              || "2")
+	options.respectHeaders        = s2b(req.query.respectHeaders        || req.body.respectHeaders        || "true")
+	options.respectHeadersTimeout = s2i(req.query.respectHeadersTimeout || req.body.respectHeadersTimeout || "300")
+
 	options.includeData    = s2b(req.query.includeData    || req.body.includeData    || "false");
 	options.includeMeta    = s2b(req.query.includeMeta    || req.body.includeMeta    || "false");
 	options.includeHeader  = s2b(req.query.includeHeader  || req.body.includeHeader  || "false");
 	options.includeLstat   = s2b(req.query.includeLstat   || req.body.includeLstat   || "false");
 	options.includeVers    = s2b(req.query.includeVers    || req.body.includeVers    || "false");
+
 	options.return         =     req.query.return         || req.body.return         || "json";
 	options.dir            =     req.query.dir            || req.body.dir            || "/cache/";
     options.prefix         =     req.body.prefix          || req.query.prefix        || "";
@@ -476,6 +484,36 @@ function parseOptions(req, res) {
 	options.plugin         = req.query.plugin        || req.body.plugin        || "";
 	options.lineRegExp     = req.query.lineRegExp    || req.body.lineRegExp    || ".";	
 	options.lineFormatter  = req.query.lineFormatter || req.body.lineFormatter || "";
+
+	if (options.lineFormatter === "") {
+		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){return line.search(lineRegExp)!=-1}";
+		options.extractData = req.query.extractData  || req.body.extractData   || 'body.toString().split("\\n").filter('+options.lineFilter+').join("\\n") + "\\n"';	
+	} else {
+		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){if (line.search(options.lineRegExp) != -1) return lineFormatter.formatLine(line,options);}"
+		options.extractData = '(body.toString().split("\\n").map(function(line){if (line.search(options.lineRegExp) != -1) {return lineFormatter.formatLine(line,options)}}).join("\\n")+"\\n").replace(/^\\n+/,"").replace(/\\n\\n+/g,"\\n")';
+	}
+
+	if (req.query.extractData || req.body.extractData || req.query.lineFilter || req.body.lineFilter) {
+		options.unsafeEval = false;
+	} else {
+		options.unsafeEval = true;
+	}
+
+	if (options.dir) {
+	    if (options.dir[0] !== '/') {
+			options.dir = '/' + options.dir
+	    }
+	    if (options.dir[options.dir.length-1] !== '/') {
+			options.dir = options.dir + '/'
+	    }
+	}
+
+    options.timeRange = req.body.timeRange || req.query.timeRange || "";
+	if (options.timeRange !== "") {
+		options.timeRangeExpanded = expandISO8601Duration(options.timeRange,{debug:options.debugtemplate})
+	} else {
+		options.timeRangeExpanded = options.timeRange
+	}
 
 	options.debugall       = s2b(req.query.debugall      || req.body.debugall)      || argv.debugall;
 	options.debugapp       = s2b(req.query.debugapp      || req.body.debugapp)      || argv.debugapp;
@@ -500,63 +538,57 @@ function parseOptions(req, res) {
 		}
 	}
 
-	if (options.lineFormatter === "") {
-		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){return line.search(lineRegExp)!=-1}";
-		options.extractData = req.query.extractData  || req.body.extractData   || 'body.toString().split("\\n").filter('+options.lineFilter+').join("\\n") + "\\n"';	
-	} else {
-		options.lineFilter  = req.query.lineFilter   || req.body.lineFilter    || "function(line){if (line.search(options.lineRegExp) != -1) return lineFormatter.formatLine(line,options);}"
-		options.extractData = '(body.toString().split("\\n").map(function(line){if (line.search(options.lineRegExp) != -1) {return lineFormatter.formatLine(line,options)}}).join("\\n")+"\\n").replace(/^\\n+/,"").replace(/\\n\\n+/g,"\\n")';
-	}
-
-	if (req.query.extractData || req.body.extractData || req.query.lineFilter || req.body.lineFilter) {
-		options.unsafeEval = false;
-	} else {
-		options.unsafeEval = true;
-	}
-
+	// Stream options
 	options.streamGzip     = s2b(req.query.streamGzip   || req.body.streamGzip   || "false");
 	options.acceptGzip     = s2b(req.query.acceptGzip   || req.body.acceptGzip   || "true");
 	options.streamOrder    = s2b(req.query.streamOrder  || req.body.streamOrder  || "true");
 	options.streamFilter   =     req.query.streamFilter || req.body.streamFilter || "";
 
-	options.respectHeaders        = s2b(req.query.respectHeaders        || req.body.respectHeaders        || "true")
-	options.respectHeadersTimeout = s2i(req.query.respectHeadersTimeout || req.body.respectHeadersTimeout || "300")
-
 	//options.streamFilterBinary   = req.query.streamFilterBinary        || req.body.streamFilterBinary        || "";
 
-	options.streamFilterReadBytes        = s2i(req.query.streamFilterReadBytes       || req.body.streamFilterReadBytes         || "0");
-	options.streamFilterReadLines        = s2i(req.query.streamFilterReadLines       || req.body.streamFilterReadLines         || "0");
-	options.streamFilterReadPosition     = s2i(req.query.streamFilterReadPosition    || req.body.streamFilterReadPosition      || "1");
-	options.streamFilterReadColumns      =     req.query.streamFilterReadColumns     || req.body.streamFilterReadColumns       || "0";
-	
-	//options.streamFilterColumnsDelimiter =     req.query.streamFilterColumnDelimiter || req.body.streamFilterColumnDelimiter   || " ";
-	
-	options.streamFilterExcludeColumnValues = req.query.streamFilterExcludeColumnValues || req.body.streamFilterExcludeColumnValues    || "";
-	options.streamFilterTimeFormat      =     req.query.streamFilterTimeFormat      || req.body.streamFilterTimeFormat        || "0";
-	options.streamFilterComputeWindow   = s2i(req.query.streamFilterComputeWindow   || req.body.streamFilterComputeWindow     || "1"); 
-	options.streamFilterComputeFunction =     req.query.streamFilterComputeFunction || req.body.streamFilterComputeFunction   || ""; 
+	// Bytes or lines to start at
+	options.streamFilterReadStart         = s2i(req.query.streamFilterReadStart       || req.body.streamFilterReadStart      || "1");
 
-	options.streamFilterRegridDt        = s2i(req.query.streamFilterRegridDt	    || req.body.streamFilterRegridDt)        ||  "";
-	options.streamFilterRegridTimeRange = s2i(req.query.streamFilterRegridTimeRange || req.body.streamFilterRegridTimeRange) || "";
-    
-    options.timeRange = req.body.timeRange || req.query.timeRange || "";
-	if (options.timeRange !== "") {
-		options.timeRangeExpanded = expandISO8601Duration(options.timeRange,{debug:options.debugtemplate})
-	} else {
-		options.timeRangeExpanded = options.timeRange
-	}
+	// Read bytes into memory (and pass to streamFilterWriteComputeFunction - not implemented)
+	options.streamFilterReadBytes         = s2i(req.query.streamFilterReadBytes       || req.body.streamFilterReadBytes      || "0");
 
-	if (options.dir) {
-	    if (options.dir[0] !== '/') {
-			options.dir = '/' + options.dir
-	    }
-	    if (options.dir[options.dir.length-1] !== '/') {
-			options.dir = options.dir + '/'
-	    }
-	}
+	// Read this number of lines after streamFilterReadStart into memory
+	// (provided they match streamFilterReadLineRegExp) and format each line
+	// with streamFilterReadLineFormatter.
+	// Pass formatted line block to ComputeFunction.
+	options.streamFilterReadLines         = s2i(req.query.streamFilterReadLines       || req.body.streamFilterReadLines      || "0");
+	options.streamFilterReadLineRegExp    =     req.query.streamFilterReadLineRegExp  || req.body.streamFilterReadLineRegExp || "."; 
+	options.streamFilterReadLineFormatter =     req.query.streamFilterLineFormatter   || req.body.streamFilterLineFormatter  || ""; 
+
+	options.streamFilterReadColumnsDelimiter = req.query.streamFilterReadColumnsDelimiter || req.body.streamFilterReadColumnsDelimiter || "\\s+";
+
+	// If streamFilterReadLineFormatter + streamFilterReadLineFilter gives columns,
+	// read these columns.
+	options.streamFilterReadColumns     = req.query.streamFilterReadColumns || req.body.streamFilterReadColumns || "";
 	
+	// If columns after streamFilterReadLineFormatter + streamFilterReadLineFilter
+	// contain time information
+	options.streamFilterReadTimeFormat  = req.query.streamFilterReadTimeFormat  || req.body.streamFilterReadTimeFormat  || "";
+	options.streamFilterReadTimeColumns = req.query.streamFilterReadTimeColumns || req.body.streamFilterReadTimeColumns || "";
+
+	// If streamFilterReadColumns + streamFilterReadTimeFormat + streamFilterReadTimeColumns
+	// valid, allow output format to be 0, 1, or 2. 
+	options.streamFilterWriteTimeFormat = req.query.streamFilterWriteTimeFormat || req.body.streamFilterWriteTimeFormat      || "0";
+
+	// Read while time >= TimeStart and time < TimeStop
+	options.streamFilterReadTimeStart   = req.query.streamFilterReadTimeStart || req.body.streamFilterReadTimeStart || ""
+	options.streamFilterReadTimeStop    = req.query.streamFilterReadTimeStop  || req.body.streamFilterReadTimeStop  || ""
+
+	// ComputeFunction is applied to block of lines resulting from above.
+	options.streamFilterWriteComputeFunction          =     req.query.streamFilterWriteComputeFunction         || req.body.streamFilterWriteComputeFunction               || ""
+	//options.streamFilterWriteComputeFunctionArgs      = req.query.streamFilterComputeFunctionArgs            || req.body.streamFilterComputeFunctionArgs                || ""
+	options.streamFilterWriteComputeFunctionExcludes  =     req.query.streamFilterWriteComputeFunctionExcludes || req.body.streamFilterWriteComputeFunctionExcludes       || ""
+	options.streamFilterWriteComputeFunctionWindow    = s2i(req.query.streamFilterWriteComputeFunctionWindow   || req.body.streamFilterWriteComputeFunctionWindow         || "1")
+	options.streamFilterWriteComputeFunctionDt        = s2i(req.query.streamFilterWriteComputeFunctionDt	   || req.body.streamFilterWriteComputeFunctionDt             || "0")
+	options.streamFilterWriteComputeFunctionTimeRange = s2i(req.query.streamFilterWriteFunctionTimeRange       || req.body.streamFilterWriteComputeFunctionTimeRange)     || ""
+    	
 	if (argv.debugapp) {
-		log.logres("options after parseOptions:"+JSON.stringify(options), res)
+		log.logres("options after parseOptions:" + JSON.stringify(options), res)
 	}
 	
 	return options
@@ -580,24 +612,21 @@ function parseSource(req, res) {
     var opts = {};
 
     if (template) {	
-	    opts.template = template;
-		opts.check    = false;
-		opts.debug    = options.debugtemplate;
-		opts.side     = "server";	
+	    opts.template = template
+		opts.check    = false
+		opts.debug    = options.debugtemplate
+		opts.side     = "server"	
 		if (timeRange) {
-			opts.type       = "strftime";
-			opts.timeRange  = timeRange;
-			opts.indexRange = null;
-			opts.debug      =  options.debugtemplate;
-			opts.log        = true;
-			ret             = expandtemplate(opts);
+			opts.type       = "strftime"
+			opts.timeRange  = timeRange
+			opts.indexRange = null
+			opts.debug      = options.debugtemplate
+			opts.log        = true
+			ret             = expandtemplate(opts)
 			sourcet         = ret.files
-			//sourcet = expandtemplate(opts)
 			if (options.debugtemplate) {
 				log.logres("expandtemplate.js: "+ret.log, res)
-				//log.logres("sourcet = "+JSON.stringify(sourcet), res)
 			}
-
 		}
 		if (indexRange) {
 			opts.type       = "sprintf";
@@ -610,18 +639,18 @@ function parseSource(req, res) {
 	}
 
 	if (source) {
-		source = source.trim().replace("\r", "").split(/[\r\n]+/).filter(function (line) {return line.trim() != "";});
+		source = source.trim().replace("\r", "").split(/[\r\n]+/).filter(function (line) {return line.trim() != ""})
 	}
 	
 	if (options.debugtemplate) {
-		log.logres("options after parseSource: "+JSON.stringify(options), res)
+		log.logres("options after parseSource: " + JSON.stringify(options), res)
 	}
 
 	if ((sourcet.length > 0) && (source.length > 0)) {
 		source = source.concat(sourcet);
 	}
 	if (sourcet.length > 0) {
-		source = sourcet;
+		source = sourcet
 	}
 
 	if (prefix)		    			

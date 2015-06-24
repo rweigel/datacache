@@ -111,22 +111,24 @@ function run() {
 				work.finishStartTime = new Date()
 				runningWorks.remove(work)
 				if (work.options.debugschedulerconsole) {
-					log.logc(loginfo + " scheduler.workFinish(): Called.", logcolor)
+					log.logc(loginfo + " scheduler.run.workFinish(): Called.", logcolor)
+				}
+				if (work.options.debugschedulerconsole) {
+					log.logc(loginfo + " scheduler.run.workFinish(): work.error = "+work.error, logcolor)
+					log.logc(loginfo + " scheduler.run.workFinish(): work.retries = "+work.retries, logcolor)
+					log.logc(loginfo + " scheduler.run.workFinish(): work.maxTries = "+work.options.maxTries, logcolor)
 				}
 				if (work.error && work.retries < work.options.maxTries) {
-					if (work.retries == work.options.maxTries) {
-						log.logc(loginfo + "  scheduler.workFinish(): Retrying " + work.url, 160)
-					}
+					log.logc(loginfo + "  scheduler.run.workFinish(): Will retry " + work.url, 160)
 					work.retries += 1
 					worksQueue.push(work)
 				} else {
-					if (work.retries == work.options.maxTries) {
-						log.logc(loginfo + " scheduler.run.workFinish(): Number of tries (" + work.options.maxTries + ") exceeded.", 160)
-						log.logc(loginfo + " scheduler.run.workFinish(): URL = " + work.url, 160)
-					}
 					if (work.data) {
 						work.callback(work2result(work))
 					} else {
+						if (work.retries == work.options.maxTries) {
+							log.logc(loginfo + " scheduler.run.workFinish(): Finished max number of tries (" + work.options.maxTries + ") for "+work.url, 160)
+						}
 						util.getCachedData(work, function (err) {
 							exports.emit("finish", work)
 							work.callback(work2result(work))
@@ -197,13 +199,15 @@ function work2result(work) {
 }
 
 function getPlugin(options,url) {
-	var plugin;
+	var plugin
 	if (options.plugin) {
-		plugin = plugins.find(function (d) {return d.name === options.plugin}) || "";
+		// Find plug-in by name
+		plugin = plugins.find(function (d) {return d.name === options.plugin}) || ""
 	} else {
-		plugin = plugins.find(function(d){return d.match(url);}) || defaultPlugin;
+		// Find plug-in that returns true given a URL
+		plugin = plugins.find(function (d) {return d.match(url)}) || defaultPlugin
 	}
-	return plugin;
+	return plugin
 }
 exports.getPlugin = getPlugin;
 
@@ -248,15 +252,24 @@ function newWork(url, options, callback){
 	//TODO: Check if plugin changed on disk.  If so, re-load it.
 	plugin = getPlugin(options,url);
 	
-	if (plugin.extractSignature) extractSignature = plugin.extractSignature(options);
+	if (plugin.extractSignature) {
+		extractSignature = plugin.extractSignature(options)
+	}
 	if (options.debugschedulerconsole && extractSignature !== "") {
-		log.logc(options.loginfo + " scheduler.run(): plugin extractSignature: " + extractSignature, options.logcolor)
+		log.logc(options.loginfo + " scheduler.newWork(): URL MD5: "+util.md5(url), options.logcolor)
+		log.logc(options.loginfo + " scheduler.newWork(): Extract MD5: "+util.md5(extractSignature), options.logcolor)
+		log.logc(options.loginfo + " scheduler.newWork(): Work MD5: "+util.md5(url+extractSignature), options.logcolor)
+		//log.logc(options.loginfo + " scheduler.run(): plugin extractSignature: ", options.logcolor)
+		//log.logc(extractSignature, options.logcolor)
 	}
 
-	// TODO:  If extractSignature was provided, the plugin modifies the returned data.  For example if a time range was specified, it
-	// subsets the returned file.  Because the urlMd5 depends on the signature, the original file will be re-downloaded each time the signature
-	// changes.  This could be avoided by creating work.urlMd5base which is the md5 of the base file.  If a request comes in and urlMd5.out does not exist,
-	// scheduler should check to see if urlMd5base.out exists.
+	// TODO: If extractSignature was provided, the plugin modifies the returned data.  
+	// For example if a time range was specified, it subsets the returned file.
+	// Because the urlMd5 depends on the signature, the original file will be
+	// re-downloaded each time the signature changes.  This could be avoided by
+	// creating work.urlMd5base which is the MD5 of the base file.  If a request
+	// comes in and urlMd5.out does not exist, scheduler should check to see if
+	// urlMd5base.out exists.
 	
 	var work = {
 				id: getId(),

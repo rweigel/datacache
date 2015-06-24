@@ -69,7 +69,8 @@ exports.unescapeHTML = unescapeHTML;
 // Head check on resource.
 var head = function head(work,callback) {
 
-	work.headCheckStartTime = new Date();
+	// TODO: Check lock on header file before writing.
+	work.headCheckStartTime = new Date()
 
 	if (work.options.debugutilconsole) {
 		log.logc(work.options.loginfo + " util.head(): Doing head check of " + work.url, work.options.logcolor)
@@ -80,7 +81,7 @@ var head = function head(work,callback) {
 		if (work.options.debugutil) {
 			log.logc(work.options.loginfo + " util.head(): Head check of FTP is not implemented.", work.options.logcolor)
 		}
-		work.headCheckFinishTime = new Date()
+		work.headCheckFinishedTime = new Date()
 		callback(work)
 		return
 	}
@@ -99,13 +100,13 @@ var head = function head(work,callback) {
 		if (work.options.debugutilconsole) {
 			log.logc(work.options.loginfo + " util.head(): Finished head check.", work.options.logcolor)
 		}
-		var fname = getCachePath(work)
+		var filename = getCachePath(work)
 
-		if (fs.existsSync(fname+".header")) {
+		if (fs.existsSync(filename+".header")) {
 			if (work.options.debugutilconsole) {
-				log.logc(work.options.loginfo + " util.head(): Reading cached header file " + fname.replace(/.*\/(.*)/,"$1") + ".header", work.options.logcolor)
+				log.logc(work.options.loginfo + " util.head(): Reading cached header file " + filename.replace(/.*\/(.*)/,"$1") + ".header", work.options.logcolor)
 			}
-			var header = fs.readFileSync(fname+".header").toString()
+			var header = fs.readFileSync(filename+".header").toString()
 			var headers = header.split("\n")
 			for (var j = 0;j < headers.length;j++) {
 				var headersplit = headers[j].split(":")
@@ -119,7 +120,7 @@ var head = function head(work,callback) {
 				if (work.options.debugutilconsole) {
 					log.logc(work.options.loginfo + " util.head(): No last-modified in cached header.", work.options.logcolor)
 				}
-				work.headCheckFinishTime = new Date()
+				work.headCheckFinishedTime = new Date()
 				callback(work)
 				return
 			}
@@ -156,7 +157,7 @@ var head = function head(work,callback) {
 				log.logc(work.options.loginfo + " util.head(): No cached header file.", work.options.logcolor)
 			}
 		}
-		work.headCheckFinishTime = new Date()
+		work.headCheckFinishedTime = new Date()
 		callback(work)
 	})
 	.on('error', function (err) {
@@ -165,7 +166,7 @@ var head = function head(work,callback) {
 		}
 		work.isExpired = false
 		work.headCheckError = true
-		work.headCheckFinishTime = new Date()
+		work.headCheckFinishedTime = new Date()
 		callback(work)
 	})
 	.on('socket', function (socket) {
@@ -177,7 +178,7 @@ var head = function head(work,callback) {
 				}
 				work.headCheckTimeout = true
 				work.isExpired = false
-				work.headCheckFinishTime = new Date()
+				work.headCheckFinishedTime = new Date()
 				callback(work)
        	})
     })
@@ -247,19 +248,58 @@ exports.getZipCachePath = getZipCachePath;
 // Read data from cache.
 function getCachedData(work, callback) {
 
+	// TODO: Check write lock on files before reading.
+
 	if (work.options.debugutilconsole) {
 		log.logc(work.options.loginfo + " util.getCachedData(): Called.", work.options.logcolor)
 	}
 
+	var filename = getCachePath(work)
+	var Nr = 0
+	var err = "";
+
 	try {
 	
-		var err = "";
 
-		getHeader();
-		getLstat();
-		getMeta();
-		getData();
-		
+		if (work.options.includeHeader) {
+			getHeader()
+			Nr = Nr + 1
+		} else {
+			if (work.options.debugutilconsole) {
+				log.logc(work.options.loginfo + " util.getCachedData.finished(): includeHeader = false. Not reading.", work.options.logcolor)
+			}
+		}
+		if (work.options.includeLstat) {
+			getLstat()
+			Nr = Nr + 1
+		} else {
+			if (work.options.debugutilconsole) {
+				log.logc(work.options.loginfo + " util.getCachedData.finished(): includeLsat   = false. Not reading.", work.options.logcolor)
+			}
+		}
+
+		if (work.options.includeMeta) {
+			getMeta()
+			Nr = Nr + 1
+		} else {
+			if (work.options.debugutilconsole) {
+				log.logc(work.options.loginfo + " util.getCachedData.finished(): includeMeta   = false. Not reading.", work.options.logcolor)
+			}
+		}
+		if (work.options.includeData) {
+			getData()
+			Nr = Nr + 1
+		} else {
+			if (work.options.debugutilconsole) {
+				log.logc(work.options.loginfo + " util.getCachedData.finished(): includeData   = false. Not reading.", work.options.logcolor)
+			}
+		}
+
+		if (Nr == 0) {
+			work.isFinished = true
+			callback(err)			
+		}
+
 		function finished(msg) {
 			if (work.options.debugutilconsole) {
 				log.logc(work.options.loginfo + " util.getCachedData.finished(): " + msg, work.options.logcolor)
@@ -268,18 +308,14 @@ function getCachedData(work, callback) {
 				finished.z = 0
 			} 
 			finished.z = finished.z + 1
-			if (finished.z == 4) {
+			if (finished.z == Nr) {
 				work.isFinished = true
 				callback(err)
 			}
 		}
 		
 		function getHeader() {
-			if (!work.options.includeHeader) {
-				finished("Finished reading header.")
-				return
-			}
-			fs.readFile(getCachePath(work) + ".header", "utf8",	
+			fs.readFile(filename + ".header", "utf8",	
 				function (err, header) {
 					if (typeof(header) !== 'undefined') {
 						tmp = header.split("\n")
@@ -294,12 +330,7 @@ function getCachedData(work, callback) {
 					})
 		}		
 		function getLstat() {
-			//log.logc("Reading Lstat Started");
-			if (!work.options.includeLstat) {
-				finished("Finished lstat read.")
-				return
-			}
-			fs.lstat(getCachePath(work) + ".data",
+			fs.lstat(filename + ".data",
 				function (err, stats) {
 					if (stats) {
 						work.dataLength = stats.size
@@ -309,12 +340,7 @@ function getCachedData(work, callback) {
 				});
 		}
 		function getMeta() {
-			//log.logc("Reading Meta Started");
-			if (!work.options.includeMeta) {
-				finished("Finished reading meta.")
-				return
-			}			
-			fs.readFile(getCachePath(work) + ".meta", "utf8",
+			fs.readFile(filename + ".meta", "utf8",
 				function (err, data) {
 					work.meta       = data
 					work.metaJson   = work.plugin.metaToJson(data)
@@ -322,13 +348,9 @@ function getCachedData(work, callback) {
 				})
 		}
 		function getData(callback) {
-			if (!work.options.includeData) {
-				finished("Finished reading data.")
-				return
-			}			
 			// TODO: Don't specify encoding if writeDataBinary exists.
 			// create work.dataEncoding?
-			fs.readFile(getCachePath(work) + ".data", "utf8",
+			fs.readFile(filename + ".data", "utf8",
 				function (err, data) {
 					work.data       = data
 					work.dataJson   = work.plugin.dataToJson(data)
@@ -347,7 +369,9 @@ var memLock = {};
 //var writeLock = {};
 var writeCache = function(work, callback) {
 
-	var fname = getCachePath(work)
+	var directory = getCacheDir(work)
+	var filename  = getCachePath(work)
+	var header    = []
 
 	if (work.options.debugutilconsole) {
 		log.logc(work.options.loginfo + " util.writeCache(): Called.", work.options.logcolor)
@@ -355,14 +379,11 @@ var writeCache = function(work, callback) {
 	if (!writeCache.memLock) {
 		writeCache.memLock = {}
 	}
-	if (typeof(writeCache.memLock[fname]) === "undefined") {
-		writeCache.memLock[fname] = 0
+	if (typeof(writeCache.memLock[filename]) === "undefined") {
+		writeCache.memLock[filename] = 0
 	}
-	//if (!writeLock[fname]) {writeLock[fname] = 0;}
+	//if (!writeLock[filename]) {writeLock[filename] = 0;}
 	
-	var directory = getCacheDir(work)
-	var filename  = getCachePath(work)
-	var header    = []
 
 	for (var key in work.header) {
 		header.push(key + " : " + work.header[key])
@@ -378,7 +399,7 @@ var writeCache = function(work, callback) {
 		writeCache.memLock[filename] = writeCache.memLock[filename] + 1;
 		var tmp = writeCache.memLock[filename];
 		if (work.options.debugutilconsole) {
-			log.logc(work.options.loginfo + " util.writeCache(): Memory locking " + filename.replace(/.*\/(.*)/,"$1"), work.options.logcolor)
+			log.logc(work.options.loginfo + " util.writeCache(): Cache memory locking " + filename.replace(/.*\/(.*)/,"$1"), work.options.logcolor)
 		}
 		memLock[work.id] = 6; // 6 is number of writes associated with each request.
 		work.writeStartTime = new Date();
@@ -514,13 +535,13 @@ var writeCache = function(work, callback) {
 				}
 				writeCache.memLock[filename] = writeCache.memLock[filename]-1
 				if (work.options.debugutilconsole) {
-					log.logc(work.options.loginfo + " util.writeCache(): Memory unlocking " + filename.replace(/.*\/(.*)/,"$1"), work.options.logcolor)
+					log.logc(work.options.loginfo + " util.writeCache(): Cache memory unlocking " + filename.replace(/.*\/(.*)/,"$1"), work.options.logcolor)
 				}
 				callback(work);
 			}
 		}
 
-		function tryrename(fname) {
+		function tryrename() {
 			try {
 				fs.renameSync(filename+".data"  , filename+"/"+dataMd5old+".data");			
 			} catch (e) {
