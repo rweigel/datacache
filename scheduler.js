@@ -43,7 +43,7 @@ function addURL(url, options, callback) {
 	exports.emit("submit", work)
 	worksQueue.push(work)
 	if (work.options.debugschedulerconsole) {
-		log.logc(options.loginfo + " scheduler.addURL: Calling run().", options.logcolor)
+		log.logc(options.loginfo + " scheduler.addURL(): Calling run().", options.logcolor)
 	}
 	run();
 }
@@ -108,34 +108,67 @@ function run() {
 			}
 
 			function workFinish() {
-				work.finishStartTime = new Date()
 				runningWorks.remove(work)
 				if (work.options.debugschedulerconsole) {
 					log.logc(loginfo + " scheduler.run.workFinish(): Called.", logcolor)
 				}
 				if (work.options.debugschedulerconsole) {
-					log.logc(loginfo + " scheduler.run.workFinish(): work.error = "+work.error, logcolor)
-					log.logc(loginfo + " scheduler.run.workFinish(): work.retries = "+work.retries, logcolor)
-					log.logc(loginfo + " scheduler.run.workFinish(): work.maxTries = "+work.options.maxTries, logcolor)
+					log.logc(loginfo + " scheduler.run.workFinish(): work.error    = " + work.error, logcolor)
+					log.logc(loginfo + " scheduler.run.workFinish(): work.retries  = " + work.retries, logcolor)
+					log.logc(loginfo + " scheduler.run.workFinish(): work.maxTries = " + work.options.maxTries, logcolor)
 				}
+
+				if (!work.error && work.retries < work.options.maxTries) {
+					util.getCachedData(work, function (err) {
+						exports.emit("finish", work)
+						if (!work.isfinished) {
+							work.isfinished = true;
+							work.callback(work2result(work))
+						} else {
+							if (work.options.debugstreamconsole) {
+								log.logc(loginfo + " scheduler.run.workFinish(): Work already sent.  Not executing work.callback().", logcolor)
+							}
+						}
+					})						
+				}
+
 				if (work.error && work.retries < work.options.maxTries) {
 					log.logc(loginfo + "  scheduler.run.workFinish(): Will retry " + work.url, 160)
 					work.retries += 1
 					worksQueue.push(work)
 				} else {
-					if (work.data) {
+					if (work.data && !work.isfinished) {
+						if (work.options.debugstreamconsole) {
+							log.logc(loginfo + " scheduler.run.workFinish(): work.data exists and work.isfinished=false. Executing work.callback().", logcolor)
+						}
+						work.isfinished = true;
 						work.callback(work2result(work))
 					} else {
 						if (work.retries == work.options.maxTries) {
-							log.logc(loginfo + " scheduler.run.workFinish(): Finished max number of tries (" + work.options.maxTries + ") for "+work.url, 160)
+							log.logc(loginfo + " scheduler.run.workFinish(): Finished max number of tries (" + work.options.maxTries + ") for "+work.url, 160)	
+							if (!work.isfinished) {
+								if (work.options.debugstreamconsole) {
+									log.logc(loginfo + " scheduler.run.workFinish(): Work not already sent.  Executing work.callback().", logcolor)
+								}
+								util.getCachedData(work, function (err) {
+									exports.emit("finish", work)
+									if (!work.isfinished) {
+										work.isfinished = true;
+										work.callback(work2result(work))
+									} else {
+										if (work.options.debugstreamconsole) {
+											log.logc(loginfo + " scheduler.run.workFinish(): Work already sent.  Not executing work.callback().", logcolor)
+										}
+									}
+								})	
+							} else {
+								if (work.options.debugschedulerconsole) {
+									log.logc(loginfo + " scheduler.run.workFinish(): Work already sent.  Not Checking cache.", logcolor)
+								}
+							}						
 						}
-						util.getCachedData(work, function (err) {
-							exports.emit("finish", work)
-							work.callback(work2result(work))
-						})
 					}
 				}
-				work.finishFinishedTime = new Date()			
 				run()
 			}
 		})		
@@ -152,50 +185,28 @@ function run() {
 function work2result(work) {
 
 	work.work2ResultStartTime = new Date()
-	var ret = {}
 
-	for (var key in work) {
-
-		if (key!=="data" && key!=="dataBinary" && key!=="dataJson" && key!=="datax" && key!=="meta" && key!=="metaJson" && key!=="body") {
-			ret[key] = work[key];
+	if (work.options.includeMeta) {
+		if (!work.hasOwnProperty("meta")) {
+			work["meta"] = {}
 		}
-		if (work.options.includeData) {
-		    if (Object.keys(work["dataJson"]).length == 0) {
-			ret["data"] = work["data"];
-		    } else {
-			ret["dataJson"] = work["dataJson"];
-		    }
+		if (!work.hasOwnProperty("datax")) {
+			work["datax"] = {}
 		}
-		
-		//console.log(work["meta"]);
-		//console.log(work["metaJson"]);
-		//console.log(work.options.includeMeta)
-		if (work.options.includeMeta) {
-			//console.log(work.options.includeMeta)
 
-			//if (Object.keys(work["metaJson"]).length == 0) {
-		    	if (!work.hasOwnProperty("meta")) {
-		    		work["meta"] = {};
-		    	}
-		    	if (!work.hasOwnProperty("datax")) {
-		    		work["datax"] = {};
-		    	}
-		    	
-				if (typeof(work["meta"]) === "undefined") {
-				    ret["meta"] = work["datax"];			    
-				} else if (work["meta"].length == 0) {
-				    ret["meta"] = work["datax"];
-				} else {
-				    ret["meta"] = work["meta"];
-				}
-			    } else {
-					ret["metaJson"] = work["metaJson"];
-			    }
-			//}
+		if (typeof(work["meta"]) === "undefined") {
+			work["meta"] = work["datax"]			    
+		} else if (work["meta"].length == 0) {
+			work["meta"] = work["datax"]
+		} else {
+			work["meta"] = work["meta"]
+		}
 	}
-	ret.work2ResultFinishedTime = new Date();
-	ret.jobFinishedTime = new Date();
-	return ret;
+
+	work.work2ResultFinishedTime = new Date()
+	work.jobFinishedTime = new Date()
+	return work
+
 }
 
 function getPlugin(options,url) {
@@ -256,9 +267,9 @@ function newWork(url, options, callback){
 		extractSignature = plugin.extractSignature(options)
 	}
 	if (options.debugschedulerconsole && extractSignature !== "") {
-		log.logc(options.loginfo + " scheduler.newWork(): URL MD5: "+util.md5(url), options.logcolor)
-		log.logc(options.loginfo + " scheduler.newWork(): Extract MD5: "+util.md5(extractSignature), options.logcolor)
-		log.logc(options.loginfo + " scheduler.newWork(): Work MD5: "+util.md5(url+extractSignature), options.logcolor)
+		log.logc(options.loginfo + " scheduler.newWork(): MD5(URL): "+util.md5(url), options.logcolor)
+		log.logc(options.loginfo + " scheduler.newWork(): MD5(extractSignature): "+util.md5(extractSignature), options.logcolor)
+		log.logc(options.loginfo + " scheduler.newWork(): MD5(URL + extractSignature): "+util.md5(url+extractSignature), options.logcolor)
 		//log.logc(options.loginfo + " scheduler.run(): plugin extractSignature: ", options.logcolor)
 		//log.logc(extractSignature, options.logcolor)
 	}
@@ -290,25 +301,29 @@ function newWork(url, options, callback){
 				isExpired : false,
 				isFinished : false,
 				foundInCache: false,
-				headCheckError: false,
 				error: pluginerror,
 				jobStartTime : new Date(),
 				processStartTime : 0,
 				cacheCheckStartTime : 0,
-				cacheCheckFinishedTime : 0,
+				cacheCheckFinishedTime : 0,	
+				cacheCheckError : "",	
+				cacheWriteStartTime : 0,
+				cacheWriteFinishedTime : 0,
+				cacheWriteError : "",
 				headCheckStartTime : 0,
 				headCheckFinishedTime : 0,
+				headLastModified : 0,
+				headInCacheLastModified : 0,	
+				headCheckError: false,
+				getStartTime : 0,
 				getFirstChunkTime: 0,
-				finishStartTime: 0,
+				getFinishedTime : 0,
 				work2ResultStartTime: 0,
 				work2ResultFinishedTime: 0,
-				finishFinishedTime: 0,
-				writeStartTime : 0,
-				writeFinishedTime : 0,
 				processFinishedTime : 0,
 				jobFinishedTime : 0,
-				getEndTime : 0,
 				retries : 0,
+				isfinished: false,
 				callback : callback || function(){},
 				process : function (callback) {
 					exports.emit("process", this);
@@ -346,5 +361,6 @@ function newWork(url, options, callback){
 					return this.plugin.extractRem(data, options);
 				}
 			}
-	return work;
+	return work
 }
+exports.newWork = newWork

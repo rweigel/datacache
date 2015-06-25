@@ -58,6 +58,8 @@ exports.process = function (work, callback) {
 						path: url.parse(work.url).pathname
 					}
 
+		work.getStartTime = new Date()
+
 		util.get(work.url, function (error, response, body) {
 
 			if (error) {
@@ -145,19 +147,17 @@ exports.process = function (work, callback) {
 		.on("data", function (data) {
 			sz = sz + data.length;
 			
-			if (!work.getFirstChunkTime) {
-				if (debugconsole) {
-					log.logc(work.options.loginfo + " default.process(): Got first chunk of size [bytes] " + data.length, logcolor)
-				}
-			    work.getFirstChunkTime = new Date();
+			if (debugconsole) {
+				log.logc(work.options.loginfo + " default.process(): Got first chunk of size [bytes] " + data.length, logcolor)
 			}
+			work.getFirstChunkTime = new Date();
 		})
 		.on("end", function () {
 			if (debugconsole) {
 				log.logc(work.options.loginfo + " default.process(): On end event.  Size [bytes]     " + sz, logcolor)
 			}
 			if (!work.getEndTime) {
-			    work.getEndTime = new Date();
+			    work.getFinishedTime = new Date();
 			}
 		})
 	} else if (work.url.match(/^ftp/)) {
@@ -251,6 +251,15 @@ exports.extractData = function (body, options) {
 		}
 		return eval(options.extractData)
 	}
+
+	if (debugconsole) {
+		log.logc(options.loginfo + " default.extractData(): Using safe eval because extractData or lineRegExp are not default values.", logcolor)
+		log.logc(options.loginfo + " default.extractData(): Evaluating " + options.extractData, logcolor)
+		log.logc(options.loginfo + " default.extractData(): lineRegExp = " + lineRegExp, logcolor)
+	}
+
+	//Not needed, even though body is a buffer.
+	//body = body.toString()
 
 	var window
 	var $

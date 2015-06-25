@@ -94,7 +94,7 @@ function stream(source, options, res) {
 								    options.streamFilterReadReadColumns);
 
 	if (options.debugstreamconsole) {
-		log.logc(options.loginfo+" stream.js: Stream signature: " + util.md5(streamsignature), logcolor)
+		log.logc(options.loginfo+" stream.js: Stream signature: " + streamsignature, logcolor)
 	}
 
 	var streamdir         = __dirname +"/cache/stream/"+source[0].split("/")[2]+"/"+streamsignature+"/";
@@ -132,10 +132,24 @@ function stream(source, options, res) {
 	
 	var N = source.length;
 	if (options.debugstream) {
-		log.logres('Calling scheduler with ' + N + ' URL(s) and options.streamOrder = '+options.streamOrder,res)
+		log.logres('Calling scheduler with ' + N + ' URL(s) and options.streamOrder = ' + options.streamOrder,res)
 	}
 	if (options.debugstreamconsole) {
 		log.logc(options.loginfo+' stream.js: Calling scheduler with ' + N + ' URL(s) and options.streamOrder = '+options.streamOrder,logcolor)
+	}
+
+	// TODO: Account for this before adding URLs to scheduler.
+
+	if (options.debugstreamconsole) {
+		if (options.forceUpdate == false && options.respectHeaders == false) {
+			for (var jj=0;jj<N;jj++) {
+				xwork = scheduler.newWork(source[jj], options);
+				part = streamdir + "/" + xwork.urlMd5 + ".stream.gz"
+				if (fs.existsSync(part)) {
+					log.logc(options.loginfo+' stream.js: Stream cache for ' + source[jj] + ' found.  Did need to add to scheduler.', logcolor)
+				}
+			}
+		}
 	}
 
 	if (options.streamOrder) {
@@ -345,6 +359,10 @@ function stream(source, options, res) {
 	}
 
 	function processwork(work, inorder) {
+ 		
+		if (options.debugstreamconsole) {
+			log.logc(options.loginfo + " stream.processwork(): Called.", logcolor)
+		}
 		//console.log(work)
 		var fname = util.getCachePath(work);
 		var streamfilepart = streamdir+work.urlMd5+".stream.gz";
@@ -357,7 +375,7 @@ function stream(source, options, res) {
 			if (options.debugstreamconsole) {
 				log.logc(options.loginfo + " stream.processwork(): work.error = '"+work.error+"' and no cached data.  Calling finished() and not sending data.", logcolor)
 			}
-			//console.log(work)
+
 			finished(inorder)
 			return
 		}

@@ -33,6 +33,7 @@ Array.prototype.find = function (match) {
 }
 
 function get(url, callback) {
+
 	var options = {	
 					url: url,
 					timeout: TIMEOUT,
@@ -130,13 +131,14 @@ var head = function head(work,callback) {
 				log.logc(work.options.loginfo + " util.head(): last-modified of cache file: " + lmcache, work.options.logcolor)
 			}
 			var mslmcache = new Date(lmcache).getTime()
-			work.lastModified = (new Date(lmcache)).toISOString()
+			work.headInCacheLastModified = (new Date(lmcache)).toISOString()
 			var  lmnow = res.headers["last-modified"]
 			if (lmnow) {
 				if (work.options.debugutilconsole) {
 					log.logc(work.options.loginfo + " util.head(): last-modified of from head : " + lmnow, work.options.logcolor)
 				}
 				var mslmnow = new Date(lmnow).getTime();
+				work.headLastModified = (new Date(mslmnow)).toISOString()
 				if (mslmnow > mslmcache) {
 					if (work.options.debugutilconsole) {
 						log.logc(work.options.loginfo + " util.head(): Cache has expired.", work.options.logcolor)
@@ -248,6 +250,10 @@ exports.getZipCachePath = getZipCachePath;
 // Read data from cache.
 function getCachedData(work, callback) {
 
+	if (work.error !== "") {
+		callback(work.error)
+	}
+
 	// TODO: Check write lock on files before reading.
 
 	if (work.options.debugutilconsole) {
@@ -296,7 +302,6 @@ function getCachedData(work, callback) {
 		}
 
 		if (Nr == 0) {
-			work.isFinished = true
 			callback(err)			
 		}
 
@@ -309,7 +314,6 @@ function getCachedData(work, callback) {
 			} 
 			finished.z = finished.z + 1
 			if (finished.z == Nr) {
-				work.isFinished = true
 				callback(err)
 			}
 		}
@@ -337,7 +341,7 @@ function getCachedData(work, callback) {
 						work.lstat = stats
 						finished("Finished lstat read.")
 					}
-				});
+				})
 		}
 		function getMeta() {
 			fs.readFile(filename + ".meta", "utf8",
@@ -384,7 +388,6 @@ var writeCache = function(work, callback) {
 	}
 	//if (!writeLock[filename]) {writeLock[filename] = 0;}
 	
-
 	for (var key in work.header) {
 		header.push(key + " : " + work.header[key])
 	}
@@ -402,7 +405,6 @@ var writeCache = function(work, callback) {
 			log.logc(work.options.loginfo + " util.writeCache(): Cache memory locking " + filename.replace(/.*\/(.*)/,"$1"), work.options.logcolor)
 		}
 		memLock[work.id] = 6; // 6 is number of writes associated with each request.
-		work.writeStartTime = new Date();
 
 		// Create dir if it does not exist
 		fs.exists(directory, function (exist) {
@@ -418,7 +420,7 @@ var writeCache = function(work, callback) {
 			} else {
 				writeCacheFiles()
 			}
-		});
+		})
 	} else {
 		if (writeCache.memLock[filename] != 0) {
 			if (work.options.debugutilconsole) {
@@ -430,7 +432,7 @@ var writeCache = function(work, callback) {
 				log.logc(work.options.loginfo + " util.writeCache(): Stream memory lock found.  Not writing file.", work.options.logcolor)
 			}
 		}
-		callback(work);
+		callback(work)
 	}
 
 	function writeCacheFiles() {
@@ -439,54 +441,66 @@ var writeCache = function(work, callback) {
 		// If .data file exists and differs from new data, move files to directory md5url.
 		// If .data file exists and is same as new data, do nothing unless forceWrite=true.
 
+		work.cacheWriteStartTime = new Date();
+
 		fs.exists(filename + ".data",
-			  function (exists) {
-				  if (!exists) {
-					  writeFiles();
-				  } else {
-					  if (work.options.debugutilconsole) {
-					  	log.logc(work.options.loginfo+" util.writeCacheFiles(): Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1") + ".data", work.options.logcolor)
-					  }
-					  try {
-						  dataMd5old = md5(fs.readFileSync(filename+".data"));
-					  } catch (e) {
-						  debugger
-						  if (work.options.debugutilconsole) {
-						  	log.logc(work.options.loginfo+" util.writeCacheFiles(): Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1" + ".data" + " failed."), work.options.logcolor)
-						  }
-						  dataMd5old = "";
-					  }
-					  if (work.options.debugutilconsole) {
-					  	if (work.dataMd5 === dataMd5old) {
-					  		log.logc(work.options.loginfo+" util.writeCacheFiles(): Existing MD5 = cached MD5", work.options.logcolor)
-					  	} else {
-					  		log.logc(work.options.loginfo+" util.writeCacheFiles(): Existing MD5 != cached MD5", work.options.logcolor)
-					  	}
-					  }
-					  if ( (work.dataMd5 != dataMd5old) || work.options.forceWrite || (work.options.respectHeaders && work.isExpired)) {
+			function (exists) {
+				if (!exists) {
+					if (work.options.debugutilconsole) {
+						log.logc(work.options.loginfo + " util.writeCacheFiles.writeFiles(): .data does not exist.", work.options.logcolor)
+					}
+					writeFiles();
+				} else {
+					if (work.options.debugutilconsole) {
+						log.logc(work.options.loginfo + " util.writeCacheFiles.writeFiles(): .data exists: " + fs.existsSync(filename+".data"), work.options.logcolor)
+					}
+
+					if (work.options.debugutilconsole) {
+						log.logc(work.options.loginfo + " util.writeCacheFiles(): Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1") + ".data", work.options.logcolor)
+					}
+					try {
+						dataMd5old = md5(fs.readFileSync(filename + ".data"));
+					} catch (e) {
+						debugger
+						if (work.options.debugutilconsole) {
+							log.logc(work.options.loginfo + " util.writeCacheFiles(): Computing MD5 of " + filename.replace(/.*\/(.*)/,"$1" + ".data" + " failed."), work.options.logcolor)
+						}
+						dataMd5old = "";
+					}
+					if (work.options.debugutilconsole) {
+						if (work.dataMd5 === dataMd5old) {
+					  		log.logc(work.options.loginfo + " util.writeCacheFiles(): Existing MD5 = cached MD5", work.options.logcolor)
+						} else {
+							log.logc(work.options.loginfo + " util.writeCacheFiles(): Existing MD5 != cached MD5", work.options.logcolor)
+						}
+					}
+					if ( (work.dataMd5 != dataMd5old) || work.options.forceWrite || (work.options.respectHeaders && work.isExpired)) {
 						if (keepversions(work.url) && (work.dataMd5 != dataMd5old)) {
 							renameFiles(writeFiles);
 						} else {
-							writeFiles();
+							if (work.options.debugutilconsole) {
+								log.logc(work.options.loginfo + " util.writeCacheFiles(): Will attempt to write files.", work.options.logcolor)
+							}
+							writeFiles()
 						}
-					  } else {
+					} else {
+						if (work.options.debugutilconsole) {
+					  		log.logc(work.options.loginfo + " util.writeCacheFiles(): Not writing files.", work.options.logcolor)
+						}
+						work.isFromCache = true
+						work.isFinished = true
 						finish();finish();finish();finish();finish();finish();
-					  }
-				  }
-			  });
-		
+					}
+				}
+			})
 		
 		function writeFiles() {
-
-			if (work.options.debugutilconsole) {
-				log.logc(work.options.loginfo + " util.writeCacheFiles(): Maybe writing: " + filename.replace(/.*\/(.*)/,"$1")+".*", work.options.logcolor)
-				log.logc(work.options.loginfo + " util.writeCacheFiles(): .data exists: " + fs.existsSync(filename+".data"), work.options.logcolor)
-			}
 	
 			if (app.stream.streaming[filename] > 0) {
 				if (work.options.debugutilconsole) {
 					log.logc(work.options.loginfo + " util.writeCacheFiles(): A stream memory lock was found.  Aborting write.", work.options.logcolor)
 				}
+				work.cacheWriteError = "Cache file could not be written because it was stream locked.";
 				finish();finish();finish();finish();finish();finish();
 				return
 			} else {
@@ -494,11 +508,6 @@ var writeCache = function(work, callback) {
 					log.logc(work.options.loginfo + " util.writeCacheFiles(): No stream memory lock was found.  Writing.", work.options.logcolor)
 				}
 			}
-
-			//if (work.options.debugutil)
-			//log.logc(work.options.loginfo + " util.writeCacheFiles(): Writing "+filename+".lck")
-			//fs.writeFileSync(filename+".lck","");
-			//fs.writeFileSync(__dirname+"/cache/locks/"+work.urlMd5+".lck",work.dir);
 
 			if (work.options.debugutilconsole) {
 				log.logc(work.options.loginfo + " util.writeCacheFiles(): Writing " + filename.replace(/.*\/(.*)/,"$1") + ".*", work.options.logcolor)
@@ -519,25 +528,21 @@ var writeCache = function(work, callback) {
 				console.trace(err)
 			}
 			memLock[work.id]--;
-			work.writeFinishedTime = new Date();
+			work.cacheWriteFinishedTime = new Date();
 			if (memLock[work.id]==0) {
-
-				var filename  = getCachePath(work);
-				if (work.options.debugutilconsole) {
-					log.logc(work.options.loginfo + " util.writeCacheFiles(): Wrote " + filename.replace(/.*\/(.*)/,"$1") + ".*", work.options.logcolor)
-				}
-				// Will not exist if write was aborted because stream lock was found.
 				if (fs.existsSync(filename+".lck")) {
+					// Will not exist if write was aborted because stream lock was found.
 					if (work.options.debugutilconsole) {
 						log.logc(work.options.loginfo + " util.writeCacheFiles(): Removing " + filename.replace(/.*\/(.*)/,"$1") + ".lck", work.options.logcolor)
 					}
 					fs.unlinkSync(filename + ".lck")
 				}
-				writeCache.memLock[filename] = writeCache.memLock[filename]-1
+				writeCache.memLock[filename] = writeCache.memLock[filename] - 1
 				if (work.options.debugutilconsole) {
 					log.logc(work.options.loginfo + " util.writeCache(): Cache memory unlocking " + filename.replace(/.*\/(.*)/,"$1"), work.options.logcolor)
 				}
-				callback(work);
+				work.isFinished = true
+				callback(work)
 			}
 		}
 

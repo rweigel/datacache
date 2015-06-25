@@ -2,48 +2,32 @@
 
 LOCAL="http://localhost:7999"
 
-# Return data for ECONNREFUSED (should return nothing)
-curl -s -g "$LOCAL/sync?source=http://localhost:22/&return=stream&forceUpdate=true&forceWrite=true"
-
-# Return data for ECONNREFUSED (should return nothing)
-#curl -s -g "$LOCAL/sync?source=http://localhost:22/&forceUpdate=true&forceWrite=true"
-
-exit 1
-
-# Return info for ECONNREFUSED
-curl -s -g "$LOCAL/sync?source=http://localhost:22/&forceUpdate=true&forceWrite=true"
-
 BASE="$LOCAL/sync?source=$LOCAL/test/data/google.html&lineRegExp=google"
 
-curl -s -g "$BASE&forceUpdate=true&forceWrite=true"
+#curl -s -g "$BASE&forceUpdate=true&forceWrite=true"
+#curl -s -g "$BASE&forceUpdate=true"
+#touch data/google.html
 
-touch test/data/google.html
 
-curl -s -g "$BASE&forceUpdate=true"
+#curl -s -g "$BASE&forceUpdate=true"
+#touch data/google.html
+#curl -s -g "$BASE&respectHeaders=false"
 
-touch test/data/google.html
+#touch data/google.html
+#curl -s -g "$BASE&streamFilterReadLines=1&return=stream"
+#touch data/google.html
+#curl -s -g "$BASE&streamFilterReadLines=1&return=stream&respectHeaders=false"
 
-curl -s -g "$BASE&respectHeaders=false"
-
-touch test/data/google.html
-
-curl -s -g "$BASE&streamFilterReadLines=1&return=stream"
-
-touch test/data/google.html
-
-curl -s -g "$BASE&streamFilterReadLines=1&return=stream&respectHeaders=false"
 
 # Test of template and prefix
-curl -s -g "$LOCAL/sync?source=$LOCAL/demo/file1.txt%0A$LOCAL/demo/file2.txt&forceUpdate=true&forceWrite=true"
-
-curl -s -g "$LOCAL/sync?prefix=$LOCAL/demo/&source=file1.txt%0Afile2.txt&forceUpdate=true&forceWrite=true"
-
-curl -s -g "$LOCAL/sync?template=$LOCAL/demo/file%d.txt&indexRange=1/2&forceUpdate=true&forceWrite=true"
-
-curl -s -g "$LOCAL/sync?template=$LOCAL/demo/file%Y%m%d.txt&timeRange=1999-01-01/1999-01-03&forceUpdate=true&forceWrite=true"
+#curl -s -g "$LOCAL/sync?source=$LOCAL/test/data/file1.txt%0A$LOCAL/test/data/file2.txt&forceUpdate=true&forceWrite=true"
+#curl -s -g "$LOCAL/sync?prefix=$LOCAL/test/data/&source=file1.txt%0Afile2.txt&forceUpdate=true&forceWrite=true"
+#curl -s -g "$LOCAL/sync?template=$LOCAL/test/data/file%d.txt&indexRange=1/2&forceUpdate=true&forceWrite=true"
+#curl -s -g "$LOCAL/sync?template=$LOCAL/test/data/file%Y%m%d.txt&timeRange=1999-01-01/1999-01-03&forceUpdate=true&forceWrite=true"
 
 # Tests of extractData
-curl -s -g "$LOCAL/sync?source=$LOCAL/test/data/google.html%0$LOCAL/test/data/yahoo.html&extractData=\$(%22a%22).text()&return=stream&forceUpdate=true&forceWrite=true"
+#curl -s -g "$LOCAL/sync?source=$LOCAL/test/data/a.html&extractData=jQuery(%22p%22).text()&return=stream&forceUpdate=true&forceWrite=true"
+#curl -s -g "$LOCAL/sync?source=$LOCAL/test/data/a.html%0A$LOCAL/test/data/b.html&extractData=jQuery(%22a%22).text()&return=stream&forceUpdate=true&forceWrite=true"
 
 BASE="$LOCAL/sync?source=$LOCAL/demo/file1.txt&return=stream&forceUpdate=true&forceWrite=true"
 
@@ -51,6 +35,8 @@ BASE="$LOCAL/sync?source=$LOCAL/demo/file1.txt&return=stream&forceUpdate=true&fo
 
 # %23 is # 
 curl -s -g "$BASE&lineRegExp=^%23"
+
+exit 1
 
 curl -s -g "$BASE&lineRegExp=^02-01-2005%2000:04:00.000"
 
