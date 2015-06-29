@@ -1,3 +1,7 @@
+curl -s -g "http://localhost:7999/sync?return=stream&forceUpdate=true&forceWrite=true&lineRegExp=^[0-9]&streamOrder=true&streamFilterReadLines=10&prefix=http://localhost:7999/&source=test/data/bou20130801vmin.min%0Atest/data/bou20130802vmin.min" > a
+curl -s -g "http://localhost:7999/sync?return=stream&forceUpdate=true&forceWrite=true&lineRegExp=^[0-9]&streamOrder=true&streamFilterReadLines=10&prefix=http://localhost:7999/&source=test/data/bou20130801vmin.min%0Atest/data/bou20130802vmin.min" > b
+diff a b
+exit 1
 # Transfer these to apiTestsInput.js after testing
 
 LOCAL="http://localhost:7999"
@@ -29,14 +33,20 @@ BASE="$LOCAL/sync?source=$LOCAL/test/data/google.html&lineRegExp=google"
 #curl -s -g "$LOCAL/sync?source=$LOCAL/test/data/a.html&extractData=jQuery(%22p%22).text()&return=stream&forceUpdate=true&forceWrite=true"
 #curl -s -g "$LOCAL/sync?source=$LOCAL/test/data/a.html%0A$LOCAL/test/data/b.html&extractData=jQuery(%22a%22).text()&return=stream&forceUpdate=true&forceWrite=true"
 
-BASE="$LOCAL/sync?source=$LOCAL/demo/file1.txt&return=stream&forceUpdate=true&forceWrite=true"
+#BASE="$LOCAL/sync?source=$LOCAL/demo/file1.txt&return=stream&forceUpdate=true&forceWrite=true"
+# %23 is # 
+#curl -s -g "$BASE&lineRegExp=^%23"
 
-# Tests of lineRegExp
-
+BASE="$LOCAL/sync?source=$LOCAL/test/data/file1.txt&return=stream&forceUpdate=true&forceWrite=true"
 # %23 is # 
 curl -s -g "$BASE&lineRegExp=^%23"
 
 exit 1
+
+BASE="$LOCAL/sync?source=$LOCAL/test/data/file1.txt&return=stream&forceUpdate=true"
+# %23 is # 
+curl -s -g "$BASE&lineRegExp=^%23"
+
 
 curl -s -g "$BASE&lineRegExp=^02-01-2005%2000:04:00.000"
 

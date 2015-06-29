@@ -60,6 +60,8 @@ var scheduler = require("./scheduler.js")
 var stream    = require("./stream.js")
 var log       = require("./log.js")
 
+util.memCacheInit()
+
 function s2b(str) {if (str === "true") {return true} else {return false}}
 function s2i(str) {return parseInt(str)}
 
@@ -170,8 +172,6 @@ app.use(express.bodyParser());
 app.use(express.errorHandler({ showStack: true, dumpExceptions: true }));
 app.use("/cache", express.directory(__dirname+"/cache"));
 app.use("/cache", express.static(__dirname + "/cache"));
-app.use("/demo",  express.directory(__dirname+"/demo"));
-app.use("/demo",  express.static(__dirname + "/demo"));
 app.use("/test/data", express.directory(__dirname + "/test/data"));
 app.use("/test/data", express.static(__dirname + "/test/data"));
 app.use("/asset", express.directory(__dirname + "/asset"));
@@ -180,9 +180,11 @@ app.use("/asset", express.static(__dirname + "/asset"));
 // Rewrite /sync?return=report ... to /report ...
 app.use(function (req, res, next) {
 	ret = req.body.return || req.query.return;
-	if (ret === "report") {req.url = "/report";}
-	next();
-});
+	if (ret === "report") {
+		req.url = "/report"
+	}
+	next()
+})
 
 app.get('/', function (req, res) {
 	res.contentType("html")
@@ -231,24 +233,29 @@ app.get("/sync", function (req,res) {
 
 app.post("/sync", function (req, res) {
 	if (argv.debugapp) console.log("POST")
-	handleRequest(req,res);
+	handleRequest(req,res)
 })
 
 app.get("/plugins", function (req, res) {
-	res.send(scheduler.plugins.map(function (p) {return p.name;}));
+	res.send(scheduler.plugins.map(function (p) {return p.name}))
 })
 
 Magic = mmm.Magic;
 var magic = new Magic(mmm.MAGIC_MIME_TYPE);
 app.use(function(req, res, next) {
-	magic.detectFile(__dirname + req.path, function (err, result) {
-		if (!err) {
-			res.contentType(result)
-		} else {
-			console.log('Magic')
-			console.log(err)
+	fs.exists(__dirname + req.path, function (exists) {
+		if (!exists) {
+			next()
+			return
 		}
-		next()
+		magic.detectFile(__dirname + req.path, function (err, result) {
+			if (!err) {
+				res.contentType(result)
+			} else {
+				console.log(new Date().toISOString() + " [datacache] Could not determine content type of " + req.path)
+			}
+			next()
+		})
 	})
 })
 
