@@ -2,6 +2,7 @@ var fs     = require("fs");
 var clc    = require('cli-color');
 var mkdirp = require("mkdirp");
 var crypto = require("crypto");
+var geoip  = require('geoip-lite');
 
 // Create directories, add absolute paths if needed.
 function init(config) {
@@ -69,7 +70,7 @@ function logres(message, res) {
 exports.logres = logres;
 
 // Log application information to file
-function logapp(message, res) {
+function logapp(message, config) {
 
 	if (!logapp.nwriting) logapp.nwriting = 0;
 	if (!logapp.entriespublic) logapp.entriespublic = "";
@@ -77,14 +78,27 @@ function logapp(message, res) {
 
 	logapp.nwriting = logapp.nwriting + 1;
 
-	var entry = (new Date()).toISOString() + "," + message + "\n";
 
-	var entrypublic = entry.split(",");
-	// Create MD5 hash of IP address.  Use only first 8 bytes.  
-	entrypublic[2] = crypto.createHash("md5").update(entrypublic[2]).digest("hex").substring(0,8)
+	var now   = (new Date()).toISOString()
 
-	logapp.entriespublic = logapp.entriespublic + entrypublic
-	logapp.entriesprivate = logapp.entriesprivate + entry;
+	// Create MD5 hash of IP address.  Use only first 8 bytes.  	
+	var entrypublic  = message.split(" ");
+
+	if (!entrypublic[0].match("127.0.0.1")) {
+		//console.log("Looking up " + entrypublic[0].split(",")[0])
+		var ip = geoip.lookup(entrypublic[0].split(",")[0])
+		//console.log(ip)
+		var ips = ip.country + "," + ip.region + "," + ip.city.replace(/\s+/g,"_") + "," + ip.ll[0] + "," + ip.ll[1]
+	} else {
+		var ips = "localhost"
+	}
+
+	var appname = config.APPNAME || "null"
+	
+	entrypublic[0]   = crypto.createHash("md5").update(entrypublic[0]).digest("hex").substring(0,8)
+
+	logapp.entriespublic  = logapp.entriespublic  + now + " " + entrypublic.join(" ")  +              "\n"
+	logapp.entriesprivate = logapp.entriesprivate + now + " " +        message         + " " + ips + "\n"
 
 	// Prevent too many files from being open at the same time.
 	if (logapp.nwriting < 10) {
@@ -93,8 +107,8 @@ function logapp(message, res) {
 		var yyyymmdd = tmp.toISOString().substring(0,10);
 		
 		// Write to requests.log
-		var fileprivate = res.config.LOGDIRAPPPRIVATE + "tsdsfe_"+yyyymmdd+".log";
-		var filepublic = res.config.LOGDIRAPPPUBLIC + "tsdsfe_"+yyyymmdd+".log";
+		var fileprivate = config.LOGDIRAPPPRIVATE + appname + "_"+yyyymmdd + ".log";
+		var filepublic  = config.LOGDIRAPPPUBLIC  + appname + "_"+yyyymmdd + ".log";
 
 		fs.appendFile(fileprivate, logapp.entriesprivate, 
 			function(err){

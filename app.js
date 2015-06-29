@@ -125,6 +125,7 @@ process.on('SIGINT', function () {
 if (!fs.existsSync(__dirname+"/cache")) {fs.mkdirSync(__dirname+"/cache");}
 if (!fs.existsSync(__dirname+"/cache/locks")) {fs.mkdirSync(__dirname+"/cache/locks");}
 if (!fs.existsSync(__dirname+"/log")) {fs.mkdirSync(__dirname+"/log");}
+if (!fs.existsSync(__dirname+"/log/memory")) {fs.mkdirSync(__dirname+"/log/memory");}
 
 // Monitor and log memory usage every 1000 ms.
 setInterval(function () {
@@ -132,7 +133,7 @@ setInterval(function () {
 	mem = process.memoryUsage()
 	var yyyymmdd = tmp.toISOString().substring(0,10)
 	// Write to requests.log
-	var file = __dirname + "/log/datacache_" + argv.port + "_memory_"+yyyymmdd+".log"
+	var file = __dirname + "/log/memory/datacache_" + argv.port + "_memory_"+yyyymmdd+".log"
 	fs.appendFile(file, tmp.toISOString() + " " + mem.rss + " " + mem.heapTotal + " " + mem.heapUsed + "\n")
 },1000);
 
@@ -312,6 +313,7 @@ config = {};
 config.TIMEOUT = 60*1000*15;
 config.LOGDIR = __dirname+"/log/";
 config.LOGHEADER = 'x-datacache-log';
+config.APPNAME = "datacache"
 
 // Create directories if needed.
 config = log.init(config)
@@ -392,24 +394,25 @@ function syncSummary(source, options, res) {
 
 function handleRequest(req, res) {
 
-	var message = req.connection.remoteAddress + "," + req.originalUrl;		
-	if (req.headers['X-Forwarded-For']) {
-		var message = req.headers['X-Forwarded-For'].replace(",",";") + req.originalUrl + ",";
-	} 
+	res.config = config;
+
+	if (req.headers['x-forwarded-for']) {
+		var ip = req.headers['x-forwarded-for'].replace(/\s+/g,"")
+	} else {
+		var ip = req.connection.remoteAddress
+	}
 
 	// Create detailed log file name based on current time, originalUrl, and request IP address
 	var loginfo = crypto
 					.createHash("md5")
-					.update((new Date()).toISOString() + message)
+					.update((new Date()).toISOString() + ip + req.originalUrl)
 					.digest("hex")
 					.substring(0,4)
 
+	log.logapp(ip + " " + loginfo + " " + req.originalUrl, config)
+				
 	// Set log file name as response header
-	res.header(config.LOGHEADER,loginfo)
-
-	res.config = config;
-
-	log.logapp(loginfo + "," + message, res)
+	res.header(config.LOGHEADER, loginfo)
 
 	var options  = parseOptions(req, res);
 	var source   = parseSource(req, res);
