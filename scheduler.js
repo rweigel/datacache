@@ -45,7 +45,7 @@ function addURL(url, options, callback) {
 	if (work.options.debugschedulerconsole) {
 		log.logc(options.loginfo + " scheduler.addURL(): Calling run().", options.logcolor)
 	}
-	run();
+	run()
 }
 exports.addURL = addURL;
 
@@ -82,19 +82,32 @@ function run() {
 		util.isCached(work, function (work) {
 			work.cacheCheckFinishedTime = new Date()
 			if (work.options.debugschedulerconsole) {
-				log.logc(loginfo + " scheduler.run(): util.isCached() callback.", logcolor)
-				log.logc(loginfo + " scheduler.run(): work.foundInCache      = " + work.foundInCache, logcolor)
-				log.logc(loginfo + " scheduler.run(): options.forceUpdate    = " + work.options.forceUpdate, logcolor)
-				log.logc(loginfo + " scheduler.run(): options.forceWrite     = " + work.options.forceWrite, logcolor)
-				log.logc(loginfo + " scheduler.run(): options.respectHeaders = " + work.options.respectHeaders, logcolor)
-				log.logc(loginfo + " scheduler.run(): work.isExpired         = " + work.isExpired, logcolor)
+				log.logc(loginfo + " scheduler.run.util.isCached() callback.", logcolor)
+				log.logc(loginfo + " scheduler.run.util.isCached(): work.foundInCache      = " + work.foundInCache, logcolor)
+				log.logc(loginfo + " scheduler.run.util.isCached(): work.foundOutInCache   = " + work.foundInCache, logcolor)
+				log.logc(loginfo + " scheduler.run.util.isCached(): options.forceUpdate    = " + work.options.forceUpdate, logcolor)
+				log.logc(loginfo + " scheduler.run.util.isCached(): options.forceWrite     = " + work.options.forceWrite, logcolor)
+				log.logc(loginfo + " scheduler.run.util.isCached(): options.respectHeaders = " + work.options.respectHeaders, logcolor)
+				log.logc(loginfo + " scheduler.run.util.isCached(): work.isExpired         = " + work.isExpired, logcolor)
 			}
 			if (!work.foundInCache || work.options.forceUpdate || (work.options.respectHeaders && work.isExpired)) {				
+				if (work.options.debugschedulerconsole) {
+					log.logc(loginfo + " scheduler.run(): Calling work.preprocess().", logcolor)
+				}
 			    work.preprocess(function (err, work) {
 				    work.processStartTime = new Date()
+					if (work.options.debugschedulerconsole) {
+						log.logc(loginfo + " scheduler.run(): Calling work.process().", logcolor)
+					}
 				    work.process(function (err, work) {
+						if (work.options.debugschedulerconsole) {
+							log.logc(loginfo + " scheduler.run(): Calling work.postprocess().", logcolor)
+						}
 					    work.postprocess(function (err, work) {
 						    work.processFinishedTime = new Date()
+						    if (work.options.debugschedulerconsole) {
+								log.logc(loginfo + " scheduler.run(): Calling workFinish().", logcolor)
+							}
 						    workFinish()
 						})
 					})
@@ -102,6 +115,8 @@ function run() {
 			} else {
 				if (work.options.debugschedulerconsole) {
 					log.logc(loginfo + " scheduler.run(): Cache hit.", logcolor)
+					log.logc(loginfo + " scheduler.run(): Setting work.isFromCache = true.", logcolor)
+					log.logc(loginfo + " zz scheduler.run(): Calling workFinish().", logcolor)
 				}
 			    work.isFromCache = true
 			    workFinish()
@@ -119,17 +134,17 @@ function run() {
 				}
 
 				if (!work.error && work.retries < work.options.maxTries) {
+					if (work.options.debugstreamconsole) {
+						log.logc(loginfo + " scheduler.run.workFinish(): Work not already finished.  Executing work.getCachedData().", logcolor)
+					}
+					if (work.options.debugstreamconsole) {
+						log.logc(loginfo + " scheduler.run.workFinish(): Setting work.isfinished = true and executing util.getCachedData().", logcolor)
+					}
+					work.isfinished = true;
+					exports.emit("finish", work)
 					util.getCachedData(work, function (err) {
-						exports.emit("finish", work)
-						if (!work.isfinished) {
-							work.isfinished = true;
-							work.callback(work2result(work))
-						} else {
-							if (work.options.debugstreamconsole) {
-								log.logc(loginfo + " scheduler.run.workFinish(): Work already sent.  Not executing work.callback().", logcolor)
-							}
-						}
-					})						
+						work.callback(work2result(work))
+					})
 				}
 
 				if (work.error && work.retries < work.options.maxTries) {
@@ -139,31 +154,36 @@ function run() {
 				} else {
 					if (work.data && !work.isfinished) {
 						if (work.options.debugstreamconsole) {
-							log.logc(loginfo + " scheduler.run.workFinish(): work.data exists and work.isfinished=false. Executing work.callback().", logcolor)
+							log.logc(loginfo + " ++ scheduler.run.workFinish(): work.data exists and work.isfinished=false. Executing work.callback().", logcolor)
 						}
 						work.isfinished = true;
+						exports.emit("finish", work)
 						work.callback(work2result(work))
 					} else {
 						if (work.retries == work.options.maxTries) {
 							log.logc(loginfo + " scheduler.run.workFinish(): Finished max number of tries (" + work.options.maxTries + ") for "+work.url, 160)	
 							if (!work.isfinished) {
 								if (work.options.debugstreamconsole) {
-									log.logc(loginfo + " scheduler.run.workFinish(): Work not already sent.  Executing work.callback().", logcolor)
+									log.logc(loginfo + " scheduler.run.workFinish(): Work not already finished.  Executing work.getCachedData().", logcolor)
 								}
+								// TODO: This is a repeat of code above
 								util.getCachedData(work, function (err) {
-									exports.emit("finish", work)
 									if (!work.isfinished) {
+										if (work.options.debugstreamconsole) {
+											log.logc(loginfo + " ++ scheduler.run.workFinish(): Setting work.isfinished = true and executing work.callback().", logcolor)
+										}
 										work.isfinished = true;
+										exports.emit("finish", work)
 										work.callback(work2result(work))
 									} else {
 										if (work.options.debugstreamconsole) {
-											log.logc(loginfo + " scheduler.run.workFinish(): Work already sent.  Not executing work.callback().", logcolor)
+											log.logc(loginfo + " scheduler.run.workFinish(): Work already finished.  Not executing work.callback().", logcolor)
 										}
 									}
 								})	
 							} else {
 								if (work.options.debugschedulerconsole) {
-									log.logc(loginfo + " scheduler.run.workFinish(): Work already sent.  Not Checking cache.", logcolor)
+									log.logc(loginfo + " scheduler.run.workFinish(): Work already finished.  Not Checking cache.", logcolor)
 								}
 							}						
 						}
@@ -206,10 +226,9 @@ function work2result(work) {
 	work.work2ResultFinishedTime = new Date()
 	work.jobFinishedTime = new Date()
 	return work
-
 }
 
-function getPlugin(options,url) {
+function getPlugin(options, url) {
 	var plugin
 	if (options.plugin) {
 		// Find plug-in by name
@@ -222,30 +241,12 @@ function getPlugin(options,url) {
 }
 exports.getPlugin = getPlugin;
 
-var getId = (function () {
-
-	var Id = 1;
-	var timeStamp = "";
-
-	function pad(str, num){
-	    // convert to string
-	    str = str+"";
-	    while (str.length < num) {
-			str = "0" + str;
-	    }
-	    return str;
-	}
-
-	return function () {
-	    var now = new Date();
-	    var ret = "" + now.getFullYear() + pad(now.getMonth() + 1, 2) + pad(now.getDate(), 2);
-	    if (ret !== timeStamp) {
-			timeStamp = ret;
-			jobId = 1;
-	    }
-	    return ret + "-" + (jobId++);
-	}
-})();
+function getId() {
+	if (!getId.jobId) {getId.jobId = 1}
+	var now = new Date().toISOString().substring(0,10).replace(/-/g,"")+"-"+getId.jobId
+	getId.jobId = getId.jobId + 1
+	return now
+}
 
 function newWork(url, options, callback){
 
@@ -268,19 +269,10 @@ function newWork(url, options, callback){
 	}
 	if (options.debugschedulerconsole && extractSignature !== "") {
 		log.logc(options.loginfo + " scheduler.newWork(): MD5(URL): "+util.md5(url), options.logcolor)
-		log.logc(options.loginfo + " scheduler.newWork(): MD5(extractSignature): "+util.md5(extractSignature), options.logcolor)
 		log.logc(options.loginfo + " scheduler.newWork(): MD5(URL + extractSignature): "+util.md5(url+extractSignature), options.logcolor)
 		//log.logc(options.loginfo + " scheduler.run(): plugin extractSignature: ", options.logcolor)
 		//log.logc(extractSignature, options.logcolor)
 	}
-
-	// TODO: If extractSignature was provided, the plugin modifies the returned data.  
-	// For example if a time range was specified, it subsets the returned file.
-	// Because the urlMd5 depends on the signature, the original file will be
-	// re-downloaded each time the signature changes.  This could be avoided by
-	// creating work.urlMd5base which is the MD5 of the base file.  If a request
-	// comes in and urlMd5.out does not exist, scheduler should check to see if
-	// urlMd5base.out exists.
 	
 	var work = {
 				id: getId(),
@@ -324,7 +316,7 @@ function newWork(url, options, callback){
 				jobFinishedTime : 0,
 				retries : 0,
 				isfinished: false,
-				callback : callback || function(){},
+				callback : callback || function () {},
 				process : function (callback) {
 					exports.emit("process", this);
 					this.plugin.process(this, callback);
@@ -351,13 +343,13 @@ function newWork(url, options, callback){
 				extractDataJson: function (data, options) {
 					return this.plugin.extractDataJson(data, options);
 				},
-				extractMeta: function(data, options) {
+				extractMeta: function (data, options) {
 					return this.plugin.extractMeta(data, options);
 				},
 				extractMetaJson: function (data, options) {
 					return this.plugin.extractMetaJson(data, options);
 				},
-				extractRem: function(data, options) {
+				extractRem: function (data, options) {
 					return this.plugin.extractRem(data, options);
 				}
 			}
