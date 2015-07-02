@@ -686,7 +686,9 @@ var writeCache = function(work, callback) {
 							}
 						}
 					} else {
-						log.logc(work.options.loginfo + " util.writeCache(): No queue found.", 160);//work.options.logcolor)
+						if (work.options.debugutilconsole) {
+							log.logc(work.options.loginfo + " util.writeCache(): No queue found.", work.options.logcolor)
+						}
 					}
 
 					work.isFinished = true
