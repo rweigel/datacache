@@ -85,6 +85,8 @@ exports.formatLine = function (line, options) {
 		exports.formatLine.wascalled = {};
 	}
 
+	debug = false
+
 	// Only show debug information for first line.
 	if (exports.formatLine.wascalled[options.loginfo]) {
 		debug = false
