@@ -19,9 +19,10 @@ exports.version = "1.0.0"
 exports.match = function (url) {return false}
 
 exports.extractSignature = function (options) {
+	var tmp = ""
 	if (options.lineFormatter !== "") {
 	    var lineFormatter = require(__dirname + "/" + options.lineFormatter + ".js")
-		var tmp = lineFormatter.extractSignature(options)
+			var tmp = lineFormatter.extractSignature(options)
 	}
 	var tmp2 = exports.extractData.toString()
 	var ret = "\n-----\n" + tmp + "\n-----\n" + tmp2 + "\n-----\n" + options.lineRegExp + "\n-----\n" + options.lineFilter + "\n-----\n" + options.extractData + "\n-----\n"

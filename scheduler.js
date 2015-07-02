@@ -24,9 +24,7 @@ function addURLs(source, options, callback){
 				})
 				callback(finished)
 			}
-			//callback(finished);
-			//callback(work);
-		});
+		})
 	})
 }
 exports.addURLs = addURLs;
@@ -84,7 +82,6 @@ function run() {
 			if (work.options.debugschedulerconsole) {
 				log.logc(loginfo + " scheduler.run.util.isCached() callback.", logcolor)
 				log.logc(loginfo + " scheduler.run.util.isCached(): work.foundInCache      = " + work.foundInCache, logcolor)
-				log.logc(loginfo + " scheduler.run.util.isCached(): work.foundOutInCache   = " + work.foundInCache, logcolor)
 				log.logc(loginfo + " scheduler.run.util.isCached(): options.forceUpdate    = " + work.options.forceUpdate, logcolor)
 				log.logc(loginfo + " scheduler.run.util.isCached(): options.forceWrite     = " + work.options.forceWrite, logcolor)
 				log.logc(loginfo + " scheduler.run.util.isCached(): options.respectHeaders = " + work.options.respectHeaders, logcolor)

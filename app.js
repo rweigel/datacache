@@ -2,7 +2,7 @@ var request  = require("request")
 var	xml2js   = require('xml2js')
 var	parser   = new xml2js.Parser()
 var express  = require('express')
-var app      = express()
+var app       = express()
 var server   = require("http").createServer(app)
 var	crypto   = require("crypto")
 var	fs       = require("fs")
@@ -48,9 +48,8 @@ for (key in argv) {
 }
 if (argv.debugall) {
 	for (key in argv) {
-		//if (key.match("debug") && !key.match("lineformatter")) {
 		if (key.match("debug")) {
-			argv[key] = argv[key]
+			argv[key] = true
 		}			
 	}
 }
@@ -101,6 +100,7 @@ if (fs.existsSync("../tsdset/lib/expandtemplate.js")) {
 
 // http://stackoverflow.com/questions/9768444/possible-eventemitter-memory-leak-detected
 process.setMaxListeners(0)
+server.setMaxListeners(0)
 
 process.on('uncaughtException', function(err) {
 	if (err.errno === 'EADDRINUSE') {
@@ -408,6 +408,10 @@ function handleRequest(req, res) {
 	} else {
 		var ip = req.connection.remoteAddress
 	}
+	
+	var addr = req.headers['x-forwarded-for'] || req.connection.remoteAddress
+	console.log((new Date()).toISOString() + " [datacache] Request from " + addr + ": " + req.originalUrl)
+
 
 	// Create detailed log file name based on current time, originalUrl, and request IP address
 	var loginfo = crypto
@@ -535,7 +539,7 @@ function parseOptions(req, res) {
 	options.debugscheduler     = s2b(req.query.debugscheduler     || req.body.debugscheduler)     || argv.debugscheduler;
 
 	for (key in argv) {
-		if (key.match("debugconsole")) {
+		if (key.match("debug")) {
 			options[key] = argv[key]
 		}			
 	}
