@@ -48,9 +48,9 @@ for (key in argv) {
 }
 if (argv.debugall) {
 	for (key in argv) {
-		//if (key.match("debug") && !key.match("lineformatter")) {
-		if (key.match("debug")) {
-			argv[key] = argv[key]
+		if (key.match("debug") && !key.match("lineformatter")) {
+		//if (key.match("debug")) {
+			argv[key] = true
 		}			
 	}
 }
