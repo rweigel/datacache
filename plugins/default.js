@@ -51,6 +51,7 @@ exports.process = function (work, callback) {
 		}
 
 		fs.exists(outfile, function (exist) {
+
 			if (!exist) {
 				if (debugconsole) {
 					log.logc(loginfo + ".out file does not exist. Calling doget().", logcolor)
@@ -145,7 +146,6 @@ exports.process = function (work, callback) {
 			log.logc(loginfo + "Calling util.writeCache.", logcolor)
 		}
 		util.writeCache(work, function (work) {callback(false, work)})
-		
 	}
 
 	function doget() {
@@ -181,12 +181,25 @@ exports.process = function (work, callback) {
 				if (debugconsole) {
 					log.logc(loginfo + "Finished writing tmp .out file.", logcolor)
 				}
-				// TODO: If forceWrite = false and MD5 has not changed, delete tmp file.
+				function rmfile() {
+					// No lock will ever exist on this file as it depends on job id.
+					log.logc(loginfo + "Removing tmp .out file because of error getting file.", logcolor)
+					fs.unlink(outfiletmp, function (err) {
+						if (err) {
+							log.logc(loginfo + "Could not remove tmp .out file.", 160)
+						}						
+					})
+				}
+
+				if (work.error !== "") { rmfile(); return }
+
 				util.writeLockFile(outfile, work, function (success) {
 					if (!success) {
 						log.logc(loginfo + "Could not rename tmp .out file.", 160)
+						rmfile()
 						return
 					}
+					// TODO: If forceWrite = false and MD5 has not changed, delete tmp file?
 					fs.rename(outfiletmp, outfile, function (err) {
 						if (err) {
 							log.logc(loginfo + "Error when trying to rename tmp .out file.", logcolor)
@@ -197,7 +210,6 @@ exports.process = function (work, callback) {
 							util.writeUnlockFile(outfile, work, function () {})
 						}
 					})
-
 				})
 			})
 			// Will need to move code for unzipping to extractData in default.js

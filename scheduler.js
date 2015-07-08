@@ -113,7 +113,7 @@ function run() {
 				if (work.options.debugschedulerconsole) {
 					log.logc(loginfo + " scheduler.run(): Cache hit.", logcolor)
 					log.logc(loginfo + " scheduler.run(): Setting work.isFromCache = true.", logcolor)
-					log.logc(loginfo + " zz scheduler.run(): Calling workFinish().", logcolor)
+					log.logc(loginfo + " scheduler.run(): Calling workFinish().", logcolor)
 				}
 			    work.isFromCache = true
 			    workFinish()

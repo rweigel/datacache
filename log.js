@@ -78,7 +78,6 @@ function logapp(message, config) {
 
 	logapp.nwriting = logapp.nwriting + 1;
 
-
 	var now   = (new Date()).toISOString()
 
 	// Create MD5 hash of IP address.  Use only first 8 bytes.  	
