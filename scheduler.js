@@ -91,21 +91,21 @@ function run() {
 				if (work.options.debugschedulerconsole) {
 					log.logc(loginfo + " scheduler.run(): Calling work.preprocess().", logcolor)
 				}
-			    work.preprocess(function (err, work) {
-				    work.processStartTime = new Date()
+				work.preprocess(function (err, work) {
+					work.processStartTime = new Date()
 					if (work.options.debugschedulerconsole) {
 						log.logc(loginfo + " scheduler.run(): Calling work.process().", logcolor)
 					}
-				    work.process(function (err, work) {
+					work.process(function (err, work) {
 						if (work.options.debugschedulerconsole) {
 							log.logc(loginfo + " scheduler.run(): Calling work.postprocess().", logcolor)
 						}
-					    work.postprocess(function (err, work) {
-						    work.processFinishedTime = new Date()
-						    if (work.options.debugschedulerconsole) {
+						work.postprocess(function (err, work) {
+							work.processFinishedTime = new Date()
+							if (work.options.debugschedulerconsole) {
 								log.logc(loginfo + " scheduler.run(): Calling workFinish().", logcolor)
 							}
-						    workFinish()
+							workFinish()
 						})
 					})
 				})
