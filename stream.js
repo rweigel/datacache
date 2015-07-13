@@ -757,7 +757,7 @@ function stream(source, options, res) {
 							}
 
 							// lineformatter returns blank if line is before timerange.
-							line = lineFormatter.formatLine(line,options);
+							line = lineFormatter.formatLine(line, options);
 
 							if (options.debugstreamconsole && (lr == options.streamFilterReadStart)) {
 								log.logc(options.loginfo + " stream.processwork.readlines.lineReader: First processed line after calling formatLine:", logcolor)
@@ -814,6 +814,10 @@ function stream(source, options, res) {
 							lines = lines + line.replace(/\r$/,"") + "\n";
 							lk = lk + 1;
 						} else {
+							//log.logc(options.loginfo + " stream.processwork.readlines.lineReader: Error: line is undefined.", 160)
+						}
+
+						if (typeof(line) === "undefined") {
 							log.logc(options.loginfo + " stream.processwork.readlines.lineReader: Error: line is undefined.", 160)
 						}
 

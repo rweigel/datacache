@@ -81,24 +81,22 @@ exports.formatLine = function (line, options) {
 
 	var debug = options.debuglineformatterconsole;
 
-	debug = false
-	// Only show debug information for first line.
-	if (exports.formatLine.wascalled) {
-		if (exports.formatLine.wascalled[options.loginfo]) {
-			debug = false
-		}
-	} else {
+	if (!exports.formatLine.wascalled) {
 		exports.formatLine.wascalled = {};
-		if (!exports.formatLine.wascalled[options.loginfo]) {
-			exports.formatLine.wascalled[options.loginfo] = options.debuglineformatterconsole;
-		} 
+	}
+
+	debug = false
+
+	// Only show debug information for first line.
+	if (exports.formatLine.wascalled[options.loginfo]) {
+		debug = false
+	} else {
+		exports.formatLine.wascalled[options.loginfo] = options.debuglineformatterconsole;
 	}
 	
 	if (debug) {
 		log.logc(options.loginfo + " formattedTime.formatLine(): Showing debug info for processed line.", options.logcolor)
 	}
-
-	exports.formatLine.wascalled[options.loginfo] = exports.formatLine.wascalled[options.loginfo] + 1;
 
 	var timeformat  = options.streamFilterReadTimeFormat  || "$Y-$m-$dT$H:$M$SZ";//"YYYY-MM-DDTHH:mm:ss.SSSZ";
 	var timecolumns = options.streamFilterReadTimeColumns || "1";

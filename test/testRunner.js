@@ -5,8 +5,6 @@
 // To run a single test, use
 // node testRunner.js --n 1 --all false
 
-
-
 var fs      = require("fs");
 var md5     = require("./lib/util").md5;
 var sys     = require('sys');
@@ -15,18 +13,17 @@ var spawn   = require('child_process').spawn;
 var clc     = require('cli-color');
 var argv    = require('yargs')
 					.default({
-						'suite':"false",
-						'sync':"false",
-						'start':0,
-						'all':"true",
-						'n':10,
-						'server':"http://localhost:7999/",
-						'serverdata':"http://mag.gmu.edu/datacache/",
-						'type':'stream',
-						'showdiffs':true
+						'suite': "false",
+						'sync': "false",
+						'start': 0,
+						'all': "true",
+						'n': 10,
+						'server': "http://localhost:7999/",
+						'serverdata': "http://mag.gmu.edu/datacache/",
+						'type': "stream",
+						'showdiffs': true
 					})
 					.argv;
-
 
 function logc(str,color) {var msg = clc.xterm(color); console.log(msg(str));};
 
