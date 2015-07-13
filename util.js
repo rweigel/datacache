@@ -691,7 +691,7 @@ var writeCache = function(work, callback) {
 				for (var key in work.header) {
 					header.push(key + " : " + work.header[key])
 				}
-				fs.writeFile(filename + ".header", work.data, function () {
+				fs.writeFile(filename + ".header", header.join("\n"), function () {
 					writeUnlockFile(filename + ".header", work)
 					finish()
 				})
