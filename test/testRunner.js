@@ -1,9 +1,8 @@
 // To run all tests
-// node testRunner.js --suite true --type stream
-// node testRunner.js --suite true --type api
+// node testRunner.js --suite true --type {stream,api}
 
 // To run a single test, use
-// node testRunner.js --n 1 --all false
+// node testRunner.js --n 1 --all false --type {stream,api}
 
 var fs      = require("fs");
 var md5     = require("./lib/util").md5;
@@ -140,7 +139,7 @@ function checkmd5(j,k,sync,all) {
 function command(j,k,sync) {
 		var fname = "data-"+type+"/out." + j + "." + k;
 		if (tests[j].url.match("streamGzip=true")) {
-			var com = 'curl -s -g "' + tests[j].url + '" | gunzip';
+			var com = 'curl -s -g "' + tests[j].url + '" | gunzip ';
 		} else {
 			var com = 'curl -s -g "' + tests[j].url + '" ';
 		}

@@ -185,12 +185,30 @@ tests[j].md5  = "c805a6125e2cfe15b365c12cd18901bb";
 
 j = j+1;
 tests[j]      = {};
-tests[j].url  = server + "sync?source="+server+"test/data/aae20040101vmin.min%0A"+server+"test/data/aae20040102vmin.min&return=stream&lineRegExp=^[0-9]&streamGzip=true&forceUpdate=true&forceWrite=true";
+tests[j].url  = server + "sync?source="+server+"test/data/aae20040101vmin.min.gz&return=stream&lineRegExp=^[0-9]&streamGzip=true";
+tests[j].n    = n || 50;
+tests[j].md5  = "c805a6125e2cfe15b365c12cd18901bb";
+
+j = j+1;
+tests[j]      = {};
+tests[j].url  = server + "sync?source="+server+"test/data/aae20040101vmin.min.gz&return=stream&lineRegExp=^[0-9]&streamGzip=true";
+tests[j].n    = n || 50;
+tests[j].md5  = "c805a6125e2cfe15b365c12cd18901bb";
+
+j = j+1;
+tests[j]      = {};
+tests[j].url  = server + "sync?source="+server+"test/data/aae20040101vmin.min%0A"+server+"test/data/aae20040102vmin.min&return=stream&lineRegExp=^[0-9]&streamGzip=true";
 tests[j].n    = n || 50;
 tests[j].md5  = "6e777ce6fb02ce90170cce95996c9f3d";
 
 j = j+1;
 tests[j]      = {};
-tests[j].url  = server + "sync?source="+server+"test/data/aae20040101vmin.min%0A"+server+"test/data/aae20040102vmin.min&return=stream&lineRegExp=^[0-9]&streamGzip=true";
+tests[j].url  = server + "sync?source="+server+"test/data/aae20040101vmin.min.gz%0A"+server+"test/data/aae20040102vmin.min.gz&return=stream&lineRegExp=^[0-9]&streamGzip=true";
+tests[j].n    = n || 50;
+tests[j].md5  = "6e777ce6fb02ce90170cce95996c9f3d";
+
+j = j+1;
+tests[j]      = {};
+tests[j].url  = server + "sync?source="+server+"test/data/aae20040101vmin.min.gz%0A"+server+"test/data/aae20040102vmin.min.gz&return=stream&lineRegExp=^[0-9]&streamGzip=false";
 tests[j].n    = n || 50;
 tests[j].md5  = "6e777ce6fb02ce90170cce95996c9f3d";
