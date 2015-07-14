@@ -569,7 +569,7 @@ var writeCache = function(work, callback) {
 				log.logc(loginfo + "Can't write cache file. Queuing " + loginfo, 160)
 			}
 			if (!writeCache.finishQueue[filename]) {
-				writeCache.finishQueue[filename] = [];
+				writeCache.finishQueue[filename] = []
 			}
 			work.finishQueueCallback = callback
 			writeCache.finishQueue[filename].push(work)
@@ -580,7 +580,7 @@ var writeCache = function(work, callback) {
 		}
 
 		// 6 is number of writes associated with each request.
-		writeCache.memWriteLock[work.id] = 6; 
+		writeCache.memWriteLock[work.id] = 6 
 
 		// Create dir if it does not exist
 		mkdirp(directory, function (err) {
@@ -656,7 +656,7 @@ var writeCache = function(work, callback) {
 			fs.appendFile(filename + ".log", 
 								(new Date()).toISOString() + "\t" 
 								+ work.body.length + "\t" 
-								+ work.data.length + "\n", finish)
+								+ work.data.length + "\n")
 			
 			// TODO: If any of these fail, need to try again (unless another process
 			// is already writing it).
@@ -667,8 +667,7 @@ var writeCache = function(work, callback) {
 					return
 				}
 				fs.writeFile(filename + ".data", work.data, function () {
-					writeUnlockFile(filename + ".data", work)
-					finish()
+					writeUnlockFile(filename + ".data", work, finish)
 				})
 			})
 
@@ -679,8 +678,7 @@ var writeCache = function(work, callback) {
 					return
 				}
 				fs.writeFile(filename + ".out", work.body, function () {
-					writeUnlockFile(filename + ".out", work)
-					finish()
+					writeUnlockFile(filename + ".out", work, finish)
 				})
 			})
 
@@ -695,8 +693,7 @@ var writeCache = function(work, callback) {
 					header.push(key + " : " + work.header[key])
 				}
 				fs.writeFile(filename + ".header", header.join("\n"), function () {
-					writeUnlockFile(filename + ".header", work)
-					finish()
+					writeUnlockFile(filename + ".header", work, finish)
 				})
 			})
 
@@ -707,8 +704,7 @@ var writeCache = function(work, callback) {
 					return
 				}
 				fs.writeFile(filename + ".bin", work.data, function () {
-					writeUnlockFile(filename + ".bin", work)
-					finish()
+					writeUnlockFile(filename + ".bin", work, finish)
 				})
 			})
 
@@ -719,8 +715,7 @@ var writeCache = function(work, callback) {
 					return
 				}
 				fs.writeFile(filename + ".meta", work.data, function () {
-					writeUnlockFile(filename + ".meta", work)
-					finish()
+					writeUnlockFile(filename + ".meta", work, finish)
 				})
 			})
 
@@ -731,8 +726,7 @@ var writeCache = function(work, callback) {
 					return
 				}
 				fs.writeFile(filename + ".datax", work.data, function () {
-					writeUnlockFile(filename + ".datax", work)
-					finish()
+					writeUnlockFile(filename + ".datax", work, finish)
 				})
 			})
 
@@ -742,9 +736,9 @@ var writeCache = function(work, callback) {
 
 			var loginfo  = work.options.loginfo + " util.writeCache.writeCacheFiles.finish(): "
 
-			if (err) {
-				console.trace(err)
-			}
+			if (err) { console.trace(err) }
+
+			//console.log(writeCache.memWriteLock[work.id] + " " + work.id)
 			writeCache.memWriteLock[work.id] = writeCache.memWriteLock[work.id] - 1
 			if (writeCache.memWriteLock[work.id] == 0) {
 
@@ -755,7 +749,9 @@ var writeCache = function(work, callback) {
 						while (writeCache.finishQueue[filename].length > 0) {
 							workq = writeCache.finishQueue[filename].shift()
 							if (workq.options.debugutilconsole) {
-								log.logc(loginfo + "Evaluating callback for queued work " + workq.options.loginfo, 160)
+								log.logc(loginfo 
+									+ "Evaluating callback for queued work " 
+									+ workq.options.loginfo, 160)
 							}
 							workq.cacheWriteFinishedTime = new Date()
 							workq.isFinished = true
