@@ -38,8 +38,14 @@ exports.init = init;
 
 // Log to console with color
 function logc(str,color) {
+	var sig = str.split(" ")[0]
+	if (!logc.timers) logc.timers = {}
+	if (!logc.timers[sig]) logc.timers[sig] = (new Date()).getTime()
+	var now = (new Date()).getTime()
+	var dt = now - logc.timers[sig]
+	logc.timers[sig] = now
 	var msg = clc.xterm(color)
-	console.log(msg(str));
+	console.log(dt + " " + msg(str))
 }
 exports.logc = logc;
 
@@ -80,20 +86,23 @@ function logapp(message, config) {
 
 	var now   = (new Date()).toISOString()
 
-	// Create MD5 hash of IP address.  Use only first 8 bytes.  	
-	var entrypublic  = message.split(" ");
+	console.log(message)
 
-	if (!entrypublic[0].match("127.0.0.1")) {
-		//console.log("Looking up " + entrypublic[0].split(",")[0])
+	var entrypublic  = message.split(" ");
+	if (!entrypublic[0].match("127.0.0.1") && !entrypublic[0].match("::1")) {
 		var ip = geoip.lookup(entrypublic[0].split(",")[0])
-		//console.log(ip)
-		var ips = ip.country + "," + ip.region + "," + ip.city.replace(/\s+/g,"_") + "," + ip.ll[0] + "," + ip.ll[1]
+		if (!ip) {
+			var ips = ip.country + "," + ip.region + "," + ip.city.replace(/\s+/g,"_") + "," + ip.ll[0] + "," + ip.ll[1]
+		} else {
+			var ips = "unknown"
+		}
 	} else {
 		var ips = "localhost"
 	}
 
 	var appname = config.APPNAME || "null"
-	
+
+	// Create MD5 hash of IP address.  Use only first 8 bytes.	
 	entrypublic[0]   = crypto.createHash("md5").update(entrypublic[0]).digest("hex").substring(0,8)
 
 	logapp.entriespublic  = logapp.entriespublic  + now + " " + entrypublic.join(" ")  +              "\n"
