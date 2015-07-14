@@ -6,13 +6,13 @@ var app       = express()
 var server   = require("http").createServer(app)
 var	crypto   = require("crypto")
 var	fs       = require("fs")
-var	hogan    = require("hogan.js")
 var	moment   = require("moment")
 var	whiskers = require("whiskers")
 var	domain   = require("domain")
 var qs       = require('querystring')
 var mmm      = require('mmmagic')
 var clc      = require('cli-color')
+
 var argv     = require('yargs')
 					.default({
 						'port': "7999",
@@ -408,10 +408,9 @@ function handleRequest(req, res) {
 	} else {
 		var ip = req.connection.remoteAddress
 	}
-	
+
 	var addr = req.headers['x-forwarded-for'] || req.connection.remoteAddress
 	console.log((new Date()).toISOString() + " [datacache] Request from " + addr + ": " + req.originalUrl)
-
 
 	// Create detailed log file name based on current time, originalUrl, and request IP address
 	var loginfo = crypto
@@ -444,7 +443,7 @@ function handleRequest(req, res) {
 		log.logc((new Date()).toISOString() + " [datacache] Request: " + JSON.stringify(req.originalUrl), logcolor)
 	}
 	if (options.debugappconsole) {
-		log.logc(options.loginfo + " app.handleRequest(): parseSource() returned source = " + source.toString().replace(/,/g,"\n\t"),logcolor)
+		log.logc(options.loginfo + " app.handleRequest(): parseSource() returned source = \n     " + source.toString().replace(/,/g,"\n     "),logcolor)
 	}
 
 	// Compress response if headers accept it and streamGzip is not requested.
@@ -453,7 +452,7 @@ function handleRequest(req, res) {
 	}
 	
 	// Return nothing if no URLs were requested or if template did create any urls.
-	if (source.length === 0) {
+	if (source.length == 0) {
 		if (argv.debugapp) {
 			log.logres("source.length = 0.  Sending res.end().", res)
 		}
@@ -465,7 +464,7 @@ function handleRequest(req, res) {
 	}
 
 	if (options.return === "stream") {
-		stream.stream(source,options,res)
+		stream.stream(source, options, res)
 	} else {
 		syncSummary(source,options,res)
 	}
