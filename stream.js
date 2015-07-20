@@ -21,7 +21,7 @@ function stream(source, options, res) {
 	var debugstream = options.debugstream
 	var debugstreamconsole = options.debugstreamconsole
 
-	var readFilterSignature = ""
+	var computeFunctionSignature = ""
 
 	if (options.streamFilterReadLineFormatter.match(/formattedTime/) ||
 		options.streamFilterReadTimeFormat || 
@@ -64,7 +64,7 @@ function stream(source, options, res) {
 			log.logc(loginfo + " stream.js: Reading ./filters/stats.js", logcolor)
 		}
 		var statsfilter = require("./filters/stats.js");
-		readFilterSignature = readFilterSignature + statsfilter.filterSignature(options)
+		computeFunctionSignature = computeFunctionSignature + statsfilter.filterSignature(options)
 	}
 
 	if (options.streamFilterWriteComputeFunction.match(/regrid/)) {
@@ -75,7 +75,7 @@ function stream(source, options, res) {
 			log.logc(loginfo + " stream.js: Reading ./filters/regrid.js", logcolor)
 		}
 		var regridfilter = require("./filters/regrid.js");
-		readFilterSignature = readFilterSignature + regridfilter.filterSignature(options)
+		computeFunctionSignature = computeFunctionSignature + regridfilter.filterSignature(options)
 	}
 
 	// TODO:
@@ -92,16 +92,15 @@ function stream(source, options, res) {
 		}
 	}
 
-	var streamsignature   = util.md5
-							(
-								extractSignature + 
-								readFilterSignature +
-								options.streamFilterReadStart +
-								options.streamFilterReadBytes +
-								options.streamFilterReadLines + 
-								options.streamFilterReadTimeFormat +
-								options.streamFilterReadReadColumns
-							)
+	var streamFilterSignature = ""
+	for (key in options) {
+		if (key.match("streamFilter")) {
+			streamFilterSignature = streamFilterSignature + options[key]
+		}			
+	}
+	streamFilterSignature = streamFilterSignature + computeFunctionSignature
+
+	var streamsignature   = util.md5(extractSignature + streamFilterSignature)
 
 	if (debugstreamconsole) {
 		log.logc(loginfo + " stream.js: Stream signature: " + streamsignature, logcolor)
