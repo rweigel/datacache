@@ -10,72 +10,51 @@ var scheduler  = require("./scheduler.js")
 var log        = require("./log.js")
 var util       = require("./util.js")
 
-function stream(source, options, res) {
+var reqstatus = {}
 
-	if (options.debugstreamconsole) {
-		log.logc(options.loginfo + " stream.js: Called.", options.logcolor)
-	}
+function stream(source, res) {
 
-	var loginfo  = options.loginfo
-	var logcolor = options.logcolor
-	var debugstream = options.debugstream
-	var debugstreamconsole = options.debugstreamconsole
+	log.logres("Called.", res.options)
 
-	var computeFunctionSignature = ""
-
-	if (options.streamFilterReadLineFormatter.match(/formattedTime/) ||
-		options.streamFilterReadTimeFormat || 
-		options.streamFilterReadTimeColumns) {
-		if (debugstream) {
-			log.logres(loginfo + ", Reading ./plugins/formattedTime.js", res)
-		}
-		if (debugstreamconsole) {
-			log.logc(loginfo
-				+ " stream.js: Reading ./plugins/formattedTime.js", logcolor)
-		}
+	if (res.options.streamFilterReadLineFormatter.match(/formattedTime/) ||
+		res.options.streamFilterReadTimeFormat || 
+		res.options.streamFilterReadTimeColumns) {
+		
+		log.logres("Reading ./plugins/formattedTime.js", res.options, "stream")
 		var lineFormatter = require(__dirname + "/plugins/formattedTime.js")
 		// TODO: Add signature
 	} else {
-		if (debugstreamconsole) {
-			log.logc(loginfo
-				+ " stream.js: No lineFormatter will be used.", logcolor)
-		}
+		log.logres("No lineFormatter will be used.", res.options, "stream")
 		var lineFormatter = ""
 	}
-
-	//res.setHeader('Transfer-Encoding', 'chunked');
-	//res.setHeader('Content-Encoding','gzip');
 	
-	//console.log(options)
-	var rnd        = options.loginfo
-	var reqstatus  = {};
-	reqstatus[rnd] = {};
+	log.logres("Response sig = " + res.options.logsig, res.options, "stream")
 
-	reqstatus[rnd].Nx       = 0; // Number of reads/processed URLs completed
-	reqstatus[rnd].Nd       = 0; // Number of drained reads
-	reqstatus[rnd].gzipping = 0;
-	reqstatus[rnd].dt       = 0;
-		
-	if (options.streamFilterWriteComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
-		if (debugstream) {
-			log.logres(loginfo + ", Reading ./filters/stats.js", res);
-		}
-		if (debugstreamconsole) {
-			log.logc(loginfo + " stream.js: Reading ./filters/stats.js", logcolor)
-		}
+	reqstatus[res.options.logsig]            = {}
+	reqstatus[res.options.logsig].N          = source.length; 
+	reqstatus[res.options.logsig].Nx         = 0; // Number of reads/processed URLs completed
+	reqstatus[res.options.logsig].Nd         = 0; // Number of drained reads
+	reqstatus[res.options.logsig].gzipping   = 0;
+	reqstatus[res.options.logsig].dt         = 0;
+	reqstatus[res.options.logsig].lastsent   = -1;
+	reqstatus[res.options.logsig].aborted    = false;
+	reqstatus[res.options.logsig].writequeue = [];
+
+	var computeFunctionSignature = ""
+	if (res.options.streamFilterWriteComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
+		log.logres("Reading ./filters/stats.js", res.options, "stream");
+
 		var statsfilter = require("./filters/stats.js");
-		computeFunctionSignature = computeFunctionSignature + statsfilter.filterSignature(options)
+		computeFunctionSignature = computeFunctionSignature 
+									+ statsfilter.filterSignature(res.options)
 	}
 
-	if (options.streamFilterWriteComputeFunction.match(/regrid/)) {
-		if (debugstream) {
-			log.logres("Reading ./filters/regrid.js", res);
-		}
-		if (debugstreamconsole) {
-			log.logc(loginfo + " stream.js: Reading ./filters/regrid.js", logcolor)
-		}
+	if (res.options.streamFilterWriteComputeFunction.match(/regrid/)) {
+		log.logres("Reading ./filters/regrid.js", res.options, "stream")
+
 		var regridfilter = require("./filters/regrid.js");
-		computeFunctionSignature = computeFunctionSignature + regridfilter.filterSignature(options)
+		computeFunctionSignature = computeFunctionSignature 
+									+ regridfilter.filterSignature(res.options)
 	}
 
 	// TODO:
@@ -84,27 +63,24 @@ function stream(source, options, res) {
 	// 	Modify this so assumption is not made.
 
 	var extractSignature = source.join(",")
-	var plugin = scheduler.getPlugin(options,source[0])
+	var plugin = scheduler.getPlugin(res.options,source[0])
 	if (plugin.extractSignature) {
-		extractSignature = extractSignature + plugin.extractSignature(options)
-		if (debugstream) {
-			log.logres("Plugin signature MD5: " + util.md5(extractSignature), res)
-		}
+		extractSignature = extractSignature + plugin.extractSignature(res.options)
+		log.logres("Plugin signature MD5: " 
+					+ util.md5(extractSignature), res.options, "stream")
 	}
 
 	var streamFilterSignature = ""
-	for (key in options) {
+	for (key in res.options) {
 		if (key.match("streamFilter")) {
-			streamFilterSignature = streamFilterSignature + options[key]
+			streamFilterSignature = streamFilterSignature + res.options[key]
 		}			
 	}
 	streamFilterSignature = streamFilterSignature + computeFunctionSignature
 
 	var streamsignature   = util.md5(extractSignature + streamFilterSignature)
 
-	if (debugstreamconsole) {
-		log.logc(loginfo + " stream.js: Stream signature: " + streamsignature, logcolor)
-	}
+	log.logres("Stream signature: " + streamsignature, res.options, "stream")
 
 	var streamdir     = __dirname 
 						+ "/cache/stream/" 
@@ -113,120 +89,85 @@ function stream(source, options, res) {
 						+ streamsignature
 	var streamfilecat = streamdir + ".stream.gz"
 	
-	if (debugstream || debugstreamconsole) {
+	if (res.options.debugstream) {
 		if (!fs.existsSync(streamfilecat)) {
-			if (debugstream) {
-				log.logres("streamfilecat does not exist: " + streamfilecat, res)
-			}
-			if (debugstreamconsole) {
-				log.logc(loginfo 
-							+ " stream.js: streamfilecat does not exist: "
-							+ streamfilecat, logcolor)
-			}
+			log.logres("streamfilecat does not exist: " 
+						+ streamfilecat.replace(__dirname+"/cache/",""), res.options, "stream")
 		} else {
-			if (debugstream) {
-				log.logres("streamfilecat exists at " + streamfilecat, res)
-			}
-			if (debugstreamconsole) {
-				log.logc(loginfo 
-							+ " stream.js: streamfilecat exists at " 
-							+ streamfilecat, logcolor)
-			}
+			log.logres("streamfilecat exists at " 
+						+ streamfilecat.replace(__dirname+"/cache/",""), res.options, "stream")
 		}
 	}
 
-	// This does not work because node.js does not handle concatenated gzip files.
-	if (fs.existsSync(streamfilecat) && !options.forceWrite && !options.forceUpdate) {
+	if (fs.existsSync(streamfilecat) && !res.options.forceWrite && !res.options.forceUpdate) {
 		var vera  = process.version.split(".")
 		var major = parseInt(vera[0].replace("v",""))
 		var minor = parseInt(vera[1])
 		var patch = parseInt(vera[2])
-		if (debugstreamconsole) {
-			log.logc(loginfo + " stream.js: Node.js version: " + process.version, logcolor)
-		}
+		log.logres("Node.js version: " + process.version, res.options, "stream")
 		if (minor < 12 || (minor == 12 && patch < 7)) {
-			if (debugstream) {
-				log.logres("Ignoring existing streamfilecat because of bug in node.js < 12.7 with concateneated gzip files", res)
-			}
-			if (debugstreamconsole) {
-				log.logc(loginfo + " stream.js: Ignoring existing streamfilecat because of bug in node.js with concateneated gzip files", logcolor)
-			}
+			log.logres("Ignoring existing streamfilecat because of bug "
+						+ " in node.js < 12.7 with concateneated gzip files",
+						  res.options, "stream")
 		} else {
-			streamcat()
+			util.readLockFile(streamdir, res.options, function (success) {
+				if (!success) {
+					log.logc("Could not read lock streamdir.  Try again in 100 ms", 160)
+					setTimeout(function () {stream(source, res)}, 100)
+					return
+				}
+				streamcat(res, streamfilecat, function () {
+					util.readUnlockFile(streamdir, res.options, function () {})
+				})
+			})
 			return
 		}
 	}
 	
-	var N = source.length;
-	if (debugstream) {
-		log.logres('Calling scheduler with ' + N + ' URL(s) and options.streamOrder = ' + options.streamOrder, res)
-	}
-	if (debugstreamconsole) {
-		log.logc(loginfo + ' stream.js: Calling scheduler with ' + N + ' URL(s) and options.streamOrder = ' + options.streamOrder, logcolor)
-	}
+	var N = source.length
+	log.logres('Calling scheduler with ' 
+				+ N 
+				+ ' URL(s) and work.options.streamOrder = ' 
+				+ res.options.streamOrder, res.options, "stream")
 
-	if (debugstreamconsole) {
-		if (options.forceUpdate == false && options.respectHeaders == false) {
+	if (0) {
+		if (res.options.forceUpdate == false && res.options.respectHeaders == false) {
 			for (var jj = 0; jj < N; jj++) {
-				xwork = scheduler.newWork(source[jj], options)
+				xwork = scheduler.newWork(source[jj], res.options)
 				part = streamdir + "/" + xwork.urlMd5 + ".stream.gz"
 				if (fs.existsSync(part)) {
 					// TODO: Account for this before adding URLs to scheduler.
-					log.logc(loginfo
-						+ ' stream.js: Stream cache for ' + source[jj] 
-						+ ' found.  Did need to add to scheduler.', logcolor)
+					log.logres('Stream cache for ' + source[jj] 
+							+ ' found.  Did need to add to scheduler.', work.options, "stream")
 				}
 			}
 		}
 	}
 
-	if (options.streamOrder) {
-	    scheduler.addURL(source[0], options,
-	    					function (work) {processwork(work, true)})
-	} else {
-	    for (var jj=0;jj < N;jj++) {
-	    	if (debugstream) {
-	    		log.logres("Adding to scheduler: " + source[jj], res)	    		
-	    	}
-			if (debugstreamconsole) {
-				log.logc(loginfo 
-					+ " stream.js: Adding to scheduler: " + source[jj], logcolor)
-			}
-			scheduler.addURL(source[jj], options, 
-								function (work) {processwork(work)})
-	    }
+	//for (var jj=N-1;jj > -1;jj--) { // For testing inorder
+	for (var jj = 0;jj < N;jj++) {
+		log.logres("Adding to scheduler: " + source[jj], res.options, "stream")	    		
+		scheduler.addURL(source[jj], jj, res,
+							function (work) {
+								processwork(work)
+							})
 	}
 
-	function streamcat() {
+	function streamcat(res, streamfilecat, cb) {
 
-		// http://stackoverflow.com/questions/16868052/concatenating-gzip-deflate-data-on-node-js-request
-		// https://groups.google.com/forum/#!topic/nodejs/4qkRR867nZg
-		// https://github.com/joyent/node/issues/6032
-		// https://github.com/oorabona/node-liblzma/commit/684ec73beb7059b6e12d955ca3788547fabb98a0
-		res.setHeader('Content-Disposition', streamfilecat.replace(/.*\/(.*)/,"$1"))
+		res.setHeader('Content-Disposition', 
+						streamfilecat.replace(/.*\/(.*)/,"$1"))
 
-		if (debugstream) {
-			log.logres("Streaming cached concatenated stream file: " 
-							+ streamfilecat, res)				
-		}
-		if (debugstreamconsole) {
-			log.logc(options.loginfo 
-				+ " stream.streamcat(): Streaming cached concatenated stream file: "
-				+ streamfilecat, logcolor)
-		}
-		if (options.streamGzip == false) {
-			if (debugstream) {
-				log.logres("Unzipping cached concatenated stream file: "
-								+ streamfilecat, res)
-			}
-			if (debugstreamconsole) {
-				log.logc(options.loginfo 
-					+ " stream.streamcat(): Unzipping cached concatenated stream file: "
-					+ streamfilecat, logcolor)
-			}
+		log.logres("Streaming cached concatenated stream file: " 
+						+ streamfilecat.replace(__dirname+"/cache/",""), res.options, "stream")				
+		if (res.options.streamGzip == false) {
+			log.logres("Unzipping cached concatenated stream file: "
+							+ streamfilecat.replace(__dirname+"/cache/",""), res.options, "stream")
+
 			res.setHeader('Content-Disposition', 
 				streamfilecat.replace(/.*\/(.*)/,"$1").replace(".gz",""))
-			// This does not handle concatenated stream files.
+
+			//This does not handle concatenated stream files.
 			//var streamer = fs.createReadStream(streamfilecat).pipe(zlib.createGunzip())
 			var child = require('child_process')
 			var streamer = child.spawn('gunzip',['--stdout',streamfilecat]).stdout
@@ -237,323 +178,329 @@ function stream(source, options, res) {
 			var streamer = fs.createReadStream(streamfilecat)
 		}
 		streamer.on('end',function() {
-			if (debugstream) {
-				log.logres("Received streamer.on end event.", res)
-			}
-			if (debugstreamconsole) {
-				log.logc(options.loginfo 
-					+ " stream.streamcat(): Received streamer.on end event.", logcolor)
-			}
+			log.logres("Received streamer.on end event.", res.options, "stream")
 			res.end()
+			cb()
 		})
 		streamer.pipe(res)
-		return
 	}
 
-	function catstreamparts() {
+	function processwork(work) {
 
-		if (debugstream) {
-			log.logres("Reading dir " + streamdir.replace(__dirname,""), res)
-		}
-		if (debugstreamconsole) {
-			log.logc(options.loginfo+" stream.catstreamparts(): Reading dir " + streamdir.replace(__dirname,""), logcolor)
-		}
-		var files = fs.readdirSync(streamdir);
-		if (debugstream) {
-			log.logres("Found " + files.length + " files", res)
-		}
-		if (debugstreamconsole) {
-			log.logc(options.loginfo+" stream.catstreamparts(): Found " + files.length + " files", logcolor)
-		}
-
-		if (files.length != N) {
-			if (debugstreamconsole) {
-				log.logc(options.loginfo+" stream.catstreamparts(): Not creating concatenated gzip stream file.  Did not find " + N + " files.", logcolor)
-			}
+ 		if (work.error !== "" && !work.isFromCache) {
+			log.logres("work.error = " + work.error 
+					+ " and no cached data. Calling finish().",
+					   work.options, "stream")
+			finish(work,"")
 			return
 		}
+	
+		log.logres("Called for work.partnum = " + work.partnum, work.options, "stream")
 
-		if (files.length > 1) {
-			if (debugstream) {
-				log.logres("Concatenating " + files.length + " stream parts into " + streamsignature + ".stream.gz", res)
-			}
-			if (debugstreamconsole) {
-				log.logc(options.loginfo+" stream.catstreamparts(): Concatenating " + files.length + " stream parts into ../" + streamsignature + ".stream.gz",logcolor)
-			}
-
-			var com = "cd " + streamdir + "; cat " + files.join(" ") + " > ../" + streamsignature + ".stream.gz;"
-			if (debugstream) {
-				log.logres("Evaluating: " + com, res)
-			}
-			if (debugstreamconsole) {
-				log.logc(options.loginfo+" stream.catstreamparts(): Evaluating: " + com,logcolor)
-			}
-			child = exec(com,function (error, stdout, stderr) {
-				if (debugstream) {
-					log.logres("Evaluated: " + com, res)
-				}
-				if (debugstreamconsole) {
-					log.logc(options.loginfo+" stream.catstreamparts(): Evaluated: " + com,logcolor)
-				}
-				if (error) {
-					log.logres(JSON.stringify(error), res)
-					log.logc(options.loginfo+" stream.catstreamparts(): Error: " + JSON.stringify(error), 160)
-					if (stderr) {
-						log.logc(stderr, 160)
-					}
-				}
-			})
+		// Zero pad filenames.
+		var Np = work.partnum
+		var N = reqstatus[work.options.logsig].N
+		var n = 1+Math.floor(Math.log(N)/Math.LN10)
+		if (Np == 0) {
+			var npad = 0
 		} else {
-			var com = "cd " + streamdir + "/.. ; ln -s " + streamsignature + "/" + files[0] + " " + streamsignature + ".stream.gz;"
-			if (debugstream) {
-				log.logres("Evaluating " + com, res)
-			}
-			if (debugstreamconsole) {
-				log.logc(options.loginfo+" stream.catstreamparts(): Evaluating " + com, logcolor)
-			}
-			child = exec(com,function (error, stdout, stderr) {
-				if (debugstream) {
-					log.logres("Evaluated  " + com, res)
-				}
-				if (debugstreamconsole) {
-					log.logc(options.loginfo+" stream.catstreamparts(): Evaluated  " + com, logcolor)
-				}
-				if (error) {
-					log.logres(JSON.stringify(error), res)
-					log.logc(options.loginfo+" stream.catstreamparts(): Error: " + JSON.stringify(error), 160)
-					if (stderr) {
-						log.logc(stderr, 160)
-					}
-				}
-			})								
-		}
-	}
-
-	function finished(inorder) {
-		if (reqstatus[rnd].Nx == N) {
-			log.logc(options.loginfo + " stream.finished(): N finished = N and finished() called.  Error?", 160)
-		}
-		if (debugstream) {
-			log.logres("Incremening N finished from " + reqstatus[rnd].Nx + "/" + N + " to " + (reqstatus[rnd].Nx+1) + "/" + N,res)
-		}
-		if (debugstreamconsole) {
-			log.logc(options.loginfo + " stream.finished(): Incremening N finished from " + reqstatus[rnd].Nx + "/" + N + " to " + (reqstatus[rnd].Nx+1) + "/" + N,logcolor)
-		}
-		reqstatus[rnd].Nx = reqstatus[rnd].Nx + 1;
-
-		if ((reqstatus[rnd].Nx < N) && (inorder)) {
-			if (debugstream) {
-				log.logres("Processing next URL.",res)
-			}
-			if (debugstreamconsole) {
-				log.logc(options.loginfo + " Processing next URL.",logcolor)
-			}
-			scheduler.addURL(source[reqstatus[rnd].Nx], options, function (work) {processwork(work,true)});
-		}
-
-		if (N == reqstatus[rnd].Nx) {
-			if (debugstream) {
-				log.logres("Sending res.end().", res)
-			}
-			if (debugstreamconsole) {
-				log.logc(options.loginfo + " stream.finished(): Sending res.end().", logcolor)
-			}
-			res.end()
-		}
-	}
-
-	function processwork(work, inorder) {
- 		
-		if (debugstreamconsole) {
-			log.logc(options.loginfo 
-				+ " stream.processwork(): Called by " 
-				+ arguments.callee.caller, logcolor)
-		}
-
-		var fname = util.getCachePath(work)
-
-		Nx = reqstatus[rnd].Nx
-		var n = 1+Math.floor(Math.log10(N))
-		if ( Nx == 0) {
-			var nx = 0
-		} else {
-			var nx = Math.floor(Math.log10(Nx))
+			var npad = Math.floor(Math.log(Np)/Math.LN10)
 		}
 		str = Math.pow(10,n+1).toString()
-		var ns = str.substring(1,1+n-nx-1) + Nx
+		var ps = str.substring(1,1+n-npad-1) + Np
 				
-		var streamfilepart = streamdir + "/" + ns + "." + work.urlMd5 + ".stream.gz"
+		var streamfilepart = streamdir + "/" + ps + "." + work.urlMd5 + ".stream.gz"
 		
-		if (work.error && !work.isFromCache) {
-			if (debugstream) {
-				log.logres("work.error = " + work.error 
-					+ " and no cached data. Calling finished(). Not sending data.", res)
-			}
-			if (debugstreamconsole) {
-				log.logc(options.loginfo 
-					+ " stream.processwork(): work.error = '" + work.error 
-					+ "' and no cached data.  Calling finished() and not sending data.", 160)
-			}
-			finished(inorder)
-			return
-		}
 
 		if (!fs.existsSync(streamfilepart)) {
-			createstream()
-			if (debugstreamconsole) {
-				log.logc(options.loginfo + " stream.processwork(): Stream file part does not exist.", logcolor)
-			}
+			log.logres("Stream file part does not exist.", work.options, "stream")
+			createstream(work)
 			return
 		} else {
-			if (debugstreamconsole) {
-				log.logc(options.loginfo + " stream.processwork(): Stream file part exists.", logcolor)
-			}			
+			log.logres("Stream file part exists.", work.options, "stream")
 		}
 
-		if (options.forceWrite || options.forceUpdate) {
-			if (debugstreamconsole) {
-				log.logc(options.loginfo + " stream.processwork(): Not using cached stream file part because forceWrite=true or forceUpdate=true.", logcolor)
-			}			
-			createstream()
+		if (work.options.forceWrite || work.options.forceUpdate) {
+			log.logres("Not using cached stream file part because "
+						+ " forceWrite=true or forceUpdate=true.",
+							work.options, "stream")
+			createstream(work)
 		} else {
-			if (debugstreamconsole) {
-				log.logc(options.loginfo + " stream.processwork(): Using cached stream file part.", logcolor)
-			}			
+			log.logres("Using cached stream file part.", work.options, "stream")
 			util.readLockFile(streamfilepart, work, function (success) {
 				if (!success) {
-					if (debugstreamconsole) {
-						log.logc(options.loginfo + " stream.processwork(): Failed to read lock cached stream file part.  Recreating stream.", logcolor)
-					}			
-					createstream()
+					log.logres("Failed to read lock cached stream file part."
+								+ "  Recreating stream.", work.options, "stream")
+					createstream(work)
 					return
 				}
 				if (options.streamGzip == false) {
-					if (debugstream) {
-						log.logres("Unzipping it.", res)
-					}
-					if (debugstreamconsole) {
-						log.logc(options.loginfo+" stream.processwork(): Unzipping it.", logcolor)
-					}
-					var streamer = fs.createReadStream(streamfilepart).pipe(zlib.createGunzip())
+					log.logres("Unzipping it.", work.options, "stream")
+					var streamer = fs
+									.createReadStream(streamfilepart)
+									.pipe(zlib.createGunzip())
 				} else {
-					if (debugstream) {
-						log.logres("Sending raw.", res)
-					}
-					if (debugstreamconsole) {
-						log.logc(options.loginfo+" stream.processwork(): Sending raw.", logcolor)
-					}
+					log.logres("Sending raw.", work.options, "stream")
 					var streamer = fs.createReadStream(streamfilepart)
 				}
 				streamer.on('end',function() {
-					if (debugstream) {
-						log.logres("Received streamer.on end event.",res);
-					}
-					if (debugstreamconsole) {
-						log.logc(options.loginfo+" stream.processwork(): Received streamer.on end event.", logcolor)
-					}
-					util.readUnlockFile(streamfilepart, work, function () {
-						finished(inorder)
-					})
-				})
-				streamer.on('error',function (err) {
-					if (debugstreamconsole) {
-						log.logc(options.loginfo+" stream.processwork(): streamer error event: " + JSON.stringify(err), 160)
-					}
+					log.logres("Received streamer.on end event.",
+								work.options, "stream")
 					util.readUnlockFile(streamfilepart, work, function () {})
 				})
-				if (debugstream) {
-					log.logres("Streaming it.", res)
-				}
-				if (debugstreamconsole) {
-					log.logc(options.loginfo+" stream.processwork(): Streaming it.", logcolor)
-				}
-				streamer.pipe(res, {end: false})
+				streamer.on('error',function (err) {
+					log.logc("streamer error event: " 
+								+ JSON.stringify(err), 160)
+					util.readUnlockFile(streamfilepart, work, function () {})
+				})
+				log.logres("Streaming it.", work.options, "stream")
+				finish(work, streamer)
 				return
 			})
+		}
+
+		function finish(work, data) {
+
+			if (work.error) {
+				if (work.error.code) {
+					// Express 3.x returns unusual error object of form:
+					// { [Error: connect EADDRNOTAVAIL] code: 'EADDRNOTAVAIL', errno: 'EADDRNOTAVAIL', syscall: 'connect' }
+					var msg = work.error.code
+					work.errorcode = 404
+				} else {
+					var msg = work.error
+				}
+			}
+
+			if (work.errorcode == 500) {
+				if (reqstatus[work.res.options.logsig].aborted) {
+					// TODO: Remove running works with this logsig?
+					log.logres("500 error already sent.", work.options, "stream")
+					return
+				} else {
+					log.logres("Sending 500 error.", work.options, "stream")
+					reqstatus[work.res.options.logsig].aborted = true
+					res.send(500, { error: msg })
+					return
+				}
+			} 
+
+			var so = work.res.options.streamOrder
+			if (!so || reqstatus[work.res.options.logsig].lastsent == work.partnum - 1) {
+				log.logres("Sending part " + (work.partnum+1) + " immediately.",
+							work.options, "stream")
+
+				if (typeof(data) === "object" && !(data instanceof Buffer)) {
+					//console.log("Readable stream")
+
+					// Data is a readable stream
+					// See also 
+					// http://stackoverflow.com/questions/17009975/how-to-test-if-an-object-is-a-stream-in-nodejs
+					data.on('end', 
+							function () {
+								reqstatus[work.res.options.logsig].writequeue[work.partnum] = null
+								reqstatus[work.res.options.logsig].lastsent = work.partnum
+								done(work)
+							}) 
+					data.pipe(res, {end: false})
+				} else {
+					if (data.length == 0) {
+						reqstatus[work.res.options.logsig].writequeue[work.partnum] = null
+						reqstatus[work.res.options.logsig].lastsent = work.partnum
+						done(work)						
+					} else {
+						res.write(data,
+							function (err) {
+								if (err) console.log(err)
+								reqstatus[work.res.options.logsig].writequeue[work.partnum] = null
+								reqstatus[work.res.options.logsig].lastsent = work.partnum
+								done(work)
+							})
+					}
+				}
+			} else {
+				log.logres("Queuing " + (work.partnum+1), work.options, "stream")
+				work.data = data
+				reqstatus[work.res.options.logsig].writequeue[work.partnum] = work
+			}
+
+			function queuecheck(lastwork) {
+
+				var pn     = lastwork.partnum + 1
+				var logsig = lastwork.res.options.logsig
+
+				var work   = reqstatus[logsig].writequeue[pn]
+
+				log.logres("Checking stream queue for part " + (pn+1), lastwork.options, "stream")
+				if (typeof(work) === "undefined") {
+					log.logres("No stream queue for part " + (pn+1), lastwork.options, "stream")
+					return
+				}
+				if (work === null) {
+					log.logres("Queued stream part already sent for part " + (pn+1), lastwork.options, "stream")
+					return
+				}
+				log.logres("Sending queued part " + (pn+1), work.options, "stream")
+				if (typeof(work.data) === "object" 
+					&& !(work.data instanceof Buffer)) {
+					work.data.on('end', 
+						function () {
+							reqstatus[work.res.options.logsig].writequeue[pn] = null
+							reqstatus[work.res.options.logsig].lastsent = pn
+							done(work)
+						}) 
+					work.data.pipe(res, {end: false})
+				} else {
+					if (work.data.length == 0) {
+							reqstatus[work.res.options.logsig].writequeue[pn] = null
+							reqstatus[work.res.options.logsig].lastsent = pn
+							done(work)						
+					} else {
+						//console.log(data.split("\n")[0])
+						res.write(work.data,
+							function () {
+								reqstatus[work.res.options.logsig].writequeue[pn] = null
+								reqstatus[work.res.options.logsig].lastsent = pn
+								done(work)
+							}
+						)
+					}
+				}
+			}
+
+			function done(work) {
+
+				if (reqstatus[work.res.options.logsig].Nx == reqstatus[work.res.options.logsig].N ) {
+					log.logc("N finished = N and done() called.  Error?", 160)
+				}
+
+				log.logres("Done called with work.partnum = " + work.partnum, work.options, "stream")
+
+				log.logres("Incremening N finished from " 
+							+ reqstatus[work.res.options.logsig].Nx + "/" + reqstatus[work.res.options.logsig].N 
+							+ " to " 
+							+ (reqstatus[work.res.options.logsig].Nx+1) + "/" + reqstatus[work.res.options.logsig].N, 
+							work.options, "stream")
+				reqstatus[work.res.options.logsig].Nx = reqstatus[work.res.options.logsig].Nx + 1
+
+				if (reqstatus[work.res.options.logsig].N == reqstatus[work.res.options.logsig].Nx) {
+					log.logres("Sending res.end().", work.options, "stream")
+					res.end()
+				} else {
+					//console.log(work.res.options.streamOrder)
+					if (work.res.options.streamOrder) {
+						queuecheck(work)
+					}
+				}
+			}
 		}
 	
 		function cachestreampart(streamfilepart, data) {
 
-			if (debugstream) {
-				log.logres("Creating " + streamdir.replace(__dirname,""), res)
-			}
-			if (debugstreamconsole) {
-				log.logc(options.loginfo+" stream.processwork.readcallback.cachestreampart(): Creating " + streamdir.replace(__dirname+"/","").replace("/cache/stream/",""), logcolor)
-			}
+			log.logres("Creating " + streamdir.replace(__dirname+"/cache/",""), work.options, "stream")
 
 			mkdirp(streamdir, function (err) {
 
 				if (err) {
-					log.logc(options.loginfo+" stream.processwork.readcallback.cachestreampart(): mkdirp error: " + JSON.stringify(err), 160)
+					log.logc("mkdirp error: " + JSON.stringify(err), 160)
 				}
-				if (debugstream) {
-					log.logres("Created dir " + streamdir.replace(__dirname+"/","")+streamsignature, res)
-				}
-				if (debugstreamconsole) {
-					log.logc(options.loginfo + " stream.processwork.readcallback.cachestreampart(): Created  " + streamdir.replace(__dirname+"/",""), logcolor)
-				}
+				log.logres("Created dir " 
+							+ streamdir.replace(__dirname+"/cache/", "")
+								+ streamsignature, work.options, "stream")
 
-				util.writeLockFile(streamfilepart, work, function (success) {
+				util.writeLockFile(streamdir, work, function (success) {
 					if (!success) {
-						if (debugstreamconsole) {
-							log.logc(options.loginfo + " stream.processwork.readcallback.cachestreampart(): Could not lock streamfilepart file.", logcolor)
-						}
+						log.logres("Could not lock streamdir.  Aborting write.", work.options, "stream")
 						return							
 					}
-					fs.writeFile(streamfilepart, data, function (err) {
-						if (debugstream) {
-							log.logres("Wrote " + streamfilepart.replace(streamdir,""), res)
+					util.writeLockFile(streamfilepart, work, function (success) {
+						if (!success) {
+							log.logres("Could not lock streamfilepart file.  Aborting write.", work.options, "stream")
+							return							
 						}
-						if (debugstreamconsole) {
-							log.logc(options.loginfo + " stream.processwork.readcallback.cachestreampart(): Wrote " + streamfilepart.replace(streamdir,""),logcolor)
-						}
-						util.writeUnlockFile(streamfilepart, work, function () {
-							if (reqstatus[rnd].Nx == N) {
-								catstreamparts()
-							}
+						fs.writeFile(streamfilepart, data, function (err) {
+							log.logres("Wrote " + streamfilepart.replace(streamdir,""), work.options, "stream")
+							util.writeUnlockFile(streamdir, work, function () {
+								util.writeUnlockFile(streamfilepart, work, function () {
+									if (reqstatus[work.res.options.logsig].Nx == reqstatus[work.res.options.logsig].N) {
+										catstreamparts()
+									}
+								})
+							})
 						})
-
 					})
 				})
 			})
 		}
 
-		function createstream() {
+		function catstreamparts() {
 
+			log.logres("Reading dir " + streamdir.replace(__dirname+"/cache/",""),
+							res.options, "stream")
+
+			var files = fs.readdirSync(streamdir)
+
+			log.logres("Found " + files.length + " files", res.options, "stream")
+
+			if (files.length != N) {
+				log.logres("Not creating concatenated gzip stream file.  Did not find " + N + " files.", res.options, "stream")
+				return
+			}
+
+			util.writeLockFile(streamdir, work, function (success) {
+				if (files.length > 1) {
+					log.logres("Concatenating " + files.length + " stream parts into " + streamsignature + ".stream.gz", res.options, "stream")
+
+					var com = "cd " + streamdir + "; cat " + files.join(" ") + " > ../" + streamsignature + ".stream.gz;"
+					log.logres("Evaluating: " + com, res.options, "stream")
+					child = exec(com,function (error, stdout, stderr) {
+						log.logres("Evaluated: " + com, res.options, "stream")
+						if (error) {
+							log.logres("Error: " + JSON.stringify(error), res.options, "stream")
+						}	
+						if (stderr) {
+							log.logres("Error: " +JSON.stringify(error), res.options, "stream")
+						}
+						util.writeUnlockFile(streamdir, work, function () {})
+					})
+				} else {
+					var com = "cd " + streamdir + "/.. ; ln -s " + streamsignature + "/" + files[0] + " " + streamsignature + ".stream.gz;"
+					log.logres("Evaluating " + com, work.options, "stream")
+					child = exec(com, function (error, stdout, stderr) {
+						log.logres("Evaluated  " + com, work.options, "stream")
+						if (error) {
+							log.logc("Error: " + JSON.stringify(error), 160)
+						}
+						if (stderr) {
+							log.logc(stderr, 160)
+						}				
+						util.writeUnlockFile(streamdir, work, function () {})
+					})								
+				}
+			})
+		}
+
+		function createstream(work) {
+
+			var fname = util.getCachePath(work)
 			// Create new stream.
-			if (options.streamFilterReadBytes > 0) {
-				if (debugstream) {
-					log.logres("Reading Bytes of "+ fname.replace(__dirname,""), res);
-				}
-				if (debugstreamconsole) {
-					log.logc(options.loginfo + " stream.processwork.createstream():  Reading Bytes of " + fname.replace(__dirname+"/",""), logcolor)
-				}
-
-				if (debugstream) {
-					log.logres("fs.exist: " + fs.existsSync(fname + ".data"),res);
-				}
-				if (debugstreamconsole) {
-					log.logc(options.loginfo + " stream.processwork.createstream(): fs.exist: " + fs.existsSync(fname + ".data"), logcolor)
-				}
-
+			if (work.options.streamFilterReadBytes > 0) {
+				log.logres("Reading Bytes of "+ fname.replace(__dirname+"/cache/",""), work.options, "stream");
+				log.logres("fs.exist: " + fs.existsSync(fname + ".data"), work.options, "stream");
 				fs.exists(fname + ".data", function (exists) {
 					if (!exists) {
-						if (debugstreamconsole) {
-							log.logc(options.loginfo + " stream.processwork.createstream(): Error: .data file does not exist.", 160)
-						}
+						log.logc("Error: .data file does not exist.", 160)
 					}
-					util.readLockFile(fname + ".data", work, function (success) {
+					util.readLockFile(fname, work, function (success) {
 						if (!success) {
-							if (debugstreamconsole) {
-								log.logc(options.loginfo + " stream.processwork.createstream(): Could not lock file.  Try again in 100 ms", 160)
-							}
-							setTimeout(function () {createstream()}, 100)
+							log.logc("Could not read lock file.  Try again in 100 ms", 160)
+							setTimeout(function () {createstream(work)}, 100)
 							return
 						}
 						// TODO: Clear timeout
-						var buffer = new Buffer(options.streamFilterReadBytes);
+						var buffer = new Buffer(work.options.streamFilterReadBytes);
 						fs.open(fname + ".data", 'r', function (err, fd) {
-							fs.read(fd, buffer, 0, options.streamFilterReadBytes, options.streamFilterReadStart - 1, 
+							fs.read(fd, buffer, 0, work.options.streamFilterReadBytes, work.options.streamFilterReadStart - 1, 
 								function (err, bytesRead, buffer) {
 									readcallback(err, buffer)
 									fs.close(fd)
@@ -562,108 +509,82 @@ function stream(source, options, res) {
 					})
 				})
 			} else if (
-					options.streamFilterReadStart > 1 ||
-					options.streamFilterReadLines > 0 || 
-					options.streamFilterReadLineRegExp !== "" ||
-					options.streamFilterReadLineFormatter !== "" ||
-					options.streamFilterReadColumns !== "" ||
-					options.streamFilterReadTimeColumns !== "" ||
-					options.streamFilterReadTimeStart !== "" ||
-					options.streamFilterReadTimeStop !== ""
+					work.options.streamFilterReadStart > 1 ||
+					work.options.streamFilterReadLines > 0 || 
+					work.options.streamFilterReadLineRegExp !== "" ||
+					work.options.streamFilterReadLineFormatter !== "" ||
+					work.options.streamFilterReadColumns !== "" ||
+					work.options.streamFilterReadTimeColumns !== "" ||
+					work.options.streamFilterReadTimeStart !== "" ||
+					work.options.streamFilterReadTimeStop !== ""
 					) {
-				if (debugstream) {
-					log.logres("Reading lines of "+ fname.replace(__dirname,"") + ".data", res)
-				}
-				if (debugstreamconsole) {
-					log.logc(options.loginfo + " stream.processwork.createstream(): Calling readlines() with "+ fname.replace(__dirname+"/", "") + ".data", logcolor)
-				}
+
 				fs.exists(fname + ".data", function (exists) {
 					if (!exists) {
-						if (debugstreamconsole) {
-							log.logc(options.loginfo + " stream.processwork.createstream(): Error: .data file does not exist.", 160)
-						}
+						log.logc("Error: .data file does not exist.", 160)
 					}
-					util.readLockFile(fname + ".data", work, function (success) {
+					util.readLockFile(fname, work, function (success) {
 						if (!success) {
-							if (debugstreamconsole) {
-								log.logc(options.loginfo + " stream.processwork.createstream(): Could not lock file.  Try again in 100 ms", 160)
-							}
-							setTimeout(function () {createstream()}, 100)
+							log.logc("Could not lock file.  Try again in 100 ms", 160)
+							setTimeout(function () {createstream(work)}, 100)
 							return
 						}
 						readlines(fname + ".data")
 					})
 				})
-			} else {	
-				if (debugstream) {
-					log.logres("Reading all of " + fname.replace(__dirname,""), res)
-				}
-				if (debugstreamconsole) {
-					log.logc(options.loginfo + " stream.processwork.createstream(): Reading all of " + fname.replace(__dirname+"/",""), logcolor)
-				}
+			} else {
+				log.logres("Reading all of " + fname.replace(__dirname+"/cache/",""), work.options, "stream")
 				fs.exists(fname + ".data", function (exists) {
 					if (!exists) {
-						if (debugstreamconsole) {
-							log.logc(options.loginfo + " stream.processwork.createstream(): Error: .data file does not exist.", 160)
-						}
+						log.logc("Error: .data file does not exist.", 160)
 					}
-					util.readLockFile(fname + ".data", work, function (success) {
+					util.readLockFile(fname, work, function (success) {
 						if (!success) {
-							if (debugstreamconsole) {
-								log.logc(options.loginfo + " stream.processwork.createstream(): Could not lock file.  Try again in 100 ms", 160)
-							}
-							setTimeout(function () {createstream()}, 100)
+							log.logc("Could not lock file.  Try again in 100 ms", 160)
+							setTimeout(function () {createstream(work)}, 100)
 							return
 						}
 						// Should be no encoding if streamFilterBinary was given.
-						fs.readFile(fname + ".data", "utf8", readcallback);
+						fs.readFile(fname, "utf8", readcallback);
 					})
 				})
 			}
 
 			var outcolumns = [];
 
-			if (options.streamFilterReadTimeColumns === "" && options.streamFilterReadColumns !== "") {
-				var outcolumnsStr = options.streamFilterReadColumns.split(",")
+			if (work.options.streamFilterReadTimeColumns === "" && work.options.streamFilterReadColumns !== "") {
+				var outcolumnsStr = work.options.streamFilterReadColumns.split(",")
 				for (var z = 0;z < outcolumnsStr.length; z++) {
 					if (lineFormatter !== "") {
-						outcolumns[z] = lineFormatter.columnTranslator(parseInt(outcolumnsStr[z]), options)
+						outcolumns[z] = lineFormatter.columnTranslator(parseInt(outcolumnsStr[z]), work.options)
 					} else {
 						outcolumns[z] = parseInt(outcolumnsStr[z])
 					}
 				}
-				if (debugstreamconsole) {
-					log.logc(options.loginfo + " stream.processwork.createstream(): outcolumns "+outcolumns.join(","), logcolor)
-				}
+				log.logres("outcolumns "+outcolumns.join(","), work.options, "stream")
 			}
 
-			if ((options.streamFilterReadTimeColumns === "") && (options.streamFilterReadTimeFormat !== "")) {
-				var timecolumnsStr = options.streamFilterReadTimeFormat.split(",")
-				if (debugstreamconsole) {
-					log.logc(options.loginfo + " stream.processwork.createstream(): No ReadTimeColumns given, but ReadTimeFormat given.", logcolor)
-					log.logc(options.loginfo + " stream.processwork.createstream(): Assuming time columns are first " + timecolumnsStr.length + " columns.", logcolor)
-				}
+			if ((work.options.streamFilterReadTimeColumns === "") && (work.options.streamFilterReadTimeFormat !== "")) {
+				var timecolumnsStr = work.options.streamFilterReadTimeFormat.split(",")
+				log.logres("No ReadTimeColumns given, but ReadTimeFormat given.", work.options, "stream")
+				log.logres("Assuming time columns are first " + timecolumnsStr.length + " columns.", work.options, "stream")
 				var timecolumns = []
 				for (var z = 0;z < timecolumnsStr.length; z++) {
 					timecolumns[z] = z+1
 				}
-				options.streamFilterReadTimeColumns = timecolumns.join(",")
+				work.options.streamFilterReadTimeColumns = timecolumns.join(",")
 			}
 
-			if (options.streamFilterReadColumns !== "") {
+			if (work.options.streamFilterReadColumns !== "") {
 
 				//var re = new RegExp(options.streamFilterReadColumnsDelimiter)
-				var outcolumnsStr = options.streamFilterReadColumns.split(/,/);
+				var outcolumnsStr = work.options.streamFilterReadColumns.split(/,/);
 
-				if (debugstreamconsole) {
-					log.logc(options.loginfo+" stream.processwork.createstream(): streamFilterReadColumns          = " + options.streamFilterReadColumns, logcolor)
-					log.logc(options.loginfo+" stream.processwork.createstream(): streamFilterLineFormatter        = " + options.streamFilterLineFormatter, logcolor)
-				}
+				log.logres("streamFilterReadColumns          = " + work.options.streamFilterReadColumns, work.options, "stream")
+				log.logres("streamFilterReadLineFormatter    = " + work.options.streamFilterLineFormatter, work.options, "stream")
 
-				//if (debugstreamconsole) log.logc(outcolumnsStr)
 				for (var z = 0;z < outcolumnsStr.length;z++) {
-					if (outcolumnsStr[z].match("-")) {					
-						//if (debugstreamconsole) log.logc("FOUND HYPHEN")
+					if (outcolumnsStr[z].match("-")) {
 						var start = parseInt(outcolumnsStr[z].split("-")[0]);
 						var stop  = parseInt(outcolumnsStr[z].split("-")[1]);
 						var newstr = start;
@@ -675,34 +596,20 @@ function stream(source, options, res) {
 				}
 				outcolumnsStr = outcolumnsStr.join(",").split(",");
 				
-				if (debugstream) {
-					log.logres("streamFilterReadTimeColumns = " + options.streamFilterReadTimeColumns, res)
-					log.logres("streamFilterWriteTimeFormat = " + options.streamFilterWriteTimeFormat, res)
-					log.logres("outcolumns expanded         = " + outcolumnsStr, res)
-				}
-				if (debugstreamconsole) {
-					log.logc(options.loginfo+" stream.processwork.createstream(): streamFilterReadTimeFormat       = " + options.streamFilterReadTimeFormat, logcolor)
-					log.logc(options.loginfo+" stream.processwork.createstream(): streamFilterReadTimeColumns      = " + options.streamFilterReadTimeColumns, logcolor)
-					log.logc(options.loginfo+" stream.processwork.createstream(): streamFilterWriteTimeFormat      = " + options.streamFilterWriteTimeFormat, logcolor)
-					log.logc(options.loginfo+" stream.processwork.createstream(): outcolumns expanded              = " + outcolumnsStr, logcolor)
-				}
+				log.logres("streamFilterReadTimeColumns = " + work.options.streamFilterReadTimeColumns, work.options, "stream")
+				log.logres("streamFilterWriteTimeFormat = " + work.options.streamFilterWriteTimeFormat, work.options, "stream")
+				log.logres("outcolumns expanded         = " + outcolumnsStr, work.options, "stream")
 
 				if (lineFormatter !== "") {
 					for (var z = 0;z < outcolumnsStr.length; z++) {
-						outcolumns[z] = lineFormatter.columnTranslator(parseInt(outcolumnsStr[z]), options)
+						outcolumns[z] = lineFormatter.columnTranslator(parseInt(outcolumnsStr[z]), work.options)
 					}
 				} else {
 					for (var z = 0;z < outcolumnsStr.length; z++) {
 						outcolumns[z] = parseInt(outcolumnsStr[z])
 					}				
 				}
-
-				if (debugstream) {
-					log.logres("columns translated " + outcolumns.join(","),res)
-				}
-				if (debugstreamconsole) {
-					log.logc(options.loginfo+" stream.processwork.createstream(): outcolumns translated            = " + outcolumns.join(","), logcolor)
-				}
+				log.logres("columns translated " + outcolumns.join(","), work.options, "stream")
 
 				function onlyUnique(value, index, self) { 
 					return self.indexOf(value) === index;
@@ -710,17 +617,12 @@ function stream(source, options, res) {
 				
 				outcolumns = outcolumns.filter(onlyUnique);
 
-				if (outcolumns[0] == 1 && options.streamFilterWriteTimeFormat == "2") {
+				if (outcolumns[0] == 1 && work.options.streamFilterWriteTimeFormat == "2") {
 					outcolumns.splice(0,1);
 					outcolumns = [1,2,3,4,5,6].concat(outcolumns);
 				}
 				
-				if (debugstream) {
-					log.logres("Data columns after accounting for WriteTimeFormat = " + outcolumns.join(","), res)
-				}
-				if (debugstreamconsole) {
-					log.logc(options.loginfo+" stream.processwork.createstream(): outcolumns given WriteTimeFormat = " + outcolumns.join(","), logcolor)
-				}
+				log.logres("Data columns after accounting for WriteTimeFormat = " + outcolumns.join(","), work.options, "stream")
 			}
 
 			function readlines(fnamefull) {
@@ -734,87 +636,67 @@ function stream(source, options, res) {
 				
 				var fnamesize = -1;
 
-				if (debugstreamconsole) {
-					log.logc(options.loginfo + " stream.processwork.readlines(): Reading lines of " + fnamefull.replace(__dirname+"/",""), logcolor)
-					log.logc(options.loginfo + " stream.processwork.readlines(): streamFilterReadLineRegExp = " + options.streamFilterReadLineRegExp, logcolor)
-				}
+				log.logres("Reading lines of " + fnamefull.replace(__dirname+"/cache/",""), work.options, "stream")
+				log.logres("streamFilterReadLineRegExp = " + work.options.streamFilterReadLineRegExp, work.options, "stream")
 
 				// https://github.com/nickewing/line-reader
 				lineReader.eachLine(fnamefull, function(line, last) {
-
-	 				if (debugstreamconsole) {
-						//log.logc(options.loginfo + " stream.processwork.readlines.lineReader: Line: " + line, logcolor)
-					}
 					
-					var stopline = options.streamFilterReadLines;
-					if (options.streamFilterReadLines == 0) {
+					var stopline = work.options.streamFilterReadLines;
+					if (work.options.streamFilterReadLines == 0) {
 						stopline = Infinity;
 					}
 
-					if (lr >= options.streamFilterReadStart) {
+					if (lr >= work.options.streamFilterReadStart) {
 
-						if (lk == stopline) {	
-							if (debugstream) {
-								log.logres("Reached stop line.",res)
-							}
-							if (debugstreamconsole) {
-								log.logc(options.loginfo + " stream.processwork.readlines.lineReader: Reached stop line.", logcolor)
-							}
+						if (lk == stopline) {
+							log.logres("Reached stop line.  Returning false.", work.options, "stream")
 							// Done processing
 							return false
 						}
 
-						if (options.streamFilterReadLineRegExp !== "") {
-							var re = new RegExp(options.streamFilterReadLineRegExp)
+						if (work.options.streamFilterReadLineRegExp !== "") {
+							var re = new RegExp(work.options.streamFilterReadLineRegExp)
 							if (line.match(re) === null) {
 								line = "";
 								// Process next line
 								return true
 							}
 						}
-						if (debugstreamconsole) {
-							//log.logc(options.loginfo + " stream.processwork.readlines.lineReader: Line after RegExp: " + line, logcolor)
-						}
+
+						//log.logres("readlines.lineReader: Line after RegExp: " + line, work.options, "stream")
 
 						if (lineFormatter !== "" && line !== "") {
 
-							if (debugstreamconsole && (lr == options.streamFilterReadStart)) {
-								log.logc(options.loginfo + " stream.processwork.readlines.lineReader: First processed line before calling formatLine:", logcolor)
-								log.logc(options.loginfo + " " + line, logcolor)
+							if (lr == work.options.streamFilterReadStart) {
+								log.logres("First processed line before calling formatLine:", work.options, "stream")
+								log.logres(" " + line, work.options, "stream")
 							}
-							if (debugstreamconsole && last) {
-								log.logc(options.loginfo + " stream.processwork.readlines.lineReader: Last processed line before calling formatLine:", logcolor)
-								log.logc(options.loginfo + " " + line, logcolor)
+							if (last) {
+								log.logres("Last processed line before calling formatLine:", work.options, "stream")
+								log.logres(" " + line, work.options, "stream")
 							}
 
 							// lineformatter returns blank if line is before timerange.
-							line = lineFormatter.formatLine(line, options);
+							line = lineFormatter.formatLine(line, work.options);
 
-							if (debugstreamconsole && (lr == options.streamFilterReadStart)) {
-								log.logc(options.loginfo + " stream.processwork.readlines.lineReader: First processed line after calling formatLine:", logcolor)
-								log.logc(options.loginfo + " " + line, logcolor)
+							if (lr == work.options.streamFilterReadStart) {
+								log.logres("First processed line after calling formatLine:", work.options, "stream")
+								log.logres(" " + line, work.options, "stream")
 
 							}
-							if (debugstreamconsole && last) {
-								log.logc(options.loginfo + " stream.processwork.readlines.lineReader: Last processed line after calling formatLine:", logcolor)
-								log.logc(options.loginfo + " " + line, logcolor)
-
+							if (last) {
+								log.logres("Last processed line after calling formatLine:", work.options, "stream")
+								log.logres(" " + line, work.options, "stream")
 							}
 
 							if (line == "END_OF_TIMERANGE") {	
-								if (debugstream) {
-									log.logres("Reached end of time range.", res)
-								}
-								if (debugstreamconsole) {
-									log.logc(options.loginfo+" stream.processwork.readlines.lineReader: Reached end of time range.", logcolor)
-								}
 								// Done processing
+								log.logres("Reached end of time range.", work.options, "stream")
 								return false
 							}
 
-							if (debugstreamconsole) {
-								//log.logc(options.loginfo + " stream.processwork.readlines.lineReader: Line after lineFormatter: " + line, logcolor)
-							}
+							//log.logres("Line after lineFormatter: " + line, work.options, "stream")
 
 						}
 
@@ -823,20 +705,18 @@ function stream(source, options, res) {
 							tmparr = line.split(/\s+/g)
 							line = ""
 
-							if (debugstreamconsole && (lr == options.streamFilterReadStart)) {
-								log.logc(options.loginfo+" stream.processwork.readlines.lineReader: Extracting " + tmparr.length + " columns on first line.", logcolor)
+							if (lr == work.options.streamFilterReadStart) {
+								log.logres("Extracting " + tmparr.length + " columns on first line.", work.options, "stream")
 							}
-							if (debugstreamconsole && last) {
-								log.logc(options.loginfo+" stream.processwork.readlines.lineReader: Extracting " + tmparr.length + " columns on last line.", logcolor)
+							if (last) {
+								log.logres("Extracting " + tmparr.length + " columns on last line.", work.options, "stream")
 							}
 							for (var z = 0; z < outcolumns.length-1; z++) {
 								line = line + tmparr[outcolumns[z]-1] + " ";
 							}
 							line = line + tmparr[outcolumns[z]-1];
 
-							if (debugstreamconsole) {
-								//log.logc(options.loginfo + " stream.processwork.readlines.lineReader: Line after outcolumns: " + line, logcolor)
-							}
+							//log.logres("Line after outcolumns: " + line, work.options, "stream")
 
 						}
 
@@ -845,18 +725,18 @@ function stream(source, options, res) {
 							lines = lines + line.replace(/\r$/,"") + "\n";
 							lk = lk + 1;
 						} else {
-							//log.logc(options.loginfo + " stream.processwork.readlines.lineReader: Error: line is undefined.", 160)
+							//log.logres("Error: line is undefined.", 160)
 						}
 
 						if (typeof(line) === "undefined") {
-							log.logc(options.loginfo + " stream.processwork.readlines.lineReader: Error: line is undefined.", 160)
+							log.logc("Error: line is undefined.", 160)
 						}
 
-						if (options.streamFilterWriteComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
-							if (!options.streamFilterWriteComputeFunction.match(/regrid/)) {
-								if (lk % options.streamFilterWriteComputeFunctionWindow == 0) {
+						if (work.options.streamFilterWriteComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
+							if (!work.options.streamFilterWriteComputeFunction.match(/regrid/)) {
+								if (lk % work.options.streamFilterWriteComputeFunctionWindow == 0) {
 									//console.log(lines)
-									linesx = linesx + statsfilter.stats(lines.replace(/\n$/,""), options)
+									linesx = linesx + statsfilter.stats(lines.replace(/\n$/,""), work.options)
 									lines = ''
 								}
 							}
@@ -865,37 +745,27 @@ function stream(source, options, res) {
 					}
 					lr = lr+1;
 				}).then(function () {
-					if (debugstreamconsole) {
-						log.logc(options.loginfo+" stream.processwork.readlines.lineReader.then(): Called.", logcolor)
-					}
 
-					if (options.streamFilterWriteComputeFunction.match(/regrid/)) {
+					log.logres("lineReader.then(): Called.", work.options, "stream")
+
+					if (work.options.streamFilterWriteComputeFunction.match(/regrid/)) {
 						// Not tested.
-						if (debugstream) {
-							log.logres("stream.js: Calling regrid()", res)
-						}
-						if (debugstreamconsole) {
-							log.logc(options.loginfo + " stream.processwork.readlines.lineReader.then(): Calling regrid() with:", logcolor)
-							console.log(lines)
-						}
-						lines = regridfilter.regrid(lines, options)
-						if (debugstreamconsole) {
-							log.logc(options.loginfo + " stream.processwork.readlines.lineReader.then(): regrid() returned:", logcolor)
-							console.log(lines)
-						}
+						log.logres("stream.js: Calling regrid()", work.options, "stream")
+						lines = regridfilter.regrid(lines, work.options)
+
+						log.logres("lineReader.then(): regrid() returned:", work.options, "stream")
+						console.log(lines)
 
 						// If regrid is requested, stats were not computed.  Compute them here if requested.
-						if (options.streamFilterWriteComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
+						if (work.options.streamFilterWriteComputeFunction.match(/stats|mean|max|min|std|Nvalid/)) {
 							var linesv = lines.join(/\n/)
-							var h = options.streamWriteFilterComputeFunctionArgs
+							var h = work.options.streamWriteFilterComputeFunctionArgs
 							var Nb = Math.floor(linesv.length/h)
-							linesx = '';
-							if (debugstreamconsole) {
-								log.logc(options.loginfo + " stream.processwork.readlines.lineReader.then(): Nblocks = " + Nb, logcolor)
-								log.logc(options.loginfo + " stream.processwork.readlines.lineReader.then(): Block height = " + h, logcolor)
-							}
+							linesx = ''
+							log.logres("lineReader.then(): Nblocks = " + Nb, work.options, "stream")
+							log.logres("lineReader.then(): Block height = " + h, work.options, "stream")
 							for (var b = 0; b < Nb-1;b++) {
-								linesx = linesx + statsfilter.stats(linesv.slice(b*h,(b+1)*h).join(/\n/).replace(/\n$/,""), options)
+								linesx = linesx + statsfilter.stats(linesv.slice(b*h,(b+1)*h).join(/\n/).replace(/\n$/,""), work.options)
 							}
 							readcallback("", linesx);
 						} else {
@@ -910,127 +780,81 @@ function stream(source, options, res) {
 						if (lines === '') {
 							readcallback("", linesx)
 						} else {
-							if (debugstream) {
-								log.logres("Last window not full.", res)
-							}
-							if (debugstreamconsole) {
-								log.logc(options.loginfo + " stream.processwork.readlines.lineReader.then(): Last window not full.", logcolor)
-							}
-							linesx = linesx + statsfilter.stats(lines.replace(/\n$/,""), options)
+							log.logres("Last window not full.", work.options, "stream")
+							linesx = linesx + statsfilter.stats(lines.replace(/\n$/,""), work.options)
 							readcallback("", linesx)
 						}
 					}
+					return false
 				})
 			}
 		
 			function readcallback(err, data) {
 
-				util.readUnlockFile(fname + ".data", work, function () {})
+				util.readUnlockFile(fname, work, function () {})
 
-				if (debugstream) {
-					log.logres("Called for " + fname.replace(__dirname+"/",""), res)
-				}			
-				if (debugstreamconsole) {
-					log.logc(options.loginfo+" stream.processwork.readcallback(): Called for " + fname.replace(__dirname+"/",""),logcolor)
-				}
+				log.logres("Called for " + fname.replace(__dirname+"/cache/",""), work.options, "stream")
 					
 				if (err) {
-					if (debugstream) {
-						log.logres("Error: " + err, res)
-					}
-					if (debugstreamconsole) {
-						log.logc(options.loginfo + " stream.processwork.readcallback(): Error: " + err, logcolor)
-					}
+					log.logres("Error: " + err, work.options, "stream")
 					return res.end()
 				}
 
-				if (options.streamFilter === "") {
-					if (debugstream) {
-						log.logres("Writing response.", res)
-					}
-					if (debugstreamconsole) {
-						log.logc(options.loginfo + " stream.processwork.readcallback(): Writing response.", logcolor)
-					}
-					if (!options.streamGzip) {
-						if (debugstream) {
-							log.logres("Sending uncompressed data of length = " + data.length, res)
-						}
-						if (debugstreamconsole) {
-							log.logc(options.loginfo + " stream.processwork.readcallback(): Sending uncompressed data of length = " + data.length, logcolor)
-						}
-						res.write(data)
-						finished(inorder)
+				if (work.options.streamFilter === "") {
+					log.logres("Writing response.", work.options, "stream")
+
+
+					log.logres("Uncompressed buffer has length = " + data.length, work.options, "stream")
+					if (!work.options.streamGzip) {
+						log.logres("Calling finish with uncompressed buffer.", work.options, "stream")
+						//res.write(data)
+						finish(work, data)
 						zlib.createGzip({level: 1})
 						zlib.gzip(data, function (err, buffer) {
 							if (err) {
-								log.logc(options.loginfo + " stream.processwork.readcallback(): gzip error: " + JSON.stringify(err), 160)
-							}
-							if (debugstreamconsole) {
-								log.logc(options.loginfo + " stream.processwork.readcallback(): Calling cachestreampart()", logcolor)
+								log.logc("gzip error: " + JSON.stringify(err), 160)
 							}
 							cachestreampart(streamfilepart, buffer)
 						})
 					} else {
-						if (debugstream) {
-							log.logres("Compressing buffer of length " + data.length, res)
-						}
-						if (debugstreamconsole) {
-							log.logc(options.loginfo + " stream.processwork.readcallback(): Compressing buffer of length "+data.length, logcolor)
-						}
+						log.logres("Compressing buffer.", work.options, "stream")
 						zlib.createGzip({level:1})
 						zlib.gzip(data, function (err, buffer) {
 							if (err) {
-								log.logc(options.loginfo + " stream.processwork.readcallback(): gzip error: " + JSON.stringify(err), 160)
+								log.logc("gzip error: " + JSON.stringify(err), 160)
 							}
-							if (debugstream) {
-								log.logres("Compression finished. Sending buffer of length "+buffer.length, res)
-							}	
-							if (debugstreamconsole) {
-								log.logc(options.loginfo + " stream.processwork.readcallback(): Compression finished. Sending buffer of length "+buffer.length,logcolor)
-							}	
-							res.write(buffer)
-							if (debugstreamconsole) {
-								log.logc(options.loginfo + " stream.processwork.readcallback(): Calling cachestreampart()", logcolor)
-							}
-							finished(inorder)
+							log.logres("Calling finished with compressed buffer of length "+buffer.length, work.options, "stream")
+
+							finish(work, buffer)
+
+							log.logres("Calling cachestreampart()", work.options, "stream")
 							cachestreampart(streamfilepart, buffer)
 						})
 					}
 
 				} else {	
 					try {
-						eval("data = data.toString()."+options.streamFilter)
-						if (!options.streamGzip) {
-							res.write(data)
+						eval("data = data.toString()."+work.options.streamFilter)
+						if (!work.options.streamGzip) {
+							finish(work, data)
 							cachestreampart(streamfilepart, data)
-							finished(inorder)
 						} else {
 							var tic = new Date()
 							zlib.createGzip({level: 1})
 							zlib.gzip(data, function (err, buffer) {
-								reqstatus[rnd].dt = new Date()-tic
-								if (debugstream) {
-									log.logres("gzip callback event", res)
-									log.logres("Writing compressed buffer", res)
-								}
-								if (debugstreamconsole) {
-									log.logc(options.loginfo + " stream.processwork.readcallback(): gzip callback event", logcolor)
-									log.logc(options.loginfo + " stream.processwork.readcallback(): Writing compressed buffer", logcolor)
-								}
-								res.write(buffer)
-								reqstatus[rnd].gzipping = reqstatus[rnd].gzipping - 1
-								cachestreampart(streamfilepart, buffer)
-								finished(inorder)
+								reqstatus[work.res.options.logsig].dt = new Date()-tic
+
+								log.logres("gzip callback event", work.options, "stream")
+								log.logres("Writing compressed buffer", work.options, "stream")
+
+								finish(work, buffer)
+								reqstatus[work.res.options.logsig].gzipping = reqstatus[work.res.options.logsig].gzipping - 1
+								cachestreampart(streamfilepart, buffer)								
 							})
 						}
 					} catch (err) {
-						if (debugstream) {
-							log.logres("Error when evaluating " + options.streamFilter, res)
-						}
-						if (debugstreamconsole) {
-							log.logc(options.loginfo + " stream.processwork.readcallback(): Error when evaluating " + options.streamFilter, logcolor)
-						}
-						finished(inorder)
+						log.logres("Error when evaluating " + work.options.streamFilter, work.options, "stream")
+						finish(work,"")
 					}
 				}
 			}

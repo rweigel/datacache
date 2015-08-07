@@ -1,13 +1,14 @@
 LOCAL="http://localhost:7999"
 
-curl -g "http://localhost:7999/sync/?&template=$LOCAL/test/data/bdt%Y%m%dvsec.sec&lineRegExp=^[0-9]&timeRange=2015-06-28T00:00:00.000/2015-06-29T00:00:00.000&return=stream&forceUpdate=true&forceWrite=true&streamFilterReadTimeStart=2015-06-28T23:59:00.000&streamFilterReadTimeFormat=\$Y-\$m-\$d,\$H:\$M:\$S.\$(millis)"
+curl -s -g "http://localhost:7999/sync?return=stream&forceUpdate=true&forceWrite=true&lineRegExp=^[0-9]&streamOrder=true&streamFilterReadLines=10&prefix=http://localhost:7999/&source=test/data/bou20130801vmin.min%0Atest/data/bou20130802vmin.min" > a
+curl -s -g "http://localhost:7999/sync?return=stream&forceUpdate=false&forceWrite=false&lineRegExp=^[0-9]&streamOrder=true&streamFilterReadLines=10&prefix=http://localhost:7999/&source=test/data/bou20130801vmin.min%0Atest/data/bou20130802vmin.min" > b
+diff a b
+exit 1
+time curl -g "http://localhost:7999/sync/?&template=$LOCAL/test/data/bdt%Y%m%dvsec.sec&lineRegExp=^[0-9]&timeRange=2015-06-28T00:00:00.000/2015-06-29T00:00:00.000&return=stream&forceUpdate=true&forceWrite=true&streamFilterReadTimeStart=2015-06-28T23:59:00.000&streamFilterReadTimeFormat=\$Y-\$m-\$d,\$H:\$M:\$S.\$(millis)"
 
-#curl -g "http://localhost:7999/sync/?&template=$LOCAL/test/data/bdt%Y%m%dvsec.sec&lineRegExp=^[0-9]&timeRange=2015-06-28T00:00:00.000/2015-06-29T00:00:00.000&return=stream&streamFilterReadTimeStart=2015-06-28T23:59:00.000&streamFilterReadTimeFormat=\$Y-\$m-\$d,\$H:\$M:\$S.\$(millis)"
+time curl -g "http://localhost:7999/sync/?&template=$LOCAL/test/data/bdt%Y%m%dvsec.sec&lineRegExp=^[0-9]&timeRange=2015-06-28T00:00:00.000/2015-06-29T00:00:00.000&return=stream&forceUpdate=false&forceWrite=false&streamFilterReadTimeStart=2015-06-28T23:59:00.000&streamFilterReadTimeFormat=\$Y-\$m-\$d,\$H:\$M:\$S.\$(millis)"
 
 exit 1
-curl -s -g "http://localhost:7999/sync?return=stream&forceUpdate=true&forceWrite=true&lineRegExp=^[0-9]&streamOrder=true&streamFilterReadLines=10&prefix=http://localhost:7999/&source=test/data/bou20130801vmin.min%0Atest/data/bou20130802vmin.min" > a
-curl -s -g "http://localhost:7999/sync?return=stream&forceUpdate=true&forceWrite=true&lineRegExp=^[0-9]&streamOrder=true&streamFilterReadLines=10&prefix=http://localhost:7999/&source=test/data/bou20130801vmin.min%0Atest/data/bou20130802vmin.min" > b
-diff a b
 exit 1
 # Transfer these to apiTestsInput.js after testing
 

@@ -1,55 +1,58 @@
-var util     = require("./util.js");
-var log      = require("./log.js");
-var fs       = require("fs");
-EventEmitter = require("events").EventEmitter;
+var util     = require("./util.js")
+var log      = require("./log.js")
+var fs       = require("fs")
+EventEmitter = require("events").EventEmitter
 
-module.exports = exports = new EventEmitter();
-exports.setMaxListeners(1000);
+module.exports = exports = new EventEmitter()
+exports.setMaxListeners(0)
 
 // Maximum number of jobs to run at same time.
-var params = { concurrency : 40 };
+var params = { concurrency : 40 }
 
-var runningWorks = [];
-var worksQueue   = [];
+var runningWorks = []
+var worksQueue   = []
 
-function addURLs(source, options, callback){
-	callback = callback || function () {};
-	var finished = [];
-	source.forEach(function (url) {
-		addURL(url, options, function (work) {
+function addURLs(source, res, callback){
+	callback = callback || function () {}
+	var finished = []
+	source.forEach(function (url, partnum) {
+		addURL(url, res.options, partnum, function (work) {
 			finished.push(work)
 			if (finished.length == source.length) {
 				finished.sort(function (a,b) {
-					return +a.id.split("-")[1] - b.id.split("-")[1];
+					return +a.id.split("-")[1] - b.id.split("-")[1]
 				})
 				callback(finished)
 			}
 		})
 	})
 }
-exports.addURLs = addURLs;
+exports.addURLs = addURLs
 
-function addURL(url, options, callback) {
-	var loginfo  = options.loginfo
-	var logcolor = options.logcolor
+function addURL(url, partnum, res, callback) {
 
-	if (options.debugschedulerconsole) {
-		log.logc(options.loginfo + " scheduler.addURL(): Called with url = " + url, logcolor)
+	log.logres("Called with url = " + url, res.options)
+
+	var work = newWork(url, partnum, res.options, callback)
+
+	work.res     = res
+	work.partnum = partnum
+
+	if (work.error !== "") {
+		callback(work)
+		return
 	}
-	options  = options || {}
-	var work = newWork(url, options, callback)
-	exports.emit("submit", work)
+
 	worksQueue.push(work)
-	if (work.options.debugschedulerconsole) {
-		log.logc(options.loginfo + " scheduler.addURL(): Calling run().", options.logcolor)
-	}
+
+	log.logres("Calling run().", res.options)
 	run()
 }
-exports.addURL = addURL;
+exports.addURL = addURL
 
 var plugins = []
 var defaultPlugin = require("./plugins/default.js")
-fs.readdir(__dirname+"/plugins", function (err, files) {
+fs.readdir(__dirname + "/plugins", function (err, files) {
 	if (!err) {
 		files.forEach(function (file) {
 			if (file !== "default.js") {
@@ -65,126 +68,65 @@ exports.plugins = plugins;
 function run() {
 
 	while (runningWorks.length < params.concurrency && worksQueue.length > 0) {
-		var work     = worksQueue.shift()
-		var loginfo  = work.options.loginfo
-		var logcolor = work.options.logcolor
+
+		var work = worksQueue.shift()
 
 		runningWorks.push(work)
 
 		if (work.options.respectHeaders) {
 			work.cacheCheckStartTime = new Date();
 		}
-		if (work.options.debugschedulerconsole) {
-			log.logc(loginfo + " scheduler.run(): Calling util.isCached.", logcolor)
-		}
+		log.logres("Calling util.isCached.", work.options, "scheduler")
 		util.isCached(work, function (work) {
 			work.cacheCheckFinishedTime = new Date()
-			if (work.options.debugschedulerconsole) {
-				log.logc(loginfo + " scheduler.run.util.isCached() callback.", logcolor)
-				log.logc(loginfo + " scheduler.run.util.isCached(): work.foundInCache      = " + work.foundInCache, logcolor)
-				log.logc(loginfo + " scheduler.run.util.isCached(): options.forceUpdate    = " + work.options.forceUpdate, logcolor)
-				log.logc(loginfo + " scheduler.run.util.isCached(): options.forceWrite     = " + work.options.forceWrite, logcolor)
-				log.logc(loginfo + " scheduler.run.util.isCached(): options.respectHeaders = " + work.options.respectHeaders, logcolor)
-				log.logc(loginfo + " scheduler.run.util.isCached(): work.isExpired         = " + work.isExpired, logcolor)
-			}
+			log.logres("Callback.", work.options, "scheduler")
+			log.logres("work.foundInCache      = " + work.foundInCache, work.options, "scheduler")
+			log.logres("options.forceUpdate    = " + work.options.forceUpdate, work.options, "scheduler")
+			log.logres("options.forceWrite     = " + work.options.forceWrite, work.options, "scheduler")
+			log.logres("options.respectHeaders = " + work.options.respectHeaders, work.options, "scheduler")
+			log.logres("work.isExpired         = " + work.isExpired, work.options, "scheduler")
 			if (!work.foundInCache || work.options.forceUpdate || (work.options.respectHeaders && work.isExpired)) {				
-				if (work.options.debugschedulerconsole) {
-					log.logc(loginfo + " scheduler.run(): Calling work.preprocess().", logcolor)
-				}
+				log.logres("Calling work.preprocess().", work.options, "scheduler")
 				work.preprocess(function (err, work) {
 					work.processStartTime = new Date()
-					if (work.options.debugschedulerconsole) {
-						log.logc(loginfo + " scheduler.run(): Calling work.process().", logcolor)
-					}
+					log.logres("Calling work.process().", work.options, "scheduler")
 					work.process(function (err, work) {
-						if (work.options.debugschedulerconsole) {
-							log.logc(loginfo + " scheduler.run(): Calling work.postprocess().", logcolor)
-						}
+						log.logres("Calling work.postprocess().", work.options, "scheduler")
 						work.postprocess(function (err, work) {
 							work.processFinishedTime = new Date()
-							if (work.options.debugschedulerconsole) {
-								log.logc(loginfo + " scheduler.run(): Calling workFinish().", logcolor)
-							}
-							workFinish()
+							log.logres("Calling workFinish().", work.options, "scheduler")
+							workFinish(work)
 						})
 					})
 				})
 			} else {
-				if (work.options.debugschedulerconsole) {
-					log.logc(loginfo + " scheduler.run(): Cache hit.", logcolor)
-					log.logc(loginfo + " scheduler.run(): Setting work.isFromCache = true.", logcolor)
-					log.logc(loginfo + " scheduler.run(): Calling workFinish().", logcolor)
-				}
+				log.logres("Cache hit.", work.options, "scheduler")
+				log.logres("Setting work.isFromCache = true.", work.options, "scheduler")
+				log.logres("Calling workFinish().", work.options, "scheduler")
 			    work.isFromCache = true
-			    workFinish()
+			    workFinish(work)
 			}
 
-			function workFinish() {
+			function workFinish(work) {
 				runningWorks.remove(work)
-				if (work.options.debugschedulerconsole) {
-					log.logc(loginfo + " scheduler.run.workFinish(): Called.", logcolor)
-				}
-				if (work.options.debugschedulerconsole) {
-					log.logc(loginfo + " scheduler.run.workFinish(): work.error    = " + work.error, logcolor)
-					log.logc(loginfo + " scheduler.run.workFinish(): work.retries  = " + work.retries, logcolor)
-					log.logc(loginfo + " scheduler.run.workFinish(): work.maxTries = " + work.options.maxTries, logcolor)
+
+				log.logres("Called.", work.options, "scheduler")
+				log.logres("work.error      = " + work.error, work.options, "scheduler")
+				log.logres("work.retries    = " + work.retries, work.options, "scheduler")
+
+				if (work.error === "") {
+					log.logres("Calling work.callback(work2result(work))", work.options, "scheduler")
+					work.callback(work2result(work))
+					return
 				}
 
-				if (!work.error && work.retries < work.options.maxTries) {
-					if (work.options.debugstreamconsole) {
-						log.logc(loginfo + " scheduler.run.workFinish(): Work not already finished.  Executing work.getCachedData().", logcolor)
-					}
-					if (work.options.debugstreamconsole) {
-						log.logc(loginfo + " scheduler.run.workFinish(): Setting work.isfinished = true and executing util.getCachedData().", logcolor)
-					}
-					work.isfinished = true;
-					exports.emit("finish", work)
-					util.getCachedData(work, function (err) {
-						work.callback(work2result(work))
-					})
-				}
-
-				if (work.error && work.retries < work.options.maxTries) {
-					log.logc(loginfo + "  scheduler.run.workFinish(): Will retry " + work.url, 160)
+				if (work.error !== "" && work.retries < work.options.maxTries) {
+					log.logres("Will retry " + work.url, work.options, "scheduler")
 					work.retries += 1
 					worksQueue.push(work)
 				} else {
-					if (work.data && !work.isfinished) {
-						if (work.options.debugstreamconsole) {
-							log.logc(loginfo + " ++ scheduler.run.workFinish(): work.data exists and work.isfinished=false. Executing work.callback().", logcolor)
-						}
-						work.isfinished = true;
-						exports.emit("finish", work)
-						work.callback(work2result(work))
-					} else {
-						if (work.retries == work.options.maxTries) {
-							log.logc(loginfo + " scheduler.run.workFinish(): Finished max number of tries (" + work.options.maxTries + ") for "+work.url, 160)	
-							if (!work.isfinished) {
-								if (work.options.debugstreamconsole) {
-									log.logc(loginfo + " scheduler.run.workFinish(): Work not already finished.  Executing work.getCachedData().", logcolor)
-								}
-								// TODO: This is a repeat of code above
-								util.getCachedData(work, function (err) {
-									if (!work.isfinished) {
-										if (work.options.debugstreamconsole) {
-											log.logc(loginfo + " ++ scheduler.run.workFinish(): Setting work.isfinished = true and executing work.callback().", logcolor)
-										}
-										work.isfinished = true;
-										exports.emit("finish", work)
-										work.callback(work2result(work))
-									} else {
-										if (work.options.debugstreamconsole) {
-											log.logc(loginfo + " scheduler.run.workFinish(): Work already finished.  Not executing work.callback().", logcolor)
-										}
-									}
-								})	
-							} else {
-								if (work.options.debugschedulerconsole) {
-									log.logc(loginfo + " scheduler.run.workFinish(): Work already finished.  Not Checking cache.", logcolor)
-								}
-							}						
-						}
-					}
+					log.logres("Finished max number of tries (" + work.options.maxTries + ") for "+work.url, work.options, "scheduler")	
+					work.callback(work2result(work))
 				}
 				run()
 			}
@@ -194,7 +136,7 @@ function run() {
 	    if (typeof(setImmediate) !== "undefined") {
 	    	setImmediate(run)
 	    } else {
-	    	process.nextTick(run);
+	    	process.nextTick(run)
 	    }
 	}
 }
@@ -245,37 +187,45 @@ function getId() {
 	return now
 }
 
-function newWork(url, options, callback){
+function newWork(url, partnum, options, callback){
 
-	plugin = getPlugin(options,url)
+	// TODO: Check if plugin changed on disk.  If so, re-load it.
+	plugin = getPlugin(options, url)
 
+	// Make a copy of options so we can add partnum that will not change.
+	var optionsc  = JSON.parse(JSON.stringify(options))
+	optionsc.partnum = partnum
+
+	pluginerror = ""
 	if (plugin === "") {
-		console.log("Error: plugin "+options.plugin+" not found.");
-		var pluginerror = "Error: plugin "+options.plugin+" not found.";
+		log.logres("Error: plugin "+options.plugin+" not found.", options)
+		pluginerror = "Error: plugin "+options.plugin+" not found."
 	} else {
-		var pluginerror = false;
+		pluginerror = ""
 	}
 
-	// TODO: If pluginerror, a crash results.
-
-	//TODO: Check if plugin changed on disk.  If so, re-load it.
-	plugin = getPlugin(options,url);
+	if (pluginerror !== "") {
+		return {error: pluginerror, errorcode: 500, options: optionsc}
+	}
 	
+	var extractSignature = ""
 	if (plugin.extractSignature) {
 		extractSignature = plugin.extractSignature(options)
+		log.logres("MD5(URL): " + util.md5(url), options, "scheduler")
+		log.logres("MD5(URL + extractSignature): " + util.md5(url+extractSignature), options, "scheduler")
+	} else {
+		pluginerror = "Error: plugin "+options.plugin+" does not have an extractSignature."
 	}
-	if (options.debugschedulerconsole && extractSignature !== "") {
-		log.logc(options.loginfo + " scheduler.newWork(): MD5(URL): "+util.md5(url), options.logcolor)
-		log.logc(options.loginfo + " scheduler.newWork(): MD5(URL + extractSignature): "+util.md5(url+extractSignature), options.logcolor)
-		//log.logc(options.loginfo + " scheduler.run(): plugin extractSignature: ", options.logcolor)
-		//log.logc(extractSignature, options.logcolor)
+
+	if (pluginerror !== "") {
+		return {error: pluginerror, errorcode: 500, options: optionsc}
 	}
 	
 	var work = {
 				id: getId(),
 				plugin : plugin,
 				url : url,
-				options : options ? options : {},
+				options : optionsc ? optionsc : {},
 				dataMd5 : "",
 				dataLength : -1,
 				urlMd5 : util.md5(url+extractSignature),
@@ -288,9 +238,8 @@ function newWork(url, options, callback){
 				versions: [],
 				isFromCache : false,
 				isExpired : false,
-				isFinished : false,
 				foundInCache: false,
-				error: pluginerror,
+				error: "",
 				jobStartTime : new Date(),
 				processStartTime : 0,
 				cacheCheckStartTime : 0,
@@ -312,7 +261,6 @@ function newWork(url, options, callback){
 				processFinishedTime : 0,
 				jobFinishedTime : 0,
 				retries : 0,
-				isfinished: false,
 				callback : callback || function () {},
 				process : function (callback) {
 					exports.emit("process", this);

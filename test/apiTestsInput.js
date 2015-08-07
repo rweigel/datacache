@@ -41,3 +41,14 @@ tests[j].url  = server + args + "&prefix=http://localhost:22/&source=404%0A400"
 tests[j].n    = n || 50;
 tests[j].md5  = "d41d8cd98f00b204e9800998ecf8427e";
 
+j = j+1;
+tests[j]      = {};
+tests[j].url  = server + args + "&source=test/data/bou20130801vmin.min&plugin=PLUGINTYPO"
+tests[j].n    = n || 50;
+tests[j].md5  = "fd7a532f22a3917bc823b97433db0954";
+
+j = j+1;
+tests[j]      = {};
+tests[j].url  = server + args + "&source=test/data/bou20130801vmin.min%0Atest/data/bou20130802vmin.min&plugin=PLUGINTYPO"
+tests[j].n    = n || 50;
+tests[j].md5  = "fd7a532f22a3917bc823b97433db0954";

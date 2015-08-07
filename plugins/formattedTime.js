@@ -81,21 +81,22 @@ exports.formatLine = function (line, options) {
 
 	var debug = options.debuglineformatterconsole;
 
+
 	if (!exports.formatLine.wascalled) {
 		exports.formatLine.wascalled = {};
 	}
 
-	debug = false
-
 	// Only show debug information for first line.
-	if (exports.formatLine.wascalled[options.loginfo]) {
+	if (exports.formatLine.wascalled[options.logsig]) {
 		debug = false
 	} else {
-		exports.formatLine.wascalled[options.loginfo] = options.debuglineformatterconsole;
+		exports.formatLine.wascalled[options.logsig] = options.debuglineformatterconsole;
 	}
+
+	//var debug = true
 	
 	if (debug) {
-		log.logc(options.loginfo + " formattedTime.formatLine(): Showing debug info for processed line.", options.logcolor)
+		log.logres(" formattedTime.formatLine(): Showing debug info for processed line.", config)
 	}
 
 	var timeformat  = options.streamFilterReadTimeFormat  || "$Y-$m-$dT$H:$M$SZ";//"YYYY-MM-DDTHH:mm:ss.SSSZ";
@@ -103,11 +104,11 @@ exports.formatLine = function (line, options) {
 	var outformat   = options.streamFilterWriteTimeFormat || "0";
 	
 	if (debug) {
-		log.logc(options.loginfo + " formattedTime.formatLine(): streamFilterReadTimeFormat:  " + options.streamFilterReadTimeFormat, options.logcolor)
-		log.logc(options.loginfo + " formattedTime.formatLine(): streamFilterReadTimeColumns: " + options.streamFilterReadTimeColumns, options.logcolor)
-		log.logc(options.loginfo + " formattedTime.formatLine(): streamFilterReadTimeStart:   " + options.streamFilterReadTimeStart, options.logcolor)
-		log.logc(options.loginfo + " formattedTime.formatLine(): streamFilterReadTimeStop:    " + options.streamFilterReadTimeStop, options.logcolor)
-		log.logc(options.loginfo + " formattedTime.formatLine(): streamFilterWriteTimeFormat: " + options.streamFilterWriteTimeFormat, options.logcolor)
+		log.logres(" formattedTime.formatLine(): streamFilterReadTimeFormat:  " + options.streamFilterReadTimeFormat, config)
+		log.logres(" formattedTime.formatLine(): streamFilterReadTimeColumns: " + options.streamFilterReadTimeColumns, config)
+		log.logres(" formattedTime.formatLine(): streamFilterReadTimeStart:   " + options.streamFilterReadTimeStart, config)
+		log.logres(" formattedTime.formatLine(): streamFilterReadTimeStop:    " + options.streamFilterReadTimeStop, config)
+		log.logres(" formattedTime.formatLine(): streamFilterWriteTimeFormat: " + options.streamFilterWriteTimeFormat, config)
 	}
 	if (options.plugin && !options.streamFilterReadTimeFormat) {
 		var timeformat = plugininfo(options,"timeFormat");
@@ -119,7 +120,7 @@ exports.formatLine = function (line, options) {
 	//timeformat = timeformat.replace("yyyy","YYYY").replace("yy","YY").replace("dd",'DD').replace("S","SSS").replace("SS","SSS").replace("j","DDD");
 	timeformat = timeformat.replace("$Y","YYYY").replace("$m","MM").replace("$H","HH").replace("$M","mm").replace("$d",'DD').replace("$S","ss").replace("$j","DDD").replace("$(millis)","SSS");
 	if (debug) {
-		log.logc(options.loginfo + " formattedTime.formatLine(): TimeFormat converted:        " + timeformat, options.logcolor);
+		log.logres(" formattedTime.formatLine(): TimeFormat converted:        " + timeformat, config);
 	}
 
 	var timeformata  = timeformat.split(/,|\s+/);
@@ -127,7 +128,7 @@ exports.formatLine = function (line, options) {
 		       
 	if (line === "") {
 		if (debug) {
-			log.logc(options.loginfo + " formattedTime().formatLine: formattedTime: Empty line.", options.logcolor);
+			log.logres(" formattedTime().formatLine: formattedTime: Empty line.", config);
 		}
 		return "";
 	}
@@ -144,16 +145,16 @@ exports.formatLine = function (line, options) {
 	}
 
 	if (debug) {
-		log.logc(options.loginfo + " formattedTime.formatLine(): time array: " + timev.join(","), options.logcolor)
-		log.logc(options.loginfo + " formattedTime.formatLine(): data array: " + datav.join(","), options.logcolor);
+		log.logres(" formattedTime.formatLine(): time array: " + timev.join(","), config)
+		log.logres(" formattedTime.formatLine(): data array: " + datav.join(","), config)
 	}
 
 	if (options.streamFilterReadTimeStart !== "") {
 		var startdate = options.streamFilterReadTimeStart;
 		var startms = new Date(startdate).getTime();
 		if (debug) {
-			log.logc(options.loginfo + " formattedTime.formatLine(): start date: " + startdate, options.logcolor)
-			log.logc(options.loginfo + " formattedTime.formatLine(): start ms:   " + startms, options.logcolor)
+			log.logres(" formattedTime.formatLine(): start date: " + startdate, config)
+			log.logres(" formattedTime.formatLine(): start ms:   " + startms, config)
 
 		}
 	}
@@ -161,8 +162,8 @@ exports.formatLine = function (line, options) {
 		var stopdate = options.streamFilterReadTimeStop;
 		var stopms  = new Date(stopdate).getTime();
 		if (debug) {
-			log.logc(options.loginfo + " formattedTime.formatLine(): stop date: " + stopdate, options.logcolor)
-			log.logc(options.loginfo + " formattedTime.formatLine(): stop ms:   " + stopms, options.logcolor)
+			log.logres(" formattedTime.formatLine(): stop date: " + stopdate, config)
+			log.logres(" formattedTime.formatLine(): stop ms:   " + stopms, config)
 		}
 	}
 
@@ -178,7 +179,7 @@ exports.formatLine = function (line, options) {
 	d[6] = ((""+d[6]).length == 2) ? "0"+d[6] : d[6];
 	
 	if (debug) {
-		log.logc(options.loginfo + " formattedTime.formatLine(): line date:  " + d, options.logcolor)
+		log.logres(" formattedTime.formatLine(): line date:  " + d, config)
 	}
 	var timestamp = d[0]+"-"+d[1]+"-"+d[2]+"T"+d[3]+":"+d[4]+":"+d[5]+"."+d[6]+"Z";
 
@@ -187,13 +188,13 @@ exports.formatLine = function (line, options) {
 		var currms = new Date(timestamp).getTime();
 
 		if (debug) {
-			log.logc(options.loginfo + " formattedTime.formatLine(): line ms:    " + currms, options.logcolor)
+			log.logres(" formattedTime.formatLine(): line ms:    " + currms, config)
 		}
 
 		if (options.streamFilterReadTimeStart !== "") {
 			if (currms < startms) {
 				if (debug) {
-					log.logc(options.loginfo + " formattedTime.formatLine(): line date is less than TimeStart.  Returning empty line.", options.logcolor)
+					log.logres(" formattedTime.formatLine(): line date is less than TimeStart.  Returning empty line.", config)
 				}
 				return "";
 			}
@@ -201,7 +202,7 @@ exports.formatLine = function (line, options) {
 		if (options.streamFilterReadTimeStop !== "") {
 			if (currms >= stopms) {
 				if (debug) {
-					log.logc(options.loginfo + " formattedTime.formatLine(): line date is greater than TimeStop. Returning END_OF_TIMERANGE.", options.logcolor)
+					log.logres(" formattedTime.formatLine(): line date is greater than TimeStop. Returning END_OF_TIMERANGE.", config)
 				}
 				return "END_OF_TIMERANGE";
 			}
@@ -210,19 +211,19 @@ exports.formatLine = function (line, options) {
 
 	if (outformat === "0") {
 		if (debug) {
-			log.logc(options.loginfo + " formattedTime.formatLine(): formattedTime: outformat = 0; Formatted date: " + d, options.logcolor)
+			log.logres(" formattedTime.formatLine(): formattedTime: outformat = 0; Formatted date: " + d, config)
 		}
 		var timestamp = timev.join(" ");
 	}
 	if (outformat === "1") {		
 		if (debug) {
-			log.logc(options.loginfo + " formattedTime.formatLine(): formattedTime: outformat = 1; Formatted date: " + d, options.logcolor)
+			log.logres(" formattedTime.formatLine(): formattedTime: outformat = 1; Formatted date: " + d, config)
 		}
 		var timestamp = d[0]+"-"+d[1]+"-"+d[2]+"T"+d[3]+":"+d[4]+":"+d[5]+"."+d[6]+"Z";
 	}
 	if (outformat === "2") {
 		if (debug) {
-			log.logc(options.loginfo + " formattedTime.formatLine(): formattedTime: outformat = 2; Formatted date: " + d, options.logcolor)
+			log.logres(" formattedTime.formatLine(): formattedTime: outformat = 2; Formatted date: " + d, options.logcolor)
 		}
 		var timestamp = d[0]+" "+d[1]+" "+d[2]+" "+d[3]+" "+d[4]+" "+d[5]+"."+d[6];
 	}
@@ -230,7 +231,7 @@ exports.formatLine = function (line, options) {
 	line = timestamp + " " + datav.join(" ");
 
 	if (debug) {
-		log.logc(options.loginfo + " formattedTime.formatLine(): Returning: " + line, options.logcolor)
+		log.logc(" formattedTime.formatLine(): Returning: " + line, config)
 	}
 
 	return line

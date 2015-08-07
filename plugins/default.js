@@ -33,11 +33,6 @@ exports.preprocess = function (work, callback) {callback(false, work)}
 
 exports.process = function (work, callback) {
 
-	var debug        = work.options.debugplugin
-	var debugconsole = work.options.debugpluginconsole
-	var logcolor     = work.options.logcolor
-	var loginfo      = work.options.loginfo + " default.process(): "
-
 	var dir        = util.getCacheDir(work)
 	var outfiletmp = dir + work.urlMd5base + ".out" + "." + work.id
 	var outfile    = dir + work.urlMd5base + ".out"
@@ -46,45 +41,35 @@ exports.process = function (work, callback) {
 		mkdirp(dir, doget)
 	} else {
 
-		if (work.options.debugutilconsole) {
-			log.logc(loginfo + "Looking for .out file.", logcolor)
-		}
+		log.logc("Looking for .out file.", work.options)
 
 		fs.exists(outfile, function (exist) {
 
 			if (!exist) {
-				if (debugconsole) {
-					log.logc(loginfo + ".out file does not exist. Calling doget().", logcolor)
-				}
+				log.logres(".out file does not exist. Calling doget().",
+								work.options, "plugin")
 				mkdirp(dir, doget)
 				return
 			}
-			if (debugconsole) {
-				log.logc(loginfo + ".out file exists.", logcolor)
-			}
+			log.logres(".out file exists.", work.options, "plugin")
 
 			util.readLockFile(outfile, work, function (success) {
 				if (!success) {
-					if (debugconsole) {
-						log.logc(loginfo + ".out file is locked.  Calling doget().", logcolor)
-					}
+					log.logres(".out file is locked.  Calling doget().",
+									work.options, "plugin")
 					doget()
 					return
 				}
-				if (debugconsole) {
-					log.logc(loginfo + "Reading .out file.", logcolor)
-				}
+				log.logres("Reading .out file.", work.options, "plugin")
 				fs.readFile(outfile, "utf8", function (err, body) {
 					if (err) {
-						if (debugconsole) {
-							log.logc(loginfo + "Error when reading .out file.  Calling doget().", logcolor)
-						}
+						log.logres("Error when reading .out file.  Calling doget().",
+										work.options, "plugin")
 						doget()
 						return
 					}
-					if (debugconsole) {
-						log.logc(loginfo + "Read .out file.  Unlocking and calling finish().", logcolor)
-					}
+					log.logres("Read .out file.  Unlocking and calling finish().",
+									work.options, "plugin")
 					util.readUnlockFile(outfile, work, function () {
 						finish("", body)
 					})
@@ -95,10 +80,8 @@ exports.process = function (work, callback) {
 
 	function finish(err, res) {
 
-		var loginfo = work.options.loginfo + " default.process.util.get.finish(): "
-
 		if (err) {
-			log.logc(loginfo + err, 160)
+			log.logc(err, 160)
 			work.error = err
 			callback(true, work)
 		}
@@ -117,53 +100,37 @@ exports.process = function (work, callback) {
 		//      if (!err) {ndone = ndone + 1} else {work.error = err; callback(true, work)}
 		//      if (ndone == 6) util.writeCache(work, function () {callback(false, work)}) }
 		// }
-		work.body = res || "";
+		work.body = res || ""
 
-		if (work.options.debugconsole) {
-			log.logc(loginfo + "Extracting data from work.body.", logcolor)
-		}
+		log.logres("Extracting data from work.body.", work.options, "plugin")
 		work.data = work.extractData(work.body, work.options)
 
-		if (work.options.debugconsole) {
-			log.logc(loginfo + "Computing MD5 of work.body.", logcolor)
-		}
+		log.logres("Computing MD5 of work.body.", work.options, "plugin")
 		work.dataMd5 = util.md5(work.data);
 
-		if (work.options.debugconsole) {
-			log.logc(loginfo + "Extracting binary from work.body.", logcolor)
-		}
-		work.dataBinary = work.extractDataBinary(work.body, "bin");
+		log.logres("Extracting binary from work.body.", work.options, "plugin")
+		work.dataBinary = work.extractDataBinary(work.body, "bin")
+
+		log.logres("Extracting metadata from work.body.", work.options, "plugin")
+		work.dataJson = work.extractDataJson(work.body, work.options)
+		work.datax    = work.extractRem(work.body, work.options)
+		work.meta     = work.extractMeta(work.body, work.options)
+		work.metaJson = work.extractMetaJson(work.body, work.options)
 		
-		if (work.options.debugconsole) {
-			log.logc(loginfo + "Extracting metadata from work.body.", logcolor)
-		}
-		work.dataJson = work.extractDataJson(work.body, work.options);
-		work.datax    = work.extractRem(work.body, work.options);
-		work.meta     = work.extractMeta(work.body, work.options);
-		work.metaJson = work.extractMetaJson(work.body, work.options);
-		
-		if (work.options.debugconsole) {
-			log.logc(loginfo + "Calling util.writeCache.", logcolor)
-		}
+		log.logres("Calling util.writeCache.",  work.options, "plugin")
 		util.writeCache(work, function (work) {callback(false, work)})
 	}
 
 	function doget() {
 
-		var loginfo = work.options.loginfo + " default.process.doget(): "
-
 		if (work.url.match(/^http/)) {
 
-			if (debugconsole) {
-				log.logc(loginfo + "Called with work.url = " + work.url, logcolor)
-			}
+			log.logres("Called with work.url = " + work.url, work.options, "plugin")
 			
 			var sz = 0
 			var body
 
-			if (debugconsole) {
-				log.logc(loginfo + "Getting: " + work.url, logcolor)
-			}
+			log.logres("Getting: " + work.url, work.options, "plugin")
 
 			var headers = work.options.acceptGzip ? {"accept-encoding": "gzip, deflate"} : {}
 
@@ -178,36 +145,37 @@ exports.process = function (work, callback) {
 			var outfiletmpstream = fs.createWriteStream(outfiletmp)
 
 			outfiletmpstream.on('finish', function () {
-				if (debugconsole) {
-					log.logc(loginfo + "Finished writing tmp .out file.", logcolor)
-				}
+				log.logres("Finished writing ." + work.id + ".out file", work.options, "plugin")
 				function rmfile() {
-					// No lock will ever exist on this file as it depends on job id.
-					log.logc(loginfo + "Removing tmp .out file because of error getting file.", logcolor)
+					// No lock will ever exist on tmp file as it depends on job id.
 					fs.unlink(outfiletmp, function (err) {
 						if (err) {
-							log.logc(loginfo + "Could not remove tmp .out file.", 160)
-						}						
+							log.logres("Could not remove .out." + work.id + " file", work.options, "plugin")
+						}				
 					})
 				}
 
-				if (work.error !== "") { rmfile(); return }
+				if (work.error !== "") { 
+					log.logres("Removing .out." + work.id + " file because of error getting file: " + work.error, work.options, "plugin")
+					rmfile()
+					return
+				}
 
-				util.writeLockFile(outfile, work, function (success) {
+				// Locks are placed on work file name, not file extension.
+				util.writeLockFile(outfile.replace(".out",""), work, function (success) {
 					if (!success) {
-						log.logc(loginfo + "Could not rename tmp .out file.", 160)
+						log.logres("Could not rename "+outfiletmp.replace(__dirname+"/cache/",""), work.options, "plugin")
 						rmfile()
 						return
 					}
 					// TODO: If forceWrite = false and MD5 has not changed, delete tmp file?
 					fs.rename(outfiletmp, outfile, function (err) {
 						if (err) {
-							log.logc(loginfo + "Error when trying to rename tmp .out file.", logcolor)
+							// This should never occur.
+							log.logc("Error when trying to rename .out." + work.id + " file.", 160)
 						} else {
-							if (debugconsole) {
-								log.logc(loginfo + "Renamed tmp .out file.", logcolor)
-							}
-							util.writeUnlockFile(outfile, work, function () {})
+							log.logres("Renamed .out." + work.id + "file to .out", work.options, "plugin")
+							util.writeUnlockFile(outfile.replace(".out",""), work, function () {})
 						}
 					})
 				})
@@ -218,47 +186,33 @@ exports.process = function (work, callback) {
 
 			util.get(work.url, function (error, response, body) {
 
-				var loginfo = work.options.loginfo + " default.process.doget.util.get(): "
-
 				if (error) {
 					work.error = error
-					if (debugconsole) {
-						log.logc(loginfo + "Error when attempting GET: " + error, logcolor)
-					}
+					log.logres("Error when attempting GET: " + error, work.options, "plugin")
 					callback(true, work)
 					return
 				}
 
 				if (response.statusCode !== 200) {
-					work.error = "HTTP Error " + response.statusCode;
-					if (debugconsole) {
-						log.logc(loginfo + "Non-200 status code when attempting to GET: " + response.statusCode, logcolor)
-					}
+					work.error = "HTTP Error " + response.statusCode
+					log.logres("Non-200 status code when attempting to GET: " + response.statusCode, work.options, "plugin")
 					callback(true, work)
 					return
 				} else {
-					work.header = response.headers;
-					if (debugconsole)  {
-						log.logc(loginfo + "Got " + work.url, logcolor)
-						log.logc(loginfo + "Headers: " + JSON.stringify(response.headers), logcolor)
-					}
+					work.header = response.headers
+					log.logres("Got " + work.url, work.options, "plugin")
+					log.logres("Headers: " + JSON.stringify(response.headers), work.options, "plugin")
 					if (response.headers["content-encoding"] === "gzip" || response.headers["content-type"] === "application/x-gzip") {
-						if (debugconsole) {
-							log.logc(loginfo + "Content-Type is application/x-gzip", logcolor)
-						}
+						log.logres("Content-Type is application/x-gzip", work.options, "plugin")
 					    zlib.gunzip(body, finish)
 					} else {
 						magic.detect(body, function(err, result) {
 							if (result.match(/^gzip/)) {
-								if (debugconsole) {
-									log.logc(loginfo + "Content-Encoding is not gzip and Content-Type is not application/x-gzip, but buffer is gzipped.", logcolor)
-								}
-								if (err) throw err;
+								log.logres("Content-Encoding is not gzip and Content-Type is not application/x-gzip, but buffer is gzipped.", work.options, "plugin")
+								if (err) throw err
 								zlib.gunzip(body, finish)
 							} else {
-								if (debugconsole) {
-									log.logc(loginfo + "Calling finish().", logcolor)
-								}
+								log.logres("Calling finish().", work.options, "plugin")
 								finish("",body)
 							}
 						})
@@ -266,32 +220,16 @@ exports.process = function (work, callback) {
 				}
 
 			})
-			// Not needed.  Caught by callback to util.get.
-			//.on("error", function (err) {
-			//	if (debugconsole) {
-			//		log.logc(work.options.loginfo + " default.process(): On error event." + err, logcolor)
-			//	}
-			//	console.log(err)
-			//})
-			// .on('connect', function(res, socket, head) {
-	    		// This is not emitted by request (https://github.com/request/request)
-	    	//	console.log(work.options.loginfo + " ---- default.process.util.get(): Connected.  Header: "+head, logcolor)
-	    	//})
 			.pipe(outfiletmpstream)
 			.on("data", function (data) {
 				// TODO: If file size is found to be large, stop reading into memory and use
 				// outfile as work.body and set work.bodyfile = work.urlMd5base + ".tmp".
 				sz = sz + data.length;
-				
-				if (debugconsole) {
-					log.logc(loginfo + "Got first chunk of size [bytes] " + data.length, logcolor)
-				}
+				log.logres("Got first chunk of size [bytes] " + data.length, work.options, "plugin")
 				work.getFirstChunkTime = new Date();
 			})
 			.on("end", function () {
-				if (debugconsole) {
-					log.logc(loginfo + "On end event.  Size [bytes]     " + sz, logcolor)
-				}
+				log.logres("On end event.  Size [bytes]     " + sz, work.options, "plugin")
 				if (!work.getEndTime) {
 				    work.getFinishedTime = new Date();
 				}
@@ -331,7 +269,7 @@ exports.process = function (work, callback) {
 							})
 							.on("error", function(e){
 								work.error = e
-								log.logc(work.options.loginfo + " default.process(): Error event in conn.get from "+host, 160)
+								log.logc(" default.process(): Error event in conn.get from "+host, 160)
 								log.logc(JSON.stringify(e), 160)
 								callback(true, work)
 								conn.end()
@@ -351,8 +289,8 @@ exports.process = function (work, callback) {
 				if (!e.toString().match("No transfer timeout")) {
 					// FTP servers send this "error" if no tranfer after a certain amount of time.
 					// It is really just a signal to close the connection.
-					log.logc(work.options.loginfo + " default.extractData(): Error event in conn.ready from " + host, logcolor)
-					log.logc(JSON.stringify(e))
+					log.logc("Error event in conn.ready from " + host, 160)
+					log.logc(JSON.stringify(e), 160)
 					work.error = e
 					callback(true, work)
 					conn.end()
@@ -360,7 +298,7 @@ exports.process = function (work, callback) {
 			})
 			conn.connect({host: host})
 		} else {
-			log.logc(work.options.loginfo + " default.js: Error.  Protocol" + work.url.replace(/^(.*)\:.*/,"$1") + " is not supported.", 160)
+			log.logc(" default.js: Error.  Protocol" + work.url.replace(/^(.*)\:.*/,"$1") + " is not supported.", 160)
 		}
 	}
 
@@ -370,33 +308,23 @@ exports.extractDataBinary = function (body, options) {return ""}
 
 exports.extractData = function (body, options) {
 
-	var debug        = options.debugplugin
-	var debugconsole = options.debugpluginconsole
 	var lineRegExp   = options.lineRegExp
-	var logcolor     = options.logcolor
-	var loginfo      = options.loginfo + " default.extractData(): "
 
 	if (options.lineFormatter !== "") {
-		if (debugconsole) {
-			log.logc(options.loginfo + " default.extractData(): Reading " + __dirname + "/" + options.lineFormatter + ".js", logcolor)
-		}
+		log.logres(" default.extractData(): Reading " + __dirname + "/" + options.lineFormatter + ".js", options, "plugin")
 		var lineFormatter = require(__dirname + "/" + options.lineFormatter + ".js")
 	}
 	
 	if (options.unsafeEval) {
-		if (debugconsole) {
-			log.logc(loginfo + "Using unsafe eval because extractData and lineRegExp are default values.", logcolor)
-			log.logc(loginfo + "Evaluating " + options.extractData, logcolor)
-			log.logc(loginfo + "lineRegExp = " + lineRegExp, logcolor)
-		}
+		log.logres("Using unsafe eval because extractData and lineRegExp are default values.", options, "plugin")
+		log.logres("Evaluating " + options.extractData, options, "plugin")
+		log.logres("lineRegExp = " + lineRegExp, options, "plugin")
 		return eval(options.extractData)
 	}
 
-	if (debugconsole) {
-		log.logc(loginfo + "Using safe eval because extractData or lineRegExp are not default values.", logcolor)
-		log.logc(loginfo + "Evaluating " + options.extractData, logcolor)
-		log.logc(loginfo + "lineRegExp = " + lineRegExp, logcolor)
-	}
+	log.logres("Using safe eval because extractData or lineRegExp are not default values.", options, "plugin")
+	log.logres("Evaluating " + options.extractData, options, "plugin")
+	log.logres("lineRegExp = " + lineRegExp, options, "plugin")
 
 	//Not needed, even though body is a buffer.
 	//body = body.toString()
@@ -407,13 +335,11 @@ exports.extractData = function (body, options) {
 		window = jsdom.jsdom(body).createWindow()
 		$ = jquery.create(window)
 	} catch(e) {
-		log.logc(loginfo + "Error when trying to parse data as html, probably it is not in valid html format.", 160)
+		log.logc("Error when trying to parse data as html, probably it is not in valid html format.", 160)
 	}
 	
 	try {
-		if (debugconsole) {
-			log.logc(loginfo + "Using safe eval because extractData or lineRegExp specified as input.", logcolor)
-		}
+		log.logres("Using safe eval because extractData or lineRegExp specified as input.", options, "plugin")
 		return localeval(options.extractData.replace(/jQuery/g,"\$"), {
 			$: $,
 			document: window.document,
@@ -424,7 +350,7 @@ exports.extractData = function (body, options) {
 		    options: options
 		})
 	} catch(e) {
-		log.logc(loginfo + "Error in trying to eval options.extractData: " + JSON.stringify(e), 160)
+		log.logc("Error in trying to eval options.extractData: " + JSON.stringify(e), 160)
 		return "Error occurred while extracting data\n"
 	}
 }

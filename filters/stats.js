@@ -21,13 +21,15 @@ exports.stats = function stats(datas, options) {
 	var exludeso = [];
 	var excludes = [];
 
+	var config = options.config
+
 	var data = datas[0].split(/\s+/g);
 
 	if (options.debuglinefilterconsole) {
-		log.logc(options.loginfo + " stats.js: # rows input = "+datas.length, options.logcolor)
+		log.logres("stats.js: # rows input = "+datas.length, config)
 	}
 	if (options.debuglinefilterconsole) {
-		log.logc(options.loginfo + " stats.js: # cols in first row = "+data.length, options.logcolor)
+		log.logres("stats.js: # cols in first row = "+data.length, config)
 	}
 
 	if (options.streamFilterWriteComputeFunctionExcludes.match(",")) {
@@ -65,7 +67,7 @@ exports.stats = function stats(datas, options) {
 	for (i = 1;i < datas.length;i++) {
 
 		if (options.debuglinefilterconsole) {
-			log.logc(options.loginfo + " stats.js: datas[i] = " + datas[i], options.logcolor)
+			log.logres("stats.js: datas[i] = " + datas[i], config)
 		}
 
 		data = datas[i].split(/\s+/g);
@@ -119,7 +121,7 @@ exports.stats = function stats(datas, options) {
 		ret = t+" "+Nvalid.join(" ")+"\n";
 	}
 	if (options.debuglinefilterconsole) {
-		log.logc(options.loginfo + " stats.js: returning " + ret, options.logcolor)
+		log.logres("stats.js: returning " + ret, config)
 	}
 	return ret
 }
