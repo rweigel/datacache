@@ -1,6 +1,7 @@
 {
   "name": "datacache",
   "version": "0.5.1",
+  "engine":{"node": ">0.12.6"},
   "dependencies": {
     "request": "2.9.203",
     "express": "3.0.0beta7",
