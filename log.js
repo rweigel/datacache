@@ -68,10 +68,10 @@ exports.logc = logc
 // Log request information to file
 function logres(message, options, context) {
 
-	if (!context) context = "app"
+	if (!context) context = "main"
 	
 	var logtofile    = options.debug[context]
-	var logtoconsole = logtofile
+	var logtoconsole = options.debug["console"]
 
 	if (!logtofile && !logtoconsole) return
 
