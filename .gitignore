@@ -4,8 +4,16 @@ log/*
 .project
 .settings
 test/streamTests.txt
+
 test/data-stream/out.*
 !test/data-stream/out.*.0
+test/data-stream/head.*
+!test/data-stream/head.*.0
+test/data-api/out.*
+!test/data-api/out.*.0
+test/data-api/head.*
+!test/data-api/head.*.0
+
 node_modules*
 *.log
 *~
