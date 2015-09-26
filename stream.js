@@ -130,27 +130,10 @@ function stream(source, res) {
 				+ ' URL(s) and work.options.streamOrder = ' 
 				+ res.options.streamOrder, res.options, "stream")
 
-	if (0) {
-		if (res.options.forceUpdate == false && res.options.respectHeaders == false) {
-			for (var jj = 0; jj < N; jj++) {
-				xwork = scheduler.newWork(source[jj], res.options)
-				part = streamdir + "/" + xwork.urlMd5 + ".stream.gz"
-				if (fs.existsSync(part)) {
-					// TODO: Account for this before adding URLs to scheduler.
-					log.logres('Stream cache for ' + source[jj] 
-							+ ' found.  Did need to add to scheduler.', work.options, "stream")
-				}
-			}
-		}
-	}
-
 	//for (var jj=N-1;jj > -1;jj--) { // For testing inorder
 	for (var jj = 0;jj < N;jj++) {
 		log.logres("Adding to scheduler: " + source[jj], res.options, "stream")	    		
-		scheduler.addURL(source[jj], jj, res,
-							function (work) {
-								processwork(work)
-							})
+		scheduler.addURL(source[jj], jj, res, function (work) { processwork(work) })
 	}
 
 	function streamcat(res, streamfilecat, cb) {
@@ -397,7 +380,8 @@ function stream(source, res) {
 	
 		function cachestreampart(streamfilepart, data) {
 
-			log.logres("Creating " + streamdir.replace(__dirname+"/cache/",""), work.options, "stream")
+			log.logres("Creating " + streamdir.replace(__dirname+"/cache/",""), 
+						work.options, "stream")
 
 			mkdirp(streamdir, function (err) {
 
@@ -405,8 +389,8 @@ function stream(source, res) {
 					log.logc("mkdirp error: " + JSON.stringify(err), 160)
 				}
 				log.logres("Created dir " 
-							+ streamdir.replace(__dirname+"/cache/", "")
-								+ streamsignature, work.options, "stream")
+							+ streamdir.replace(__dirname+"/cache/", ""),
+							work.options, "stream")
 
 				util.writeLockFile(streamdir, work, function (success) {
 					if (!success) {
