@@ -15,6 +15,7 @@ var argv     = require('yargs')
 					.default({
 						'port': "7999",
 						'debugall': "false",
+						'debugconsole': "false",
 						'debugapp': "false",
 						'debugutil': "false",
 						'debugstream': "false",
@@ -154,6 +155,24 @@ app.use("/test/data", express.directory(__dirname + "/test/data"));
 app.use("/test/data", express.static(__dirname + "/test/data"));
 app.use("/asset", express.directory(__dirname + "/asset"));
 app.use("/asset", express.static(__dirname + "/asset"));
+
+// Test files
+app.get("/test/changingfile.txt", function (req,res) {
+	var date = new Date();
+    var str = date.getFullYear() + " " + date.getMonth() + " " + 
+    			date.getDate() + " " + date.getHours() + " " + 
+    			date.getMinutes() + " " + date.getSeconds();
+	res.send(str)
+})
+
+// Delay serving files to test stream ordering. 
+for (var i = 0;i < 5; i++) {
+	app.get("/test/data-stream/bou2013080"+i+"vmin.min", function (req,res) {
+		setTimeout(function () {
+			res.send(fs.readFileSync("test/data/bou2013080"+i+"vmin.min"))},
+						Math.round(100*Math.random()));
+	})
+}
 
 // Rewrite /sync?return=report ... to /report ...
 app.use(function (req, res, next) {
