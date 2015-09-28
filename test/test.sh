@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 echo "Starting datacache server"
 
@@ -10,13 +10,23 @@ echo "Starting tests in 3 seconds."
 
 sleep 3
 
-cd test; node test.js --suite true --type stream
+cd test; node test.js --suite true --type stream -n 1
+
+RESULT1=$?
+
+node test.js --suite true --type api -n 1
+
+RESULT2=$?
 
 #sleep 1
 
-RESULT=$?
-
 kill $PID
 
-exit $RESULT
+if [[ $RESULT1 == "1" && $RESULT2 == "1" ]]; then
+	echo "test.sh Exiting with code 1"
+	exit 1
+else
+	echo "test.sh Exiting with code 0"
+	exit 0
+fi
 
