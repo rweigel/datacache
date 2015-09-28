@@ -26,7 +26,7 @@
     "handlebars": "~1.0.12"  
   },
   "scripts": {
-    "test": "sh test/test.sh"
+    "test": "bash test/test.sh > test/test.log"
   },
   "devDependencies": {}
 }
