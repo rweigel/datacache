@@ -287,11 +287,15 @@ function writeUnlockFile(fname, work, callback) {
 	if (writeCache.finishQueue[fname]) {
 		while (writeCache.finishQueue[fname].length > 0) {
 			workq = writeCache.finishQueue[fname].shift()
-			log.logres("-- Evaluating callback for queued work " 
-						+ workq.options.logsig,  workq.options, "util")
+			log.logres("Evaluating callback for queued work " 
+						+ work.options.logsig,  work.options, "util")
 			workq.cacheWriteFinishedTime = new Date()
 			workq.finishQueueCallback(workq)							
 		}
+		if (writeCache.finishQueue[fname].length == 0) {
+			delete writeCache.finishQueue[fname]
+		}
+
 	} else {
 		log.logres("No writeCache queue found for "+fname_s, work.options, "util")
 	}
@@ -321,6 +325,17 @@ function readLockFile(fname, work, callback) {
 
 	if (writeCache.memWriteLock[fname]) {	
 		log.logres("Could not read lock " + fname_s, options, "util")
+
+		// Only place in queue if callback specified
+		if (work.finishQueueCallback) {
+			log.logres("Queuing " + fname_s, work.options, "util")
+			if (!writeCache.finishQueue[fname]) {
+				writeCache.finishQueue[fname] = []
+			}
+			writeCache.finishQueue[fname].push(work)
+			log.logres("Done queuing " + fname_s, work.options, "util")
+		}
+
 		callback(false)
 	} else {
 		if (!writeCache.memReadLock[fname]) {
@@ -366,10 +381,13 @@ function readUnlockFile(fname, work, callback) {
 		if (writeCache.finishQueue[fname]) {
 			while (writeCache.finishQueue[fname].length > 0) {
 				workq = writeCache.finishQueue[fname].shift()
-				log.logres("-- Evaluating callback for queued work " 
+				log.logres("Evaluating callback for queued work " 
 							+ workq.options.logsig,  workq.options, "util")
 				workq.cacheWriteFinishedTime = new Date()
 				workq.finishQueueCallback(workq)							
+			}
+			if (writeCache.finishQueue[fname].length == 0) {
+				delete writeCache.finishQueue[fname]
 			}
 		} else {
 			log.logres("No writeCache queue found for " + fname_s, options, "util")
