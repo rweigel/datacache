@@ -68,6 +68,10 @@ exports.logc = logc
 // Log request information to file
 function logres(message, options, context) {
 
+	var re1 = new RegExp(__dirname+"/cache/","g")
+	var re2 = new RegExp(__dirname+"/","g")
+	message = message.replace(re1,"").replace(re2,"");
+
 	if (!context) context = "main"
 	
 	var logtofile    = options.debug[context]
