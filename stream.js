@@ -31,8 +31,9 @@ function stream(source, res) {
 	log.logres("Response sig = " + res.options.logsig, res.options, "stream")
 
 	reqstatus[res.options.logsig]            = {}
-	reqstatus[res.options.logsig].N          = source.length; 
-	reqstatus[res.options.logsig].Nx         = 0; // Number of reads/processed URLs completed
+	reqstatus[res.options.logsig].N          = source.length;
+	reqstatus[res.options.logsig].Nx         = 0; // Number of URLs processed and sent
+	reqstatus[res.options.logsig].Nc         = 0; // Number of stream parts cached
 	reqstatus[res.options.logsig].Nd         = 0; // Number of drained reads
 	reqstatus[res.options.logsig].gzipping   = 0;
 	reqstatus[res.options.logsig].dt         = 0;
@@ -92,10 +93,10 @@ function stream(source, res) {
 	if (res.options.debugstream) {
 		if (!fs.existsSync(streamfilecat)) {
 			log.logres("streamfilecat does not exist: " 
-						+ streamfilecat.replace(__dirname+"/cache/",""), res.options, "stream")
+						+ streamfilecat, res.options, "stream")
 		} else {
 			log.logres("streamfilecat exists at " 
-						+ streamfilecat.replace(__dirname+"/cache/",""), res.options, "stream")
+						+ streamfilecat, res.options, "stream")
 		}
 	}
 
@@ -142,10 +143,10 @@ function stream(source, res) {
 						streamfilecat.replace(/.*\/(.*)/,"$1"))
 
 		log.logres("Streaming cached concatenated stream file: " 
-						+ streamfilecat.replace(__dirname+"/cache/",""), res.options, "stream")				
+						+ streamfilecat, res.options, "stream")				
 		if (res.options.streamGzip == false) {
 			log.logres("Unzipping cached concatenated stream file: "
-							+ streamfilecat.replace(__dirname+"/cache/",""), res.options, "stream")
+							+ streamfilecat, res.options, "stream")
 
 			res.setHeader('Content-Disposition', 
 				streamfilecat.replace(/.*\/(.*)/,"$1").replace(".gz",""))
@@ -323,9 +324,9 @@ function stream(source, res) {
 					log.logres("Queued stream part already sent for part " + (pn+1), lastwork.options, "stream")
 					return
 				}
+
 				log.logres("Sending queued part " + (pn+1), work.options, "stream")
-				if (typeof(work.data) === "object" 
-					&& !(work.data instanceof Buffer)) {
+				if (typeof(work.data) === "object" && !(work.data instanceof Buffer)) {
 					work.data.on('end', 
 						function () {
 							reqstatus[work.res.options.logsig].writequeue[pn] = null
@@ -355,6 +356,8 @@ function stream(source, res) {
 
 				if (reqstatus[work.res.options.logsig].Nx == reqstatus[work.res.options.logsig].N ) {
 					log.logc("N finished = N and done() called.  Error?", 160)
+					//log.logres("Sending res.end().", work.options, "stream")
+					//res.end()
 				}
 
 				log.logres("Done called with work.partnum = " + work.partnum, work.options, "stream")
@@ -380,33 +383,40 @@ function stream(source, res) {
 	
 		function cachestreampart(streamfilepart, data) {
 
-			log.logres("Creating " + streamdir.replace(__dirname+"/cache/",""), 
-						work.options, "stream")
+			log.logres("Creating " + streamdir, work.options, "stream")
 
 			mkdirp(streamdir, function (err) {
 
 				if (err) {
 					log.logc("mkdirp error: " + JSON.stringify(err), 160)
 				}
-				log.logres("Created dir " 
-							+ streamdir.replace(__dirname+"/cache/", ""),
-							work.options, "stream")
+				log.logres("Created dir if it did not exist: " + streamdir, work.options, "stream")
 
+				//work.finishQueueCallback = function () {cachestreampart(streamfilepart, data)}
+				work.finishQueueCallback = false
 				util.writeLockFile(streamdir, work, function (success) {
 					if (!success) {
-						log.logres("Could not lock streamdir.  Aborting write.", work.options, "stream")
+						log.logres("Could not lock streamdir.", work.options, "stream")
 						return							
 					}
 					util.writeLockFile(streamfilepart, work, function (success) {
 						if (!success) {
-							log.logres("Could not lock streamfilepart file.  Aborting write.", work.options, "stream")
+							log.logres("Could not lock streamfilepart file.", work.options, "stream")
+							util.writeUnlockFile(streamdir, work, function () {});
 							return							
 						}
 						fs.writeFile(streamfilepart, data, function (err) {
-							log.logres("Wrote " + streamfilepart.replace(streamdir,""), work.options, "stream")
+							log.logres("Wrote " + streamfilepart, work.options, "stream")
+							log.logres("Incremening Nc from " 
+										+ reqstatus[work.res.options.logsig].Nc + "/" + reqstatus[work.res.options.logsig].N 
+										+ " to " 
+										+ (reqstatus[work.res.options.logsig].Nc+1) + "/" + reqstatus[work.res.options.logsig].N, 
+										work.options, "stream")
+							reqstatus[work.res.options.logsig].Nc = reqstatus[work.res.options.logsig].Nc + 1
+
 							util.writeUnlockFile(streamdir, work, function () {
 								util.writeUnlockFile(streamfilepart, work, function () {
-									if (reqstatus[work.res.options.logsig].Nx == reqstatus[work.res.options.logsig].N) {
+									if (reqstatus[work.res.options.logsig].Nc == reqstatus[work.res.options.logsig].N) {
 										catstreamparts()
 									}
 								})
@@ -419,47 +429,80 @@ function stream(source, res) {
 
 		function catstreamparts() {
 
-			log.logres("Reading dir " + streamdir.replace(__dirname+"/cache/",""),
-							res.options, "stream")
+			log.logres("Reading dir " + streamdir, res.options, "stream")
 
 			var files = fs.readdirSync(streamdir)
 
 			log.logres("Found " + files.length + " files", res.options, "stream")
 
 			if (files.length != N) {
-				log.logres("Not creating concatenated gzip stream file.  Did not find " + N + " files.", res.options, "stream")
+				log.logres("Not creating concatenated gzip stream file."
+							+ " Did not find " + N + " files."
+							, res.options, "stream")
 				return
 			}
 
+			work.finishQueueCallback = false
+			work.options.partnum = ""
 			util.writeLockFile(streamdir, work, function (success) {
 				if (files.length > 1) {
-					log.logres("Concatenating " + files.length + " stream parts into " + streamsignature + ".stream.gz", res.options, "stream")
+					log.logres("Concatenating " 
+									+ files.length 
+									+ " stream parts into " 
+									+ streamsignature 
+									+ ".stream.gz"
+									, res.options, "stream")
 
-					var com = "cd " + streamdir + "; cat " + files.join(" ") + " > ../" + streamsignature + ".stream.gz;"
+					var com = "cd " + streamdir 
+									+ "; cat " 
+									+ files.join(" ") 
+									+ " > ../" 
+									+ streamsignature 
+									+ ".stream.gz;"
+
 					log.logres("Evaluating: " + com, res.options, "stream")
-					child = exec(com,function (error, stdout, stderr) {
+					child = exec(com, function (error, stdout, stderr) {
 						log.logres("Evaluated: " + com, res.options, "stream")
 						if (error) {
-							log.logres("Error: " + JSON.stringify(error), res.options, "stream")
+							log.logres("Error: " + JSON.stringify(error),
+											res.options, "stream")
 						}	
 						if (stderr) {
-							log.logres("Error: " +JSON.stringify(error), res.options, "stream")
+							log.logres("Error: " + JSON.stringify(error),
+											res.options, "stream")
 						}
 						util.writeUnlockFile(streamdir, work, function () {})
 					})
 				} else {
-					var com = "cd " + streamdir + "/.. ; ln -s " + streamsignature + "/" + files[0] + " " + streamsignature + ".stream.gz;"
-					log.logres("Evaluating " + com, work.options, "stream")
-					child = exec(com, function (error, stdout, stderr) {
-						log.logres("Evaluated  " + com, work.options, "stream")
-						if (error) {
-							log.logc("Error: " + JSON.stringify(error), 160)
+					fs.exists(streamdir + "/../" + streamsignature + ".stream.gz",
+						function (exists) {
+							if (exists) {
+								log.logres("Symlink from single stream part to cat file exists.  Not re-creating", work.options, "stream")
+								return
+							}
+
+							var com = "cd " + streamdir 
+											+ "/.. ; ln -s " 
+											+ streamsignature 
+											+ "/" 
+											+ files[0] 
+											+ " " 
+											+ streamsignature 
+											+ ".stream.gz;"
+											
+							log.logres("Evaluating " + com, work.options, "stream")
+							child = exec(com, function (error, stdout, stderr) {
+								log.logres("Evaluated  " + com, work.options, "stream")
+								if (error) {
+									log.logc("Error: " + JSON.stringify(error), 160)
+								}
+								if (stderr) {
+									log.logc(stderr, 160)
+								}				
+								util.writeUnlockFile(streamdir, work, function () {})
+							})
 						}
-						if (stderr) {
-							log.logc(stderr, 160)
-						}				
-						util.writeUnlockFile(streamdir, work, function () {})
-					})								
+					)
 				}
 			})
 		}
@@ -467,22 +510,22 @@ function stream(source, res) {
 		function createstream(work) {
 
 			var fname = util.getCachePath(work)
+
 			// Create new stream.
 			if (work.options.streamFilterReadBytes > 0) {
-				log.logres("Reading Bytes of "+ fname.replace(__dirname+"/cache/",""), work.options, "stream");
-				log.logres("fs.exist: " + fs.existsSync(fname + ".data"), work.options, "stream");
+				log.logres("Reading bytes of "+ fname, work.options, "stream")
+				log.logres("fs.exist: " + fs.existsSync(fname + ".data"), work.options, "stream")
 				fs.exists(fname + ".data", function (exists) {
 					if (!exists) {
-						log.logc("Error: .data file does not exist.", 160)
+						log.logc("createstream: Error: .data file does not exist.", 160)
 					}
+					work.finishQueueCallback = function () {createstream(work)}
 					util.readLockFile(fname, work, function (success) {
 						if (!success) {
-							log.logc("Could not read lock file.  Try again in 100 ms", 160)
-							setTimeout(function () {createstream(work)}, 100)
 							return
 						}
-						// TODO: Clear timeout
-						var buffer = new Buffer(work.options.streamFilterReadBytes);
+						work.finishQueueCallback = false
+						var buffer = new Buffer(work.options.streamFilterReadBytes)
 						fs.open(fname + ".data", 'r', function (err, fd) {
 							fs.read(fd, buffer, 0, work.options.streamFilterReadBytes, work.options.streamFilterReadStart - 1, 
 								function (err, bytesRead, buffer) {
@@ -503,113 +546,114 @@ function stream(source, res) {
 					work.options.streamFilterReadTimeStop !== ""
 					) {
 
+				log.logres("Reading lines of " + fname, work.options, "stream")
 				fs.exists(fname + ".data", function (exists) {
 					if (!exists) {
 						log.logc("Error: .data file does not exist.", 160)
 					}
+					work.finishQueueCallback = function () {createstream(work)}
 					util.readLockFile(fname, work, function (success) {
 						if (!success) {
-							log.logc("Could not lock file.  Try again in 100 ms", 160)
-							setTimeout(function () {createstream(work)}, 100)
 							return
 						}
+						work.finishQueueCallback = false
 						readlines(fname + ".data")
 					})
 				})
 			} else {
-				log.logres("Reading all of " + fname.replace(__dirname+"/cache/",""), work.options, "stream")
+				log.logres("Reading all of " + fname, work.options, "stream")
 				fs.exists(fname + ".data", function (exists) {
 					if (!exists) {
 						log.logc("Error: .data file does not exist.", 160)
 					}
+					work.finishQueueCallback = function () {createstream(work)}
 					util.readLockFile(fname, work, function (success) {
 						if (!success) {
-							log.logc("Could not lock file.  Try again in 100 ms", 160)
-							setTimeout(function () {createstream(work)}, 100)
 							return
 						}
+						work.finishQueueCallback = false
 						// Should be no encoding if streamFilterBinary was given.
-						fs.readFile(fname, "utf8", readcallback);
+						fs.readFile(fname, "utf8", readcallback)
 					})
 				})
 			}
 
-			var outcolumns = [];
-
-			if (work.options.streamFilterReadTimeColumns === "" && work.options.streamFilterReadColumns !== "") {
-				var outcolumnsStr = work.options.streamFilterReadColumns.split(",")
-				for (var z = 0;z < outcolumnsStr.length; z++) {
-					if (lineFormatter !== "") {
-						outcolumns[z] = lineFormatter.columnTranslator(parseInt(outcolumnsStr[z]), work.options)
-					} else {
-						outcolumns[z] = parseInt(outcolumnsStr[z])
-					}
-				}
-				log.logres("outcolumns "+outcolumns.join(","), work.options, "stream")
-			}
-
-			if ((work.options.streamFilterReadTimeColumns === "") && (work.options.streamFilterReadTimeFormat !== "")) {
-				var timecolumnsStr = work.options.streamFilterReadTimeFormat.split(",")
-				log.logres("No ReadTimeColumns given, but ReadTimeFormat given.", work.options, "stream")
-				log.logres("Assuming time columns are first " + timecolumnsStr.length + " columns.", work.options, "stream")
-				var timecolumns = []
-				for (var z = 0;z < timecolumnsStr.length; z++) {
-					timecolumns[z] = z+1
-				}
-				work.options.streamFilterReadTimeColumns = timecolumns.join(",")
-			}
-
-			if (work.options.streamFilterReadColumns !== "") {
-
-				//var re = new RegExp(options.streamFilterReadColumnsDelimiter)
-				var outcolumnsStr = work.options.streamFilterReadColumns.split(/,/);
-
-				log.logres("streamFilterReadColumns          = " + work.options.streamFilterReadColumns, work.options, "stream")
-				log.logres("streamFilterReadLineFormatter    = " + work.options.streamFilterLineFormatter, work.options, "stream")
-
-				for (var z = 0;z < outcolumnsStr.length;z++) {
-					if (outcolumnsStr[z].match("-")) {
-						var start = parseInt(outcolumnsStr[z].split("-")[0]);
-						var stop  = parseInt(outcolumnsStr[z].split("-")[1]);
-						var newstr = start;
-						for (var zz = 1;zz < stop-start+1; zz++) {
-							newstr = newstr + "," +(start+zz);
-						}
-						outcolumnsStr[z] = newstr;
-					}
-				}
-				outcolumnsStr = outcolumnsStr.join(",").split(",");
-				
-				log.logres("streamFilterReadTimeColumns = " + work.options.streamFilterReadTimeColumns, work.options, "stream")
-				log.logres("streamFilterWriteTimeFormat = " + work.options.streamFilterWriteTimeFormat, work.options, "stream")
-				log.logres("outcolumns expanded         = " + outcolumnsStr, work.options, "stream")
-
-				if (lineFormatter !== "") {
-					for (var z = 0;z < outcolumnsStr.length; z++) {
-						outcolumns[z] = lineFormatter.columnTranslator(parseInt(outcolumnsStr[z]), work.options)
-					}
-				} else {
-					for (var z = 0;z < outcolumnsStr.length; z++) {
-						outcolumns[z] = parseInt(outcolumnsStr[z])
-					}				
-				}
-				log.logres("columns translated " + outcolumns.join(","), work.options, "stream")
-
-				function onlyUnique(value, index, self) { 
-					return self.indexOf(value) === index;
-				}
-				
-				outcolumns = outcolumns.filter(onlyUnique);
-
-				if (outcolumns[0] == 1 && work.options.streamFilterWriteTimeFormat == "2") {
-					outcolumns.splice(0,1);
-					outcolumns = [1,2,3,4,5,6].concat(outcolumns);
-				}
-				
-				log.logres("Data columns after accounting for WriteTimeFormat = " + outcolumns.join(","), work.options, "stream")
-			}
-
 			function readlines(fnamefull) {
+
+				var outcolumns = [];
+
+				if (work.options.streamFilterReadTimeColumns === "" && work.options.streamFilterReadColumns !== "") {
+					var outcolumnsStr = work.options.streamFilterReadColumns.split(",")
+					for (var z = 0;z < outcolumnsStr.length; z++) {
+						if (lineFormatter !== "") {
+							outcolumns[z] = lineFormatter.columnTranslator(parseInt(outcolumnsStr[z]), work.options)
+						} else {
+							outcolumns[z] = parseInt(outcolumnsStr[z])
+						}
+					}
+					log.logres("outcolumns "+outcolumns.join(","), work.options, "stream")
+				}
+
+				if ((work.options.streamFilterReadTimeColumns === "") && (work.options.streamFilterReadTimeFormat !== "")) {
+					var timecolumnsStr = work.options.streamFilterReadTimeFormat.split(",")
+					log.logres("No ReadTimeColumns given, but ReadTimeFormat given.", work.options, "stream")
+					log.logres("Assuming time columns are first " + timecolumnsStr.length + " columns.", work.options, "stream")
+					var timecolumns = []
+					for (var z = 0;z < timecolumnsStr.length; z++) {
+						timecolumns[z] = z+1
+					}
+					work.options.streamFilterReadTimeColumns = timecolumns.join(",")
+				}
+
+				if (work.options.streamFilterReadColumns !== "") {
+
+					//var re = new RegExp(options.streamFilterReadColumnsDelimiter)
+					var outcolumnsStr = work.options.streamFilterReadColumns.split(/,/);
+
+					log.logres("streamFilterReadColumns          = " + work.options.streamFilterReadColumns, work.options, "stream")
+					log.logres("streamFilterReadLineFormatter    = " + work.options.streamFilterLineFormatter, work.options, "stream")
+
+					for (var z = 0;z < outcolumnsStr.length;z++) {
+						if (outcolumnsStr[z].match("-")) {
+							var start = parseInt(outcolumnsStr[z].split("-")[0]);
+							var stop  = parseInt(outcolumnsStr[z].split("-")[1]);
+							var newstr = start;
+							for (var zz = 1;zz < stop-start+1; zz++) {
+								newstr = newstr + "," +(start+zz);
+							}
+							outcolumnsStr[z] = newstr;
+						}
+					}
+					outcolumnsStr = outcolumnsStr.join(",").split(",");
+					
+					log.logres("streamFilterReadTimeColumns = " + work.options.streamFilterReadTimeColumns, work.options, "stream")
+					log.logres("streamFilterWriteTimeFormat = " + work.options.streamFilterWriteTimeFormat, work.options, "stream")
+					log.logres("outcolumns expanded         = " + outcolumnsStr, work.options, "stream")
+
+					if (lineFormatter !== "") {
+						for (var z = 0;z < outcolumnsStr.length; z++) {
+							outcolumns[z] = lineFormatter.columnTranslator(parseInt(outcolumnsStr[z]), work.options)
+						}
+					} else {
+						for (var z = 0;z < outcolumnsStr.length; z++) {
+							outcolumns[z] = parseInt(outcolumnsStr[z])
+						}				
+					}
+					log.logres("columns translated " + outcolumns.join(","), work.options, "stream")
+
+					function onlyUnique(value, index, self) { 
+						return self.indexOf(value) === index;
+					}
+					
+					outcolumns = outcolumns.filter(onlyUnique);
+
+					if (outcolumns[0] == 1 && work.options.streamFilterWriteTimeFormat == "2") {
+						outcolumns.splice(0,1);
+						outcolumns = [1,2,3,4,5,6].concat(outcolumns);
+					}
+					
+					log.logres("Data columns after accounting for WriteTimeFormat = " + outcolumns.join(","), work.options, "stream")
+				}
 
 				var line   = ''; 
 				var lines  = ''; // Accumulated lines.
