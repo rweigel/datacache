@@ -41,7 +41,7 @@ exports.process = function (work, callback) {
 		mkdirp(dir, doget)
 	} else {
 
-		log.logc("Looking for .out file.", work.options)
+		log.logres("Looking for .out file.", work.options, "plugin")
 
 		fs.exists(outfile, function (exist) {
 
@@ -174,7 +174,7 @@ exports.process = function (work, callback) {
 							// This should never occur.
 							log.logc("Error when trying to rename .out." + work.id + " file.", 160)
 						} else {
-							log.logres("Renamed .out." + work.id + "file to .out", work.options, "plugin")
+							log.logres("Renamed " + outfiletmp + " to " + outfile, work.options, "plugin")
 							util.writeUnlockFile(outfile.replace(".out",""), work, function () {})
 						}
 					})
@@ -201,7 +201,7 @@ exports.process = function (work, callback) {
 				} else {
 					work.header = response.headers
 					log.logres("Got " + work.url, work.options, "plugin")
-					log.logres("Headers: " + JSON.stringify(response.headers), work.options, "plugin")
+					//log.logres("Headers: " + JSON.stringify(response.headers), work.options, "plugin")
 					if (response.headers["content-encoding"] === "gzip" || response.headers["content-type"] === "application/x-gzip") {
 						log.logres("Content-Type is application/x-gzip", work.options, "plugin")
 					    zlib.gunzip(body, finish)
