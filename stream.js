@@ -355,9 +355,7 @@ function stream(source, res) {
 			function done(work) {
 
 				if (reqstatus[work.res.options.logsig].Nx == reqstatus[work.res.options.logsig].N ) {
-					log.logc("N finished = N and done() called.  Error?", 160)
-					//log.logres("Sending res.end().", work.options, "stream")
-					//res.end()
+					log.logc("N finished = N and done() called for " + work.res.options.logsig + ". logsig duplicate?", 160)
 				}
 
 				log.logres("Done called with work.partnum = " + work.partnum, work.options, "stream")
@@ -373,7 +371,6 @@ function stream(source, res) {
 					log.logres("Sending res.end().", work.options, "stream")
 					res.end()
 				} else {
-					//console.log(work.res.options.streamOrder)
 					if (work.res.options.streamOrder) {
 						queuecheck(work)
 					}

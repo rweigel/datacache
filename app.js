@@ -123,24 +123,25 @@ server.setMaxListeners(0)
 
 process.on('uncaughtException', function(err) {
 	if (err.errno === 'EADDRINUSE') {
-		console.log("[datacache] - Address already in use.")
+		console.error((new Date()).toISOString() + " [datacache] Port " + config.PORT + " already in use")
 	} else {
-		console.log("[datacache] - Uncaught Exception:")
-		console.log(err.stack)
+		console.error(err);
 	}
-	process.exit(1)
+	process.exit(1);
 })
 
-process.on('exit', function () {
-	console.log('[datacache] - Received exit signal.  Removing partially written files.');
-	// TODO: 
-	// Remove partially written files by inspecting cache/locks/*.lck
-	// Remove streaming locks by inspecting cache/locks/*.streaming
-	console.log('[datacache] - Done.  Exiting.')
-})
-process.on('SIGINT', function () {
-	process.exit();
-})
+if (0) {
+	process.on('exit', function () {
+		console.log('[datacache] - Received exit signal.  Removing partially written files.');
+		// TODO: 
+		// Remove partially written files by inspecting cache/locks/*.lck
+		// Remove streaming locks by inspecting cache/locks/*.streaming
+		console.log('[datacache] - Done.  Exiting.')
+	})
+	process.on('SIGINT', function () {
+		process.exit();
+	})
+}
 
 // Create cache dir if it does not exist.
 if (!fs.existsSync(__dirname+"/cache")) {fs.mkdirSync(__dirname+"/cache")}
@@ -165,13 +166,15 @@ app.get("/test/changingfile.txt", function (req,res) {
 	res.send(str)
 })
 
-// Delay serving files to test stream ordering. 
-for (var i = 0;i < 5; i++) {
-	app.get("/test/data-stream/bou2013080"+i+"vmin.min", function (req,res) {
-		setTimeout(function () {
-			res.send(fs.readFileSync("test/data/bou2013080"+i+"vmin.min"))},
-						Math.round(100*Math.random()));
-	})
+if (0) {
+	// Delay serving files to test stream ordering. 
+	for (var i = 0;i < 5; i++) {
+		app.get("/test/data-stream/bou2013080"+i+"vmin.min", function (req,res) {
+			setTimeout(function () {
+				res.send(fs.readFileSync("test/data/bou2013080"+i+"vmin.min"))},
+							Math.round(100*Math.random()));
+		})
+	}
 }
 
 // Rewrite /sync?return=report ... to /report ...
@@ -352,9 +355,10 @@ function handleRequest(req, res) {
 	// Create detailed log file name based on current time, originalUrl, and request IP address
 	var logsig = crypto
 					.createHash("md5")
-					.update((new Date()).toISOString() + ip + req.originalUrl)
+					.update((new Date()).toISOString() + ip + req.originalUrl + Math.random().toString())
 					.digest("hex")
-					.substring(0,4)
+
+//					.substring(0,4) // Use shorter version to make logs easier to read.
 
 	var options = parseOptions(req, res)
 	var source  = parseSource(req, options)
