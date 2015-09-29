@@ -127,6 +127,7 @@ process.on('uncaughtException', function(err) {
 	} else {
 		console.error(err);
 	}
+	fs.writeFileSync('datacache.error', err);
 	process.exit(1);
 })
 
