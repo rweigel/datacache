@@ -125,10 +125,11 @@ process.on('uncaughtException', function(err) {
 	if (err.errno === 'EADDRINUSE') {
 		console.error((new Date()).toISOString() + " [datacache] Port " + config.PORT + " already in use")
 	} else {
-		console.error(err);
+		console.error(err)
 	}
-	fs.writeFileSync('datacache.error', err);
-	process.exit(1);
+	var tmps = ds()
+	fs.appendFileSync('datacache-error-'+tmps.slice(0,-5)+".log", err)
+	process.exit(1)
 })
 
 if (0) {
