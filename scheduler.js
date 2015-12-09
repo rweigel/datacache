@@ -16,7 +16,7 @@ function addURLs(source, res, callback){
 	callback = callback || function () {}
 	var finished = []
 	source.forEach(function (url, partnum) {
-		addURL(url, res.options, partnum, function (work) {
+		addURL(url, partnum, res, function (work) {
 			finished.push(work)
 			if (finished.length == source.length) {
 				finished.sort(function (a,b) {
@@ -145,6 +145,13 @@ function work2result(work) {
 
 	work.work2ResultStartTime = new Date()
 
+	delete work.res
+	delete work.body
+
+	if (!work.options.includeData) {
+		delete work.data
+	}
+
 	if (work.options.includeMeta) {
 		if (!work.hasOwnProperty("meta")) {
 			work["meta"] = {}
@@ -164,6 +171,7 @@ function work2result(work) {
 
 	work.work2ResultFinishedTime = new Date()
 	work.jobFinishedTime = new Date()
+
 	return work
 }
 

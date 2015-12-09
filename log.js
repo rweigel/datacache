@@ -47,7 +47,6 @@ function logc(str, options) {
 		var color = options.logcolor || 0
 	}
 	var sig    = options.logsig
-	var appstr = options.appname || ""
 
 	if (!logc.timers) logc.timers = {}
 	if (!logc.timers[sig]) logc.timers[sig] = (new Date()).getTime()
@@ -61,57 +60,65 @@ function logc(str, options) {
 	if (dt < 100 && dt > 9) {dtp = " "}
 
 	var msgfn = clc.xterm(color)
-	console.log(appstr + msgfn(dtp + dt + " " + str))
+	console.log(msgfn(dtp + dt + " " + str))
 }
 exports.logc = logc
 
-// Log request information to file
+// Log request information to file and console
 function logres(message, options, context) {
-
-	var re1 = new RegExp(__dirname+"/cache/","g")
-	var re2 = new RegExp(__dirname+"/","g")
-	message = message.replace(re1,"").replace(re2,"");
-
-	if (!context) context = "main"
-	
-	var logtofile    = options.debug[context]
-	var logtoconsole = options.debug["console"]
-
-	if (!logtofile && !logtoconsole) return
-
-	//var stack = new Error().stack
-	//console.log( stack.split("\n") )
 
 	if (!options) {
 		console.error("logres() function requires two arguments.")
 	}
+
+	// Quick exit.
+	if (options.debug["tofile"]["torf"] == false 
+		&& options.debug["toconsole"]["torf"] == false)
+			return
+
+	var logtofile    = options.debug["tofile"].hasOwnProperty(context) || options.debug["tofile"]["all"]
+	var logtoconsole = options.debug["toconsole"].hasOwnProperty(context) || options.debug["toconsole"]["all"]
+
+	var re1 = new RegExp(__dirname+"/cache/","g")
+	var re2 = new RegExp(__dirname+"/","g")
+	message = message.replace(re1,"").replace(re2,"");
 
 	// Extract calling function name.
 	var tmp = arguments.callee.caller
 					.toString()
 					.match(/function ([^\(]+)/) || ''
 
+	var caller = "main()"
 	if (tmp.length > 1) {
-		context = tmp[1]
+		caller = tmp[1] + "()"
 	}
 
-	var pn = ""
+	var pn = "."
 	if (typeof(options.partnum) === "number") {
 		pn = " p" + (options.partnum + 1)
 	}
-	var id = ""
+	var id = "."
 	if (options.workerid > 0) {
-		id = "w" + options.workerid + " "
+		id = "w" + options.workerid
 	}
+
+	var appstr = ""
+	if (options.config)
+		appstr = options.config.APPNAME
+	
+	context = context || "."
+
 	if (logtoconsole) {
-		logc(id + options.logsig + pn + " " + context + ": " + message, options)
+		appstr = "["+appstr+"]"
+		message = appstr + " " + id + " " + options.logsig + " " + pn + " " + context + " " + caller + ": " + message
+		logc(message.replace(/ \. /g," "), options)
 	}
 
 	if (!logtofile) return
 
 	var entry = (new Date()).toISOString() 
 					+ ","
-					+ context
+					+ caller
 					+ "," 
 					+ message + "\n"
 

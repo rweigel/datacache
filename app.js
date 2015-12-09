@@ -14,21 +14,15 @@ var clc      = require('cli-color')
 var argv     = require('yargs')
 					.default({
 						'port': "7999",
-						'debugall': "false",
-						'debugconsole': "false",
-						'debugapp': "false",
-						'debugutil': "false",
-						'debugstream': "false",
-						'debugplugin': "false",
-						'debugtemplate': "false",
-						'debugscheduler': "false",
-						'debuglineformatter': "false",
-						'debuglinefilter': "false"
+						'debugtoconsole': "",
+						'debugtofile': "",
+						'datacacheargs': ""
 					})
 					.argv
 
+var debugs = 'all,app,util,stream,plugin,template,scheduler,lineformatter,linefilter'
 if (argv.help || argv.h) {
-	console.log("Usage: node app.js [--port=number --debug{all,app,util,stream,plugin,template,scheduler,lineformatter}=true]")
+	console.log("Usage: node app.js [--port number --debugto{file,console} '"+debugs+"']")
 	return
 }
 
@@ -36,15 +30,24 @@ function s2b(str) {if (str === "true") {return true} else {return false}}
 function s2i(str) {return parseInt(str)}
 
 var debug = {}
-for (key in argv) {
-	if (key.search(/^debug/) != -1) {
-		key2 = key.replace('debug',"")
-		if (argv.debugall == "true") {
-			debug[key2] = true
-		} else {
-			debug[key2] = s2b(argv[key])
-		}
-	}			
+debug["tofile"] = {};
+var tmpa = argv.debugtofile.split(",")
+for (var i = 0; i < tmpa.length; i++) {
+	if (tmpa[i] !== "") debug["tofile"][tmpa[i]] = true
+}
+debug["tofile"]["torf"] = false
+if (Object.keys(debug["tofile"]).length > 0) {
+	debug["tofile"]["torf"] = true
+}
+
+debug["toconsole"] = {};
+var tmpb = argv.debugtoconsole.split(",")
+for (var i = 0; i < tmpb.length; i++) {
+	if (tmpb[i] !== "") debug["toconsole"][tmpb[i]] = true
+}
+debug["toconsole"]["torf"] = false
+if (Object.keys(debug["toconsole"]).length > 0) {
+	debug["tofile"]["torf"] = true
 }
 
 config = {}
@@ -125,9 +128,11 @@ process.on('uncaughtException', function(err) {
 	if (err.errno === 'EADDRINUSE') {
 		console.error((new Date()).toISOString() + " [datacache] Port " + config.PORT + " already in use")
 	} else {
-		console.error(err)
+		var stack = new Error().stack
+		console.log(stack)
+		console.log(err)
 	}
-	var tmps = ds()
+	var tmps = (new Date()).toISOString()
 	fs.appendFileSync('datacache-error-'+tmps.slice(0,-5)+".log", err)
 	process.exit(1)
 })
@@ -290,35 +295,33 @@ function syncSummary(source, res) {
 			ret[j] = source[j]
 		}
 		res.send(ret.join("\n"));
-		
+		return
 	}
-	return
 	
-	scheduler.addURLs(source, options, function (results) {
-
+	scheduler.addURLs(source, res, function (results) {
 		// TODO: If forceUpdate=true and all updates failed, give error
 		// with message that no updates could be performed.
-		if (options.debugappconsole) {
-			log.logres("app.syncSummary(): scheduler.addURLs() callback.  Sending result.", options.logcolor)
+		if (res.options.debugappconsole) {
+			log.logres("app.syncSummary(): scheduler.addURLs() callback.  Sending result.", res.options)
 		}
-		if (options.return === "json") {
+		if (res.options.return === "json") {
 			res.contentType('application/json');
 			res.send(results);
-		} else if (options.return === "urilistflat") {
+		} else if (res.options.return === "urilistflat") {
 			res.contentType("text/plain");
 			var ret = [];
 			for (var j = 0; j < results.length; j++) {
 				ret[j] = results[j].url;
 			}
 			res.send(ret.join("\n"));
-		} else if (options.return === "urilist") {
+		} else if (res.options.return === "urilist") {
 			res.contentType("text/json");
 			var ret = [];
 			for (var j = 0; j < results.length; j++) {
 				ret[j] = results[j].url;
 			}
 			res.send(JSON.stringify(ret));
-		} else if (options.return === "xml") {
+		} else if (res.options.return === "xml") {
 			res.contentType("text/xml");
 			var ret = '<array>';
 			for (var j = 0; j < results.length; j++) {
@@ -326,14 +329,13 @@ function syncSummary(source, res) {
 			}
 			ret = ret + "</array>";
 			res.send(ret);
-		} else if (options.return === "jsons") {
+		} else if (res.options.return === "jsons") {
 			res.contentType('application/json');
 			res.send(JSON.stringify(results));			
 		} else {
 			console.log("Unknown option for return.");
 			res.send("");
-		}
-	})
+		}	})
 }
 
 function handleRequest(req, res) {
@@ -358,9 +360,7 @@ function handleRequest(req, res) {
 	var logsig = crypto
 					.createHash("md5")
 					.update((new Date()).toISOString() + ip + req.originalUrl + Math.random().toString())
-					.digest("hex")
-
-//					.substring(0,4) // Use shorter version to make logs easier to read.
+					.digest("hex")//.substring(0,4) // Use shorter version to make logs easier to read.
 
 	var options = parseOptions(req, res)
 	var source  = parseSource(req, options)
@@ -371,7 +371,10 @@ function handleRequest(req, res) {
 	res.options.logcolor    = Math.round(255*parseFloat(Math.random().toString().substring(1)));
 	res.options.logsig      = logsig
 	res.options.workerid    = workerid
+	res.options.debug       = debug
 
+	res.options.config = config
+	
 	log.logapp(ip + " " + logsig + " " + req.originalUrl, config, "app")
 				
 	if (0) {//if (argv.debugapp) {
@@ -459,26 +462,6 @@ function parseOptions(req) {
 		options.timeRangeExpanded = expandISO8601Duration(options.timeRange,{debug:options.debugtemplate})
 	} else {
 		options.timeRangeExpanded = options.timeRange
-	}
-
-	options.debug = {}
-
-	options.debug["app"]       = req.query.debugapp       || req.body.debugapp
-	options.debug["stream"]    = req.query.debugstream    || req.body.debugstream
-	options.debug["util"]      = req.query.debugutil      || req.body.debugutil
-	options.debug["plugin"]    = req.query.debugplugin    || req.body.debugplugin
-	options.debug["template"]  = req.query.debugtemplate  || req.body.debugtemplate
-	options.debug["scheduler"] = req.query.debugscheduler || req.body.debugscheduler
-
-	options.debug["lineformatter"] = s2b(req.query.debuglineformatter || req.body.debuglineformatter)
-
-	// Over-ride true debug option if command line debug option is not true.
-	for (key in debug) {
-		if (debug[key] && options.debug[key] === "true") {
-			options.debug[key] = true
-		} else {
-			options.debug[key] = debug[key]
-		}
 	}
 
 	// Stream options

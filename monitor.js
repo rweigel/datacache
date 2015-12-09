@@ -10,7 +10,7 @@ function init(config) {
 		var tmp = new Date()
 		mem = process.memoryUsage()
 		var yyyymmdd = tmp.toISOString().substring(0,10)
-		var file = config.LOGDIR + "memory/datacache_" + config.port + "_memory_"+yyyymmdd+".log"
+		var file = config.LOGDIR + "memory/datacache_" + config.PORT + "_memory_"+yyyymmdd+".log"
 		fs.appendFile(file, tmp.toISOString() + " " + mem.rss + " " + mem.heapTotal + " " + mem.heapUsed + " " + Nopen + "\n")
 	},1000)
 

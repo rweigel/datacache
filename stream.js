@@ -90,14 +90,12 @@ function stream(source, res) {
 						+ streamsignature
 	var streamfilecat = streamdir + ".stream.gz"
 	
-	if (res.options.debugstream) {
-		if (!fs.existsSync(streamfilecat)) {
-			log.logres("streamfilecat does not exist: " 
-						+ streamfilecat, res.options, "stream")
-		} else {
-			log.logres("streamfilecat exists at " 
-						+ streamfilecat, res.options, "stream")
-		}
+	if (!fs.existsSync(streamfilecat)) {
+		log.logres("streamfilecat does not exist: " 
+					+ streamfilecat, res.options, "stream")
+	} else {
+		log.logres("streamfilecat exists at " 
+					+ streamfilecat, res.options, "stream")
 	}
 
 	if (fs.existsSync(streamfilecat) && !res.options.forceWrite && !res.options.forceUpdate) {
@@ -257,20 +255,20 @@ function stream(source, res) {
 			}
 
 			if (work.errorcode == 500) {
-				if (reqstatus[work.res.options.logsig].aborted) {
+				if (reqstatus[work.options.logsig].aborted) {
 					// TODO: Remove running works with this logsig?
 					log.logres("500 error already sent.", work.options, "stream")
 					return
 				} else {
 					log.logres("Sending 500 error.", work.options, "stream")
-					reqstatus[work.res.options.logsig].aborted = true
+					reqstatus[work.options.logsig].aborted = true
 					res.send(500, { error: msg })
 					return
 				}
 			} 
 
-			var so = work.res.options.streamOrder
-			if (!so || reqstatus[work.res.options.logsig].lastsent == work.partnum - 1) {
+			var so = work.options.streamOrder
+			if (!so || reqstatus[work.options.logsig].lastsent == work.partnum - 1) {
 				log.logres("Sending part " + (work.partnum+1) + " immediately.",
 							work.options, "stream")
 
@@ -282,36 +280,37 @@ function stream(source, res) {
 					// http://stackoverflow.com/questions/17009975/how-to-test-if-an-object-is-a-stream-in-nodejs
 					data.on('end', 
 							function () {
-								reqstatus[work.res.options.logsig].writequeue[work.partnum] = null
-								reqstatus[work.res.options.logsig].lastsent = work.partnum
+								reqstatus[work.options.logsig].writequeue[work.partnum] = null
+								reqstatus[work.options.logsig].lastsent = work.partnum
 								done(work)
 							}) 
 					data.pipe(res, {end: false})
 				} else {
 					if (data.length == 0) {
-						reqstatus[work.res.options.logsig].writequeue[work.partnum] = null
-						reqstatus[work.res.options.logsig].lastsent = work.partnum
+						reqstatus[work.options.logsig].writequeue[work.partnum] = null
+						reqstatus[work.options.logsig].lastsent = work.partnum
 						done(work)						
 					} else {
 						res.write(data,
 							function (err) {
 								if (err) console.log(err)
-								reqstatus[work.res.options.logsig].writequeue[work.partnum] = null
-								reqstatus[work.res.options.logsig].lastsent = work.partnum
+								reqstatus[work.options.logsig].writequeue[work.partnum] = null
+								reqstatus[work.options.logsig].lastsent = work.partnum
 								done(work)
 							})
 					}
 				}
 			} else {
+
 				log.logres("Queuing " + (work.partnum+1), work.options, "stream")
 				work.data = data
-				reqstatus[work.res.options.logsig].writequeue[work.partnum] = work
+				reqstatus[work.options.logsig].writequeue[work.partnum] = work
 			}
 
 			function queuecheck(lastwork) {
 
 				var pn     = lastwork.partnum + 1
-				var logsig = lastwork.res.options.logsig
+				var logsig = lastwork.options.logsig
 
 				var work   = reqstatus[logsig].writequeue[pn]
 
@@ -329,22 +328,22 @@ function stream(source, res) {
 				if (typeof(work.data) === "object" && !(work.data instanceof Buffer)) {
 					work.data.on('end', 
 						function () {
-							reqstatus[work.res.options.logsig].writequeue[pn] = null
-							reqstatus[work.res.options.logsig].lastsent = pn
+							reqstatus[work.options.logsig].writequeue[pn] = null
+							reqstatus[work.options.logsig].lastsent = pn
 							done(work)
 						}) 
 					work.data.pipe(res, {end: false})
 				} else {
 					if (work.data.length == 0) {
-							reqstatus[work.res.options.logsig].writequeue[pn] = null
-							reqstatus[work.res.options.logsig].lastsent = pn
+							reqstatus[work.options.logsig].writequeue[pn] = null
+							reqstatus[work.options.logsig].lastsent = pn
 							done(work)						
 					} else {
 						//console.log(data.split("\n")[0])
 						res.write(work.data,
 							function () {
-								reqstatus[work.res.options.logsig].writequeue[pn] = null
-								reqstatus[work.res.options.logsig].lastsent = pn
+								reqstatus[work.options.logsig].writequeue[pn] = null
+								reqstatus[work.options.logsig].lastsent = pn
 								done(work)
 							}
 						)
@@ -354,24 +353,24 @@ function stream(source, res) {
 
 			function done(work) {
 
-				if (reqstatus[work.res.options.logsig].Nx == reqstatus[work.res.options.logsig].N ) {
-					log.logc("N finished = N and done() called for " + work.res.options.logsig + ". logsig duplicate?", 160)
+				if (reqstatus[work.options.logsig].Nx == reqstatus[work.options.logsig].N ) {
+					log.logc("N finished = N and done() called for " + work.options.logsig + ". logsig duplicate?", 160)
 				}
 
 				log.logres("Done called with work.partnum = " + work.partnum, work.options, "stream")
 
 				log.logres("Incremening N finished from " 
-							+ reqstatus[work.res.options.logsig].Nx + "/" + reqstatus[work.res.options.logsig].N 
+							+ reqstatus[work.options.logsig].Nx + "/" + reqstatus[work.options.logsig].N 
 							+ " to " 
-							+ (reqstatus[work.res.options.logsig].Nx+1) + "/" + reqstatus[work.res.options.logsig].N, 
+							+ (reqstatus[work.options.logsig].Nx+1) + "/" + reqstatus[work.options.logsig].N, 
 							work.options, "stream")
-				reqstatus[work.res.options.logsig].Nx = reqstatus[work.res.options.logsig].Nx + 1
+				reqstatus[work.options.logsig].Nx = reqstatus[work.options.logsig].Nx + 1
 
-				if (reqstatus[work.res.options.logsig].N == reqstatus[work.res.options.logsig].Nx) {
+				if (reqstatus[work.options.logsig].N == reqstatus[work.options.logsig].Nx) {
 					log.logres("Sending res.end().", work.options, "stream")
 					res.end()
 				} else {
-					if (work.res.options.streamOrder) {
+					if (work.options.streamOrder) {
 						queuecheck(work)
 					}
 				}
@@ -405,15 +404,15 @@ function stream(source, res) {
 						fs.writeFile(streamfilepart, data, function (err) {
 							log.logres("Wrote " + streamfilepart, work.options, "stream")
 							log.logres("Incremening Nc from " 
-										+ reqstatus[work.res.options.logsig].Nc + "/" + reqstatus[work.res.options.logsig].N 
+										+ reqstatus[work.options.logsig].Nc + "/" + reqstatus[work.options.logsig].N 
 										+ " to " 
-										+ (reqstatus[work.res.options.logsig].Nc+1) + "/" + reqstatus[work.res.options.logsig].N, 
+										+ (reqstatus[work.options.logsig].Nc+1) + "/" + reqstatus[work.options.logsig].N, 
 										work.options, "stream")
-							reqstatus[work.res.options.logsig].Nc = reqstatus[work.res.options.logsig].Nc + 1
+							reqstatus[work.options.logsig].Nc = reqstatus[work.options.logsig].Nc + 1
 
 							util.writeUnlockFile(streamdir, work, function () {
 								util.writeUnlockFile(streamfilepart, work, function () {
-									if (reqstatus[work.res.options.logsig].Nc == reqstatus[work.res.options.logsig].N) {
+									if (reqstatus[work.options.logsig].Nc == reqstatus[work.options.logsig].N) {
 										catstreamparts()
 									}
 								})
@@ -486,7 +485,6 @@ function stream(source, res) {
 											+ " " 
 											+ streamsignature 
 											+ ".stream.gz;"
-											
 							log.logres("Evaluating " + com, work.options, "stream")
 							child = exec(com, function (error, stdout, stderr) {
 								log.logres("Evaluated  " + com, work.options, "stream")
@@ -867,13 +865,13 @@ function stream(source, res) {
 							var tic = new Date()
 							zlib.createGzip({level: 1})
 							zlib.gzip(data, function (err, buffer) {
-								reqstatus[work.res.options.logsig].dt = new Date()-tic
+								reqstatus[work.options.logsig].dt = new Date()-tic
 
 								log.logres("gzip callback event", work.options, "stream")
 								log.logres("Writing compressed buffer", work.options, "stream")
 
 								finish(work, buffer)
-								reqstatus[work.res.options.logsig].gzipping = reqstatus[work.res.options.logsig].gzipping - 1
+								reqstatus[work.options.logsig].gzipping = reqstatus[work.options.logsig].gzipping - 1
 								cachestreampart(streamfilepart, buffer)								
 							})
 						}
