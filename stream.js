@@ -392,7 +392,7 @@ function stream(source, res) {
 				work.finishQueueCallback = false
 				util.writeLockFile(streamdir, work, function (success) {
 					if (!success) {
-						log.logres("Could not lock streamdir.", work.options, "stream")
+						log.logres("Could not write lock " + streamdir, work.options, "stream")
 						return							
 					}
 					util.writeLockFile(streamfilepart, work, function (success) {
@@ -429,7 +429,7 @@ function stream(source, res) {
 
 			var files = fs.readdirSync(streamdir)
 
-			log.logres("Found " + files.length + " files", res.options, "stream")
+			log.logres("Found " + files.length + " file(s)", res.options, "stream")
 
 			if (files.length != N) {
 				log.logres("Not creating concatenated gzip stream file."
@@ -474,6 +474,7 @@ function stream(source, res) {
 						function (exists) {
 							if (exists) {
 								log.logres("Symlink from single stream part to cat file exists.  Not re-creating", work.options, "stream")
+								util.writeUnlockFile(streamdir, work, function () {})
 								return
 							}
 
@@ -493,7 +494,7 @@ function stream(source, res) {
 								}
 								if (stderr) {
 									log.logc(stderr, 160)
-								}				
+								}
 								util.writeUnlockFile(streamdir, work, function () {})
 							})
 						}
