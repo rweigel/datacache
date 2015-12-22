@@ -285,7 +285,6 @@ exports.process = function (work, callback) {
 					});
 			})
 			.on("error", function(e){
-
 				if (!e.toString().match("No transfer timeout")) {
 					// FTP servers send this "error" if no tranfer after a certain amount of time.
 					// It is really just a signal to close the connection.
@@ -298,7 +297,13 @@ exports.process = function (work, callback) {
 			})
 			conn.connect({host: host})
 		} else {
-			log.logc(" default.js: Error.  Protocol" + work.url.replace(/^(.*)\:.*/,"$1") + " is not supported.", 160)
+			// TODO: Don't retry
+			var msg = " URL must start with http or ftp."
+			//log.logc(" default.js: Error. " + msg, 160)
+			work.abort = true
+			work.error = msg
+			callback(true, work)
+			return
 		}
 	}
 
