@@ -105,7 +105,7 @@ function stream(source, res) {
 		var patch = parseInt(vera[2])
 		log.logres("Node.js version: " + process.version, res.options, "stream")
 		if (minor < 12 || (minor == 12 && patch < 7)) {
-			log.logres("Ignoring existing streamfilecat because of bug "
+			log.logres("Ignoring existing streamfilecat because of bug"
 						+ " in node.js < 12.7 with concateneated gzip files",
 						  res.options, "stream")
 		} else {
@@ -369,6 +369,7 @@ function stream(source, res) {
 				if (reqstatus[work.options.logsig].N == reqstatus[work.options.logsig].Nx) {
 					log.logres("Sending res.end().", work.options, "stream")
 					res.end()
+					catstreamparts()
 				} else {
 					if (work.options.streamOrder) {
 						queuecheck(work)
