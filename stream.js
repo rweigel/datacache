@@ -173,6 +173,7 @@ function stream(source, res) {
 			log.logres("work.error = " + work.error 
 					+ " and no cached data. Calling finish().",
 					   work.options, "stream")
+			reqstatus[work.options.logsig].Nc = reqstatus[work.options.logsig].Nc + 1
 			finish(work,"")
 			return
 		}
@@ -192,7 +193,6 @@ function stream(source, res) {
 		var ps = str.substring(1,1+n-npad-1) + Np
 				
 		var streamfilepart = streamdir + "/" + ps + "." + work.urlMd5 + ".stream.gz"
-		
 
 		if (!fs.existsSync(streamfilepart)) {
 			log.logres("Stream file part does not exist.", work.options, "stream")
@@ -209,35 +209,59 @@ function stream(source, res) {
 			createstream(work)
 		} else {
 			log.logres("Using cached stream file part.", work.options, "stream")
-			util.readLockFile(streamfilepart, work, function (success) {
+
+			util.readLockFile(streamdir, work, function (success) {
 				if (!success) {
-					log.logres("Failed to read lock cached stream file part."
+					log.logres("Failed to read lock stream file part directory."
 								+ "  Recreating stream.", work.options, "stream")
 					createstream(work)
+					return							
+				}
+				util.readLockFile(streamfilepart, work, function (success) {
+					if (!success) {
+						log.logres("Failed to read lock cached stream file part."
+									+ "  Recreating stream.", work.options, "stream")
+						createstream(work)
+						return
+					}
+					if (options.streamGzip == false) {
+						log.logres("Unzipping it.", work.options, "stream")
+						var streamer = fs
+										.createReadStream(streamfilepart)
+										.pipe(zlib.createGunzip())
+					} else {
+						log.logres("Sending raw.", work.options, "stream")
+						var streamer = fs.createReadStream(streamfilepart)
+					}
+					streamer.on('end',function() {
+						log.logres("Received streamer.on end event.",
+									work.options, "stream")
+						util.readUnlockFile(streamfilepart, work, function () {
+							util.readUnlockFile(streamdir, work, function () {
+								log.logres("Incremening Nc from " 
+											+ reqstatus[work.options.logsig].Nc + "/" + reqstatus[work.options.logsig].N 
+											+ " to " 
+											+ (reqstatus[work.options.logsig].Nc+1) + "/" + reqstatus[work.options.logsig].N, 
+											work.options, "stream")
+								reqstatus[work.options.logsig].Nc = reqstatus[work.options.logsig].Nc + 1
+								if (reqstatus[work.options.logsig].Nc == reqstatus[work.options.logsig].N) {
+									// Note that this is only executed if no errors
+									// and no cached files were used as a part of the stream.
+									catstreamparts()
+								}
+							})
+						})
+					})
+					streamer.on('error',function (err) {
+						log.logc("streamer error event: " + JSON.stringify(err), 160)
+						util.readUnlockFile(streamfilepart, work, function () {
+							util.readUnlockFile(streamdir, work, function () {})
+						})
+					})
+					log.logres("Streaming it.", work.options, "stream")
+					finish(work, streamer)
 					return
-				}
-				if (options.streamGzip == false) {
-					log.logres("Unzipping it.", work.options, "stream")
-					var streamer = fs
-									.createReadStream(streamfilepart)
-									.pipe(zlib.createGunzip())
-				} else {
-					log.logres("Sending raw.", work.options, "stream")
-					var streamer = fs.createReadStream(streamfilepart)
-				}
-				streamer.on('end',function() {
-					log.logres("Received streamer.on end event.",
-								work.options, "stream")
-					util.readUnlockFile(streamfilepart, work, function () {})
 				})
-				streamer.on('error',function (err) {
-					log.logc("streamer error event: " 
-								+ JSON.stringify(err), 160)
-					util.readUnlockFile(streamfilepart, work, function () {})
-				})
-				log.logres("Streaming it.", work.options, "stream")
-				finish(work, streamer)
-				return
 			})
 		}
 
@@ -369,7 +393,6 @@ function stream(source, res) {
 				if (reqstatus[work.options.logsig].N == reqstatus[work.options.logsig].Nx) {
 					log.logres("Sending res.end().", work.options, "stream")
 					res.end()
-					catstreamparts()
 				} else {
 					if (work.options.streamOrder) {
 						queuecheck(work)
@@ -398,21 +421,22 @@ function stream(source, res) {
 					}
 					util.writeLockFile(streamfilepart, work, function (success) {
 						if (!success) {
-							log.logres("Could not lock streamfilepart file.", work.options, "stream")
-							util.writeUnlockFile(streamdir, work, function () {});
+							log.logres("Could write not lock streamfilepart file.", work.options, "stream")
+							util.writeUnlockFile(streamdir, work, function () {
+							})
 							return							
 						}
 						fs.writeFile(streamfilepart, data, function (err) {
-							log.logres("Wrote " + streamfilepart, work.options, "stream")
-							log.logres("Incremening Nc from " 
-										+ reqstatus[work.options.logsig].Nc + "/" + reqstatus[work.options.logsig].N 
-										+ " to " 
-										+ (reqstatus[work.options.logsig].Nc+1) + "/" + reqstatus[work.options.logsig].N, 
-										work.options, "stream")
-							reqstatus[work.options.logsig].Nc = reqstatus[work.options.logsig].Nc + 1
-
 							util.writeUnlockFile(streamdir, work, function () {
 								util.writeUnlockFile(streamfilepart, work, function () {
+									log.logres("Wrote " + streamfilepart, work.options, "stream")
+									log.logres("Incremening Nc from " 
+												+ reqstatus[work.options.logsig].Nc + "/" + reqstatus[work.options.logsig].N 
+												+ " to " 
+												+ (reqstatus[work.options.logsig].Nc+1) + "/" + reqstatus[work.options.logsig].N, 
+												work.options, "stream")
+									reqstatus[work.options.logsig].Nc = reqstatus[work.options.logsig].Nc + 1
+
 									if (reqstatus[work.options.logsig].Nc == reqstatus[work.options.logsig].N) {
 										catstreamparts()
 									}
@@ -426,82 +450,95 @@ function stream(source, res) {
 
 		function catstreamparts() {
 
+			// TODO: Remove this code and pipe output sent to response to stream
+			// file.  I think this code is here because of bug in early versions
+			// of node.js that did not properly handle concatenation of multiple
+			// gzip files.
 			log.logres("Reading dir " + streamdir, res.options, "stream")
 
-			var files = fs.readdirSync(streamdir)
+			var files = fs.readdir(streamdir, docat)
 
-			log.logres("Found " + files.length + " file(s)", res.options, "stream")
+			function docat(err, files) {
 
-			if (files.length != N) {
-				log.logres("Not creating concatenated gzip stream file."
-							+ " Did not find " + N + " files."
-							, res.options, "stream")
-				return
-			}
-
-			work.finishQueueCallback = false
-			work.options.partnum = ""
-			util.writeLockFile(streamdir, work, function (success) {
-				if (files.length > 1) {
-					log.logres("Concatenating " 
-									+ files.length 
-									+ " stream parts into " 
-									+ streamsignature 
-									+ ".stream.gz"
-									, res.options, "stream")
-
-					var com = "cd " + streamdir 
-									+ "; cat " 
-									+ files.join(" ") 
-									+ " > ../" 
-									+ streamsignature 
-									+ ".stream.gz;"
-
-					log.logres("Evaluating: " + com, res.options, "stream")
-					child = exec(com, function (error, stdout, stderr) {
-						log.logres("Evaluated: " + com, res.options, "stream")
-						if (error) {
-							log.logres("Error: " + JSON.stringify(error),
-											res.options, "stream")
-						}	
-						if (stderr) {
-							log.logres("Error: " + JSON.stringify(error),
-											res.options, "stream")
-						}
-						util.writeUnlockFile(streamdir, work, function () {})
-					})
-				} else {
-					fs.exists(streamdir + "/../" + streamsignature + ".stream.gz",
-						function (exists) {
-							if (exists) {
-								log.logres("Symlink from single stream part to cat file exists.  Not re-creating", work.options, "stream")
-								util.writeUnlockFile(streamdir, work, function () {})
-								return
-							}
-
-							var com = "cd " + streamdir 
-											+ "/.. ; ln -s " 
-											+ streamsignature 
-											+ "/" 
-											+ files[0] 
-											+ " " 
-											+ streamsignature 
-											+ ".stream.gz;"
-							log.logres("Evaluating " + com, work.options, "stream")
-							child = exec(com, function (error, stdout, stderr) {
-								log.logres("Evaluated  " + com, work.options, "stream")
-								if (error) {
-									log.logc("Error: " + JSON.stringify(error), 160)
-								}
-								if (stderr) {
-									log.logc(stderr, 160)
-								}
-								util.writeUnlockFile(streamdir, work, function () {})
-							})
-						}
-					)
+				if (err) {
+					log.logres("Not creating concatenated gzip stream file."
+								+ " Did not find directory " + streamdir + "."
+								, res.options, "stream")
+					return
 				}
-			})
+				log.logres("Found " + files.length + " file(s)", res.options, "stream")
+
+				if (files.length != N) {
+					log.logres("Not creating concatenated gzip stream file."
+								+ " Did not find " + N + " files."
+								, res.options, "stream")
+					return
+				}
+
+				work.finishQueueCallback = false
+				work.options.partnum = ""
+				util.writeLockFile(streamdir, work, function (success) {
+					if (files.length > 1) {
+						log.logres("Concatenating " 
+										+ files.length 
+										+ " stream parts into " 
+										+ streamsignature 
+										+ ".stream.gz"
+										, res.options, "stream")
+
+						var com = "cd " + streamdir 
+										+ "; cat " 
+										+ files.join(" ") 
+										+ " > ../" 
+										+ streamsignature 
+										+ ".stream.gz;"
+
+						log.logres("Evaluating: " + com, res.options, "stream")
+						child = exec(com, function (error, stdout, stderr) {
+							log.logres("Evaluated: " + com, res.options, "stream")
+							if (error) {
+								log.logres("Error: " + JSON.stringify(error),
+												res.options, "stream")
+							}	
+							if (stderr) {
+								log.logres("Error: " + JSON.stringify(error),
+												res.options, "stream")
+							}
+							util.writeUnlockFile(streamdir, work, function () {})
+						})
+					} else {
+						fs.exists(streamdir + "/../" + streamsignature + ".stream.gz",
+							function (exists) {
+								if (exists) {
+									log.logres("Symlink from single stream part to cat file exists.  Not re-creating", work.options, "stream")
+									util.writeUnlockFile(streamdir, work, function () {})
+									return
+								}
+
+								var com = "cd " + streamdir 
+												+ "/.. ; ln -s " 
+												+ streamsignature 
+												+ "/" 
+												+ files[0] 
+												+ " " 
+												+ streamsignature 
+												+ ".stream.gz;"
+								log.logres("Evaluating " + com, work.options, "stream")
+								child = exec(com, function (error, stdout, stderr) {
+									log.logres("Evaluated  " + com, work.options, "stream")
+									if (error) {
+										log.logc("Error: " + JSON.stringify(error), 160)
+									}
+									if (stderr) {
+										log.logc(stderr, 160)
+									}
+									util.writeUnlockFile(streamdir, work, function () {})
+								})
+							}
+						)
+					}
+				})
+			}
 		}
 
 		function createstream(work) {
@@ -827,18 +864,19 @@ function stream(source, res) {
 
 				if (work.options.streamFilter === "") {
 					log.logres("Writing response.", work.options, "stream")
-
-
 					log.logres("Uncompressed buffer has length = " + data.length, work.options, "stream")
 					if (!work.options.streamGzip) {
 						log.logres("Calling finish with uncompressed buffer.", work.options, "stream")
 						//res.write(data)
 						finish(work, data)
+						log.logres("Compressing buffer.", work.options, "stream")
 						zlib.createGzip({level: 1})
 						zlib.gzip(data, function (err, buffer) {
 							if (err) {
 								log.logc("gzip error: " + JSON.stringify(err), 160)
 							}
+							log.logres("Done compressing buffer.", work.options, "stream")
+							log.logres("Calling cachestreampart()", work.options, "stream")
 							cachestreampart(streamfilepart, buffer)
 						})
 					} else {

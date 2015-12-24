@@ -224,7 +224,7 @@ var isCached = function isCached(work, callback) {
 				}
 			} else {
 				log.logres("Not doing head check because"
-							+ "respectHeaders = false && forceUpdate = true", work.options, "util")
+							+ " respectHeaders = false && forceUpdate = true", work.options, "util")
 				callback(work)
 			}
 		}
