@@ -629,7 +629,11 @@ function stream(source, res) {
 				}
 
 				if ((work.options.streamFilterReadTimeColumns === "") && (work.options.streamFilterReadTimeFormat !== "")) {
-					var timecolumnsStr = work.options.streamFilterReadTimeFormat.split(",")
+					if (work.options.streamFilterReadTimeFormat.match(",")) {
+						var timecolumnsStr = work.options.streamFilterReadTimeFormat.split(",")
+					} else {
+						var timecolumnsStr = work.options.streamFilterReadTimeFormat.split(" ")
+					}
 					log.logres("No ReadTimeColumns given, but ReadTimeFormat given.", work.options, "stream")
 					log.logres("Assuming time columns are first " + timecolumnsStr.length + " columns.", work.options, "stream")
 					var timecolumns = []
