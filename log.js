@@ -93,9 +93,9 @@ function logres(message, options, context) {
 		caller = tmp[1] + "()"
 	}
 
-	var pn = "."
+	var pn = "   "
 	if (typeof(options.partnum) === "number") {
-		pn = " p" + (options.partnum + 1)
+		pn = "-p" + (options.partnum + 1)
 	}
 	var id = "."
 	if (options.workerid > 0) {
@@ -111,7 +111,8 @@ function logres(message, options, context) {
 	context = context || "."
 
 	if (logtoconsole) {
-		message = appstr + " " + id + " " + options.logsig + " " + pn + " " + context + " " + caller + ": " + message
+		appstr = "["+appstr+"]"
+		message = appstr + " " + id + " " + options.logsig.substring(0,4) + pn + " " + context + " " + caller + ": " + message
 		logc(message.replace(/ \. /g," "), options)
 	}
 

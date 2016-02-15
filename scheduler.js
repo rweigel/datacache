@@ -111,8 +111,8 @@ function run() {
 				runningWorks.remove(work)
 
 				log.logres("Called.", work.options, "scheduler")
-				log.logres("work.error      = " + work.error, work.options, "scheduler")
-				log.logres("work.retries    = " + work.retries, work.options, "scheduler")
+				log.logres("work.error   = " + work.error, work.options, "scheduler")
+				log.logres("work.retries = " + work.retries, work.options, "scheduler")
 
 				if (work.error === "") {
 					log.logres("Calling work.callback(work2result(work))", work.options, "scheduler")
@@ -120,7 +120,10 @@ function run() {
 					return
 				}
 
-				if (work.error !== "" && work.retries < work.options.maxTries) {
+				if (work.abort) {
+					log.logres("Aborting work due to error: "+work.error, work.options, "scheduler")	
+					work.callback(work2result(work))
+				} else if (work.error !== "" && work.retries < work.options.maxTries) {
 					log.logres("Will retry " + work.url, work.options, "scheduler")
 					work.retries += 1
 					worksQueue.push(work)
@@ -268,6 +271,7 @@ function newWork(url, partnum, options, callback){
 				work2ResultFinishedTime: 0,
 				processFinishedTime : 0,
 				jobFinishedTime : 0,
+				abort: false,
 				retries : 0,
 				callback : callback || function () {},
 				process : function (callback) {
