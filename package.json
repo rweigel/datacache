@@ -10,7 +10,7 @@
     "async": "~0.2.9",
     "adm-zip": "~0.4.3",
     "jsdom": "3.0",
-    "line-reader": "*",
+    "line-reader": "0.2.3",
     "jquery": "*",
     "mkdirp": "*",
     "socket.io": "*",

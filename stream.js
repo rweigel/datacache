@@ -716,7 +716,7 @@ function stream(source, res) {
 
 				// https://github.com/nickewing/line-reader
 				lineReader.eachLine(fnamefull, function(line, last) {
-					
+
 					var stopline = work.options.streamFilterReadLines;
 					if (work.options.streamFilterReadLines == 0) {
 						stopline = Infinity;
