@@ -278,6 +278,15 @@ function stream(source, res) {
 				}
 			}
 
+			// Send 404 if only one part to the request.
+			if (work.statusCode != 200) {
+				if (reqstatus[work.options.logsig].N == 1) {
+					log.logres("Non-200 status code and only one part to request. Sending status code instead of empty body.", work.options, "stream")
+					//res.send(work.statusCode, { error: work.error });
+					//return;
+				}
+			}
+
 			if (work.errorcode == 500) {
 				if (reqstatus[work.options.logsig].aborted) {
 					// TODO: Remove running works with this logsig?
