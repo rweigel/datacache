@@ -7,16 +7,15 @@ exports.extractData = function (data) {
 	var re1 = /^([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)\s+([\d]+)/;
 
 	// Data line
-	var re2 = /\n([A-Z]+)\s+([\d-].*)/gi;
+	var re2 = /\n([A-Z]\w+)\s+([\d-].*)/gi;
 
 	// First combine timestamp and data line and remove station string.
 	// Then split on newlines, remove last line, and keep data lines.
 	
 	return data
 			.toString()
-			.replace(/[ \t]+/g,' ')				// Replace tabs with space.
-			.replace(/[0-9](\s\n[A-Z])/gi,'$1') // Removes last element of time lines which is number of records that follow timestamp.
-			.replace(re2,"$2")					// Removes newline and keeps data line.
+			.replace(/[ \t]+/g,' ')				// Replace space or tabs with space.
+			.replace(re2," $2")					// Removes newline and keeps data line.
 			.split("\n")
 			.filter(function (line) {return line.search(re1)!=-1})	// Removes lines that don't match re1.
 			.join("\n") + "\n";
