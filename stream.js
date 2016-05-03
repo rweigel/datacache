@@ -764,7 +764,7 @@ function stream(source, res) {
 
 						if (outcolumns.length > 0 && line !== "") {
 
-							tmparr = line.split(/\s+/g)
+							tmparr = line.split(work.options.streamFilterWriteDelimiter)
 							line = ""
 
 							if (lr == work.options.streamFilterReadStart) {
@@ -774,7 +774,7 @@ function stream(source, res) {
 								log.logres("Extracting " + tmparr.length + " columns on last line.", work.options, "stream")
 							}
 							for (var z = 0; z < outcolumns.length-1; z++) {
-								line = line + tmparr[outcolumns[z]-1] + " ";
+								line = line + tmparr[outcolumns[z]-1] + work.options.streamFilterWriteDelimiter;
 							}
 							line = line + tmparr[outcolumns[z]-1];
 
