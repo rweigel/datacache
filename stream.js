@@ -278,6 +278,15 @@ function stream(source, res) {
 				}
 			}
 
+			// Send 404 if only one part to the request.
+			if (work.statusCode != 200) {
+				if (reqstatus[work.options.logsig].N == 1) {
+					log.logres("Non-200 status code and only one part to request. Sending status code instead of empty body.", work.options, "stream")
+					//res.send(work.statusCode, { error: work.error });
+					//return;
+				}
+			}
+
 			if (work.errorcode == 500) {
 				if (reqstatus[work.options.logsig].aborted) {
 					// TODO: Remove running works with this logsig?
@@ -629,7 +638,11 @@ function stream(source, res) {
 				}
 
 				if ((work.options.streamFilterReadTimeColumns === "") && (work.options.streamFilterReadTimeFormat !== "")) {
-					var timecolumnsStr = work.options.streamFilterReadTimeFormat.split(",")
+					if (work.options.streamFilterReadTimeFormat.match(",")) {
+						var timecolumnsStr = work.options.streamFilterReadTimeFormat.split(",")
+					} else {
+						var timecolumnsStr = work.options.streamFilterReadTimeFormat.split(" ")
+					}
 					log.logres("No ReadTimeColumns given, but ReadTimeFormat given.", work.options, "stream")
 					log.logres("Assuming time columns are first " + timecolumnsStr.length + " columns.", work.options, "stream")
 					var timecolumns = []
@@ -703,7 +716,7 @@ function stream(source, res) {
 
 				// https://github.com/nickewing/line-reader
 				lineReader.eachLine(fnamefull, function(line, last) {
-					
+
 					var stopline = work.options.streamFilterReadLines;
 					if (work.options.streamFilterReadLines == 0) {
 						stopline = Infinity;

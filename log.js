@@ -103,9 +103,11 @@ function logres(message, options, context) {
 	}
 
 	var appstr = ""
-	if (options.config)
-		appstr = options.config.APPNAME
-	
+	if (options.config) {
+		if (options.config.APPNAME) {
+			appstr = "["+options.config.APPNAME+"]"
+		}
+	}
 	context = context || "."
 
 	if (logtoconsole) {

@@ -196,6 +196,7 @@ exports.process = function (work, callback) {
 				if (response.statusCode !== 200) {
 					work.error = "HTTP Error " + response.statusCode
 					log.logres("Non-200 status code when attempting to GET: " + response.statusCode, work.options, "plugin")
+					work.statusCode = response.statusCode
 					callback(true, work)
 					return
 				} else {
