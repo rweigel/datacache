@@ -19,8 +19,8 @@ var argv    = require('yargs')
 						'start': 0,
 						'all': "true",
 						'n': 10,
-						'server': "http://localhost:7999/",
-						'serverdata': "http://localhost:7999/",
+						'server': "http://localhost:7998/",
+						'serverdata': "http://localhost:7998/",
 						'type': "stream",
 						'showdiffs': "true"
 					})
@@ -125,8 +125,10 @@ function checkmd5(j,k,sync,all) {
 	child = exec(command(j,k,sync), function (error, stdout, stderr) {
 		console.log(k + "\t" + stdout.substring(0,32))
 		checkmd5.completed[j] = checkmd5.completed[j] + 1
-		var f1 = "data-"+type+"/out." + j + ".0"
-		var f2 = "data-"+type+"/out." + j + "." + k
+		if (k < 10) pad = "0"
+		var sub = tests[j].md5.substring(0,8)
+		var f1 = "data-"+type+"/out." + sub + ".0"
+		var f2 = "data-"+type+"/out." + sub + ".1"
 		if (tests[j].md5 === "") {
 			if (fs.existsSync(f1)) {
 				console.log("MD5 not given.  Computing from reference file " + f1 + ".")
@@ -177,8 +179,11 @@ function checkmd5(j,k,sync,all) {
 }
 
 function command(j,k,sync) {
-		var fnameo  = "data-"+type+"/out." + j + "." + k;
-		var fnameh = "data-"+type+"/head." + j + "." + k;
+
+		var sub = tests[j].md5.substring(0,8)
+		pad = ""
+		var fnameo = "data-"+type+"/out." + sub + "." + k;
+		var fnameh = "data-"+type+"/head." + sub + "." + k;
 
 		if (tests[j].url.match("streamGzip=true")) {
 			var com = 'curl -D ' + fnameh + ' -s -g "' + tests[j].url + '" | gunzip ';
@@ -207,6 +212,9 @@ function diff(f1,f2) {
 		}
 		child = exec('diff ' + f1 + ' ' + f2, 
 			function (error, stdout, stderr) {
+				if (error) {
+					console.log(error)
+				}
 				if (stdout.length > 0) {
 					//console.log("Writing to stdout");
 					logc("difference between " + f1 + " and " + f2 + ":",9)

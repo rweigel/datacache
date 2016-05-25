@@ -110,30 +110,31 @@ tests[j].url  = server + "sync?source="+server+"test/data/file1.txt&return=strea
 tests[j].n    = n || 50;
 tests[j].md5  = "755c81782ceb9bf9a391daee92ee2396";
 
-j = j+1;
-tests[j]      = {};
-tests[j].url  = server + "sync/?plugin=swpcAK&template="+server+"test/data/%Y%mAK.txt&timeRange=2010-01-01/2010-01-02&forceUpdate=true&forceWrite=true&return=stream";
-tests[j].n    = n || 50;
-tests[j].md5  = "4359cba956b4b416d86743cef6c3586b";
+if (0) {
+	j = j+1;
+	tests[j]      = {};
+	tests[j].url  = server + "sync/?plugin=swpcAK&template="+server+"test/data/%Y%mAK.txt&timeRange=2010-01-01/2010-01-02&forceUpdate=true&forceWrite=true&return=stream";
+	tests[j].n    = n || 50;
+	tests[j].md5  = "4359cba956b4b416d86743cef6c3586b";
 
-j = j+1;
-tests[j]      = {};
-tests[j].url  = server + "sync/?plugin=swpcAK&template="+server+"test/data/%Y%mAK.txt&timeRange=2010-01-01/2010-01-02&forceUpdate=false&forceWrite=false&return=stream";
-tests[j].n    = n || 50;
-tests[j].md5  = "4359cba956b4b416d86743cef6c3586b";
+	j = j+1;
+	tests[j]      = {};
+	tests[j].url  = server + "sync/?plugin=swpcAK&template="+server+"test/data/%Y%mAK.txt&timeRange=2010-01-01/2010-01-02&forceUpdate=false&forceWrite=false&return=stream";
+	tests[j].n    = n || 50;
+	tests[j].md5  = "4359cba956b4b416d86743cef6c3586b";
 
+	j = j+1;
+	tests[j]      = {};
+	tests[j].url  = server + "sync/?plugin=swpcAK&template="+server+"test/data/%Y%mAK.txt&timeRange=2010-01-01/2010-01-02&forceUpdate=true&forceWrite=true&return=stream&streamFilterReadColumns=1,7";
+	tests[j].n    = n || 50;
+	tests[j].md5  = "ab2240a0161c5540fda5e1370efbaa5c";
 
-j = j+1;
-tests[j]      = {};
-tests[j].url  = server + "sync/?plugin=swpcAK&template="+server+"test/data/%Y%mAK.txt&timeRange=2010-01-01/2010-01-02&forceUpdate=true&forceWrite=true&return=stream&streamFilterReadColumns=1,7";
-tests[j].n    = n || 50;
-tests[j].md5  = "ab2240a0161c5540fda5e1370efbaa5c";
-
-j = j+1;
-tests[j]      = {};
-tests[j].url  = server + "sync/?plugin=swpcAK&template="+server+"test/data/%Y%mAK.txt&timeRange=2010-01-01/2010-01-02&forceUpdate=false&forceWrite=false&return=stream&streamFilterReadColumns=1,7";
-tests[j].n    = n || 50;
-tests[j].md5  = "ab2240a0161c5540fda5e1370efbaa5c";
+	j = j+1;
+	tests[j]      = {};
+	tests[j].url  = server + "sync/?plugin=swpcAK&template="+server+"test/data/%Y%mAK.txt&timeRange=2010-01-01/2010-01-02&forceUpdate=false&forceWrite=false&return=stream&streamFilterReadColumns=1,7";
+	tests[j].n    = n || 50;
+	tests[j].md5  = "ab2240a0161c5540fda5e1370efbaa5c";
+}
 
 j = j+1;
 tests[j]      = {};
