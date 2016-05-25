@@ -146,8 +146,8 @@ exports.formatLine = function (line, options) {
 		datav  = line.split(/,|\s+/).slice(parseInt(timecolumnsa[timecolumnsa.length-1]))
 	}
 	if (debug) {
-		log.logres(" formattedTime.formatLine(): time array: " + timev.join(options.streamFilterWriteDelimiter), config)
-		log.logres(" formattedTime.formatLine(): data array: " + datav.join(options.streamFilterWriteDelimiter), config)
+		log.logres(" formattedTime.formatLine(): time array: " + timev.join(" "), config)
+		log.logres(" formattedTime.formatLine(): data array: " + datav.join(" "), config)
 	}
 
 	if (options.streamFilterReadTimeStart !== "") {
@@ -229,7 +229,7 @@ exports.formatLine = function (line, options) {
 		var timestamp = d[0]+" "+d[1]+" "+d[2]+" "+d[3]+" "+d[4]+" "+d[5]+"."+d[6];
 	}
 
-	line = timestamp + options.streamFilterWriteDelimiter + datav.join(options.streamFilterWriteDelimiter);
+	line = timestamp + " " + datav.join(" ");
 
 	if (debug) {
 		log.logc(" formattedTime.formatLine(): Returning: " + line, config)

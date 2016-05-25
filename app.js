@@ -501,7 +501,7 @@ function parseOptions(req) {
 	// valid, allow output format to be 0, 1, or 2. 
 	options.streamFilterWriteTimeFormat = req.query.streamFilterWriteTimeFormat || req.body.streamFilterWriteTimeFormat      || "0";
 
-	options.streamFilterWriteDelimiter = req.query.streamFilterWriteDelimiter || req.body.streamFilterWriteDelimiter      || ",";
+	options.streamFilterWriteDelimiter = req.query.streamFilterWriteDelimiter || req.body.streamFilterWriteDelimiter      || " ";
 
 	// Read while time >= TimeStart and time < TimeStop
 	options.streamFilterReadTimeStart   = req.query.streamFilterReadTimeStart || req.body.streamFilterReadTimeStart || ""
