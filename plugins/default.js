@@ -202,12 +202,17 @@ exports.process = function (work, callback) {
 				} else {
 					work.header = response.headers
 					log.logres("Got " + work.url, work.options, "plugin")
-					//log.logres("Headers: " + JSON.stringify(response.headers), work.options, "plugin")
+					log.logres("Headers: " + JSON.stringify(response.headers), work.options, "plugin")
 					if (response.headers["content-encoding"] === "gzip" || response.headers["content-type"] === "application/x-gzip") {
 						log.logres("Content-Type is application/x-gzip", work.options, "plugin")
 					    zlib.gunzip(body, finish)
 					} else {
 						magic.detect(body, function(err, result) {
+							if (!result) {
+								log.logres("Calling finish().", work.options, "plugin")
+								finish("",body)
+								return
+							}
 							if (result.match(/^gzip/)) {
 								log.logres("Content-Encoding is not gzip and Content-Type is not application/x-gzip, but buffer is gzipped.", work.options, "plugin")
 								if (err) throw err
