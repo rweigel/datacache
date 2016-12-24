@@ -495,8 +495,8 @@ function stream(source, res) {
 										+ ".stream.gz"
 										, res.options, "stream")
 
-						var com = "cd " + streamdir 
-										+ "; cat " 
+						var com = "cd '" + streamdir 
+										+ "'; cat " 
 										+ files.join(" ") 
 										+ " > ../" 
 										+ streamsignature 
@@ -524,8 +524,8 @@ function stream(source, res) {
 									return
 								}
 
-								var com = "cd " + streamdir 
-												+ "/.. ; ln -s " 
+								var com = "cd '" + streamdir 
+												+ "/..' ; ln -s " 
 												+ streamsignature 
 												+ "/" 
 												+ files[0] 
