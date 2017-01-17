@@ -64,7 +64,10 @@ function stream(source, res) {
 	// 	Modify this so assumption is not made.
 
 	var extractSignature = source.join(",")
+	//console.log(plugin)
 	var plugin = scheduler.getPlugin(res.options,source[0])
+	//console.log(plugin)
+	//console.log(plugin.extractSignature.toString())
 	if (plugin.extractSignature) {
 		extractSignature = extractSignature + plugin.extractSignature(res.options)
 		log.logres("Plugin signature MD5: " 
@@ -295,6 +298,7 @@ function stream(source, res) {
 				} else {
 					log.logres("Sending 500 error.", work.options, "stream")
 					reqstatus[work.options.logsig].aborted = true
+					res.setHeader("x-datacache-error",msg)
 					res.send(500, { error: msg })
 					return
 				}

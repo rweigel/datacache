@@ -57,7 +57,15 @@ fs.readdir(__dirname + "/plugins", function (err, files) {
 		files.forEach(function (file) {
 			if (file !== "default.js") {
 				var p = require("./plugins/"+file)
+				noExtract = false;
+				if (!p.extractSignature) {
+					noExtract = true;
+				}
 				p.__proto__ = defaultPlugin
+				if (noExtract) {
+					// This will trigger an error in newWork function
+					p.extractSignature = "";
+				}
 				plugins.push(p)
 			}
 		})
@@ -220,6 +228,8 @@ function newWork(url, partnum, options, callback){
 	}
 	
 	var extractSignature = ""
+	//console.log(plugin)
+	// TODO: This will never happen unless default.js has extractSignature function removed.
 	if (plugin.extractSignature) {
 		extractSignature = plugin.extractSignature(options)
 		log.logres("MD5(URL): " + util.md5(url), options, "scheduler")

@@ -1,5 +1,9 @@
 exports.name = "wdchr";
 
+exports.extractSignature = function () {
+	return "1"
+}
+
 exports.extractData = function (data, options) {
 
 	var dataa = data.toString().split("\n");

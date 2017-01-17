@@ -9,6 +9,10 @@ exports.match = function(url){
 	return url.split("/")[2].toLowerCase()==="cdaweb.gsfc.nasa.gov";
 }
 
+exports.extractSignature = function () {
+	return "1"
+}
+
 exports.preprocess = function(work, callback){
 	util.get(work.url, function(error, response, body) {
 		if(error || response.statusCode!==200) {
