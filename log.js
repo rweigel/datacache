@@ -71,6 +71,12 @@ function logres(message, options, context) {
 		console.error("logres() function requires two arguments.")
 	}
 
+	if (!options.debug) {
+		options.debug = { "tofile":{"torf":false},
+						  "toconsole":{"torf":true}
+						}
+	}
+
 	// Quick exit.
 	if (options.debug["tofile"]["torf"] == false 
 		&& options.debug["toconsole"]["torf"] == false)

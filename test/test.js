@@ -10,7 +10,7 @@ var fs      = require("fs")
 var crypto  = require("crypto");
 var sys     = require('sys')
 var exec    = require('child_process').exec;
-var spawn   = require('child_process').spawn
+var spawn   = require('child_process').spawn;
 var clc     = require('cli-color')
 var argv    = require('yargs')
 					.default({

@@ -18,11 +18,14 @@ node test.js --suite true --type api -n 1
 
 RESULT2=$?
 
-#sleep 1
-
 kill $PID
 
-if [[ $RESULT1 == "1" && $RESULT2 == "1" ]]; then
+echo "node formattedTimeTest.js"
+node formattedTimeTest.js
+
+RESULT0=$?
+
+if [[ $RESULT1 == "0" && $RESULT1 == "1" && $RESULT2 == "1" ]]; then
 	echo "test.sh Exiting with code 1"
 	exit 1
 else
