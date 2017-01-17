@@ -6,6 +6,10 @@ var time = require("../asset/time.js");
 
 exports.name = "_httpdemo";
 
+exports.extractSignature = function () {
+  return "1"
+}
+
 exports.match = function(url){
 	return url.split("/")[2].toLowerCase()==="xdatacache.org";
 }

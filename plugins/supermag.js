@@ -1,5 +1,9 @@
 exports.name = "supermag";
 
+exports.extractSignature = function () {
+	return "1"
+}
+
 // Reads SuperMAG response and extracts data portion into format that is easy for TSDS2 + template to process.
 exports.extractData = function (data) {
 
