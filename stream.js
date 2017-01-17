@@ -15,7 +15,7 @@ var reqstatus = {}
 function stream(source, res) {
 
 	log.logres("Called.", res.options)
-
+	
 	if (res.options.streamFilterReadLineFormatter.match(/formattedTime/) ||
 		res.options.streamFilterReadTimeFormat || 
 		res.options.streamFilterReadTimeColumns) {
@@ -758,7 +758,6 @@ function stream(source, res) {
 							if (lr == work.options.streamFilterReadStart) {
 								log.logres("First processed line after calling formatLine:", work.options, "stream")
 								log.logres(" " + line, work.options, "stream")
-
 							}
 							if (last) {
 								log.logres("Last processed line after calling formatLine:", work.options, "stream")
@@ -777,7 +776,9 @@ function stream(source, res) {
 
 						if (outcolumns.length > 0 && line !== "") {
 
-							tmparr = line.split(/\s+/g)
+							var re = new RegExp(options.streamFilterWriteDelimiter,"g");
+							tmparr = line.split(re)
+							//console.log(tmparr)
 							line = ""
 
 							if (lr == work.options.streamFilterReadStart) {
