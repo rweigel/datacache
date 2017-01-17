@@ -106,7 +106,7 @@ exports.formatLine = function (line, options, testing) {
 		log.logres(" formattedTime.formatLine(): streamFilterReadTimeColumns:      " + options.streamFilterReadTimeColumns, options);
 		log.logres(" formattedTime.formatLine(): streamFilterReadTimeStart:        " + options.streamFilterReadTimeStart, options);
 		log.logres(" formattedTime.formatLine(): streamFilterReadTimeStop:         " + options.streamFilterReadTimeStop, options);
-		log.logres(" formattedTime.formatLine(): streamFilterReadColumnsDelimiter: " + options.streamFilterReadTimeStop, options);
+		log.logres(" formattedTime.formatLine(): streamFilterReadColumnsDelimiter: " + options.streamFilterReadColumnsDelimiter, options);
 		log.logres(" formattedTime.formatLine(): streamFilterWriteTimeFormat:      " + options.streamFilterWriteTimeFormat, options);
 		log.logres(" formattedTime.formatLine(): streamFilterWriteDelimiter:       " + options.streamFilterWriteDelimiter, options);
 
