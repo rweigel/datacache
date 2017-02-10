@@ -90,7 +90,7 @@ exports.formatLine = function (line, options, testing) {
 	if (exports.formatLine.wascalled[options.logsig]) {
 		var debug = false
 	} else {
-		exports.formatLine.wascalled[options.logsig] = options.debuglineformatterconsole;
+		exports.formatLine.wascalled[options.logsig] = true;
 	}
 	
 	if (debug) {
@@ -153,6 +153,7 @@ exports.formatLine = function (line, options, testing) {
 		log.logres(" formattedTime.formatLine(): line trimmed: " + line, options);
 	}
 
+	//console.log(line)
 	// Assumes time is in continuous columns and before any data column that is to be kept.
 	if (options.streamFilterReadColumnsDelimiter !== "") {
 		var re = new RegExp(options.streamFilterReadColumnsDelimiter,"g");
@@ -162,6 +163,9 @@ exports.formatLine = function (line, options, testing) {
 		timev  = line.split(/,|\s+/).slice(parseInt(timecolumnsa[0])-1,parseInt(timecolumnsa[timecolumnsa.length-1]));
 		datav  = line.split(/,|\s+/).slice(parseInt(timecolumnsa[timecolumnsa.length-1]));
 	}
+	//console.log(datav)
+
+	//console.log(datav)
 
 	if (debug) {
 		log.logres(" formattedTime.formatLine(): time array:   " + timev.join(options.streamFilterWriteDelimiter), options);
