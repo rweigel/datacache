@@ -203,11 +203,23 @@ exports.process = function (work, callback) {
 					work.header = response.headers
 					log.logres("Got " + work.url, work.options, "plugin")
 					log.logres("Headers: " + JSON.stringify(response.headers), work.options, "plugin")
+
+					if (!body) {
+						log.logres("Body is empty. Calling finish().", work.options, "plugin")
+						finish("","")
+						return								
+					}
+
 					if (response.headers["content-encoding"] === "gzip" || response.headers["content-type"] === "application/x-gzip") {
 						log.logres("Content-Type is application/x-gzip", work.options, "plugin")
 					    zlib.gunzip(body, finish)
 					} else {
 						magic.detect(body, function(err, result) {
+							if (error) {
+								log.logres("magic.detect threw error.  Calling finish().", work.options, "plugin")
+								finish("",body)
+								return								
+							}
 							if (!result) {
 								log.logres("Calling finish().", work.options, "plugin")
 								finish("",body)
