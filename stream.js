@@ -90,15 +90,17 @@ function stream(source, res) {
 						+ "/cache/stream/" 
 						+ source[0].split("/")[2] 
 						+ "/" 
-						+ streamsignature
-	var streamfilecat = streamdir + ".stream.gz"
+						//+ streamsignature
+	var streamfilecat = streamdir + streamsignature + ".stream.gz"
 	
-	if (!fs.existsSync(streamfilecat)) {
-		log.logres("streamfilecat does not exist: " 
-					+ streamfilecat, res.options, "stream")
-	} else {
-		log.logres("streamfilecat exists at " 
-					+ streamfilecat, res.options, "stream")
+	if (0) {
+		if (!fs.existsSync(streamfilecat)) {
+			log.logres("streamfilecat does not exist: " 
+						+ streamfilecat, res.options, "stream")
+		} else {
+			log.logres("streamfilecat exists at " 
+						+ streamfilecat, res.options, "stream")
+		}
 	}
 
 	if (fs.existsSync(streamfilecat) && !res.options.forceWrite && !res.options.forceUpdate) {
@@ -112,14 +114,14 @@ function stream(source, res) {
 						+ " in node.js < 12.7 with concateneated gzip files",
 						  res.options, "stream")
 		} else {
-			util.readLockFile(streamdir, res.options, function (success) {
+			util.readLockFile(streamfilecat, res.options, function (success) {
 				if (!success) {
 					log.logc("Could not read lock streamdir.  Try again in 100 ms", 160)
 					setTimeout(function () {stream(source, res)}, 100)
 					return
 				}
 				streamcat(res, streamfilecat, function () {
-					util.readUnlockFile(streamdir, res.options, function () {})
+					util.readUnlockFile(streamfilecat, res.options, function () {})
 				})
 			})
 			return
@@ -195,7 +197,8 @@ function stream(source, res) {
 		str = Math.pow(10,n+1).toString()
 		var ps = str.substring(1,1+n-npad-1) + Np
 				
-		var streamfilepart = streamdir + "/" + ps + "." + work.urlMd5 + ".stream.gz"
+		//var streamfilepart = streamdir + "/" + ps + "." + work.urlMd5 + ".stream.gz"
+		var streamfilepart = streamdir + work.urlMd5 + ".stream.gz"
 
 		if (!fs.existsSync(streamfilepart)) {
 			log.logres("Stream file part does not exist: "+streamfilepart, work.options, "stream")
@@ -213,58 +216,44 @@ function stream(source, res) {
 		} else {
 			log.logres("Using cached stream file part.", work.options, "stream")
 
-			util.readLockFile(streamdir, work, function (success) {
+			util.readLockFile(streamfilepart, work, function (success) {
 				if (!success) {
-					log.logres("Failed to read lock stream file part directory."
+					log.logres("Failed to read lock cached stream file part."
 								+ "  Recreating stream.", work.options, "stream")
 					createstream(work)
-					return							
-				}
-				util.readLockFile(streamfilepart, work, function (success) {
-					if (!success) {
-						log.logres("Failed to read lock cached stream file part."
-									+ "  Recreating stream.", work.options, "stream")
-						createstream(work)
-						return
-					}
-					if (options.streamGzip == false) {
-						log.logres("Unzipping it.", work.options, "stream")
-						var streamer = fs
-										.createReadStream(streamfilepart)
-										.pipe(zlib.createGunzip())
-					} else {
-						log.logres("Sending raw.", work.options, "stream")
-						var streamer = fs.createReadStream(streamfilepart)
-					}
-					streamer.on('end',function() {
-						log.logres("Received streamer.on end event.",
-									work.options, "stream")
-						util.readUnlockFile(streamfilepart, work, function () {
-							util.readUnlockFile(streamdir, work, function () {
-								log.logres("Incremening Nc from " 
-											+ reqstatus[work.options.logsig].Nc + "/" + reqstatus[work.options.logsig].N 
-											+ " to " 
-											+ (reqstatus[work.options.logsig].Nc+1) + "/" + reqstatus[work.options.logsig].N, 
-											work.options, "stream")
-								reqstatus[work.options.logsig].Nc = reqstatus[work.options.logsig].Nc + 1
-								if (reqstatus[work.options.logsig].Nc == reqstatus[work.options.logsig].N) {
-									// Note that this is only executed if no errors
-									// and no cached files were used as a part of the stream.
-									catstreamparts()
-								}
-							})
-						})
-					})
-					streamer.on('error',function (err) {
-						log.logc("streamer error event: " + JSON.stringify(err), 160)
-						util.readUnlockFile(streamfilepart, work, function () {
-							util.readUnlockFile(streamdir, work, function () {})
-						})
-					})
-					log.logres("Streaming it.", work.options, "stream")
-					finish(work, streamer)
 					return
+				}
+				if (options.streamGzip == false) {
+					log.logres("Unzipping it.", work.options, "stream")
+					var streamer = fs
+									.createReadStream(streamfilepart)
+									.pipe(zlib.createGunzip())
+				} else {
+					log.logres("Sending raw.", work.options, "stream")
+					var streamer = fs.createReadStream(streamfilepart)
+				}
+				streamer.on('end',function() {
+					log.logres("Received streamer.on end event.",
+								work.options, "stream")
+					util.readUnlockFile(streamfilepart, work, function () {
+						log.logres("Incremening Nc from " 
+									+ reqstatus[work.options.logsig].Nc + "/" + reqstatus[work.options.logsig].N 
+									+ " to " 
+									+ (reqstatus[work.options.logsig].Nc+1) + "/" + reqstatus[work.options.logsig].N, 
+									work.options, "stream")
+						reqstatus[work.options.logsig].Nc = reqstatus[work.options.logsig].Nc + 1
+						if (reqstatus[work.options.logsig].Nc == reqstatus[work.options.logsig].N) {
+							//catstreamparts()
+						}
+					})
 				})
+				streamer.on('error',function (err) {
+					log.logc("streamer error event: " + JSON.stringify(err), 160)
+					util.readUnlockFile(streamfilepart, work, function () {})
+				})
+				log.logres("Streaming it.", work.options, "stream")
+				finish(work, streamer)
+				return
 			})
 		}
 
@@ -282,10 +271,12 @@ function stream(source, res) {
 			}
 
 			// Send 404 if only one part to the request.
-			if (work.statusCode != 200) {
+			if (work.error == 404) {
+				//console.log(work.statusCode)
 				if (reqstatus[work.options.logsig].N == 1) {
-					log.logres("Non-200 status code and only one part to request. Sending status code instead of empty body.", work.options, "stream")
-					//res.send(work.statusCode, { error: work.error });
+					//log.logres("Error status code and only one part to request. Sending status code instead of empty body.", work.options, "stream")
+					//res.setHeader("x-datacache-error",msg)
+					//res.send(404, { error: work.error });
 					//return;
 				}
 			}
@@ -451,7 +442,7 @@ function stream(source, res) {
 									reqstatus[work.options.logsig].Nc = reqstatus[work.options.logsig].Nc + 1
 
 									if (reqstatus[work.options.logsig].Nc == reqstatus[work.options.logsig].N) {
-										catstreamparts()
+										//catstreamparts()
 									}
 								})
 							})
