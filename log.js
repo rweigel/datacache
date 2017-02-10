@@ -157,7 +157,7 @@ function logapp(message, config) {
 	var ips = "localhost"
 	if (!entrypublic[0].match("127.0.0.1") && !entrypublic[0].match("::1")) {
 		var ip = geoip.lookup(entrypublic[0].split(",")[0])
-		if (!ip) {
+		if (ip) {
 			var ips = ip.country 
 						+ "," + ip.region
 						+ "," + ip.city.replace(/\s+/g,"_")
