@@ -80,7 +80,7 @@ function stream(source, res) {
 			streamFilterSignature = streamFilterSignature + res.options[key]
 		}			
 	}
-	streamFilterSignature = streamFilterSignature + computeFunctionSignature
+	streamFilterSignature = streamFilterSignature + computeFunctionSignature;
 
 	var streamsignature   = util.md5(extractSignature + streamFilterSignature)
 
@@ -198,7 +198,7 @@ function stream(source, res) {
 		var ps = str.substring(1,1+n-npad-1) + Np
 				
 		//var streamfilepart = streamdir + "/" + ps + "." + work.urlMd5 + ".stream.gz"
-		var streamfilepart = streamdir + work.urlMd5 + ".stream.gz"
+		var streamfilepart = streamdir + util.md5(work.urlMd5+streamsignature) + ".stream.gz"
 
 		if (!fs.existsSync(streamfilepart)) {
 			log.logres("Stream file part does not exist: "+streamfilepart, work.options, "stream")
@@ -861,6 +861,37 @@ function stream(source, res) {
 			}
 		
 			function readcallback(err, data) {
+
+				//console.log(data)
+				//var data = csv2fbin(data);
+				//console.log(data)
+				function csv2fbin(lines) {
+
+					var linesarr = lines.split("\n");
+					var Nr = linesarr.length; // Number of rows
+
+					var line1 = linesarr[0].split(",");
+					var Nd    = line1.length - 1;	 // Number of data columns
+
+					//var linebuff = new Buffer.alloc(22 + Nr*(Nt + 8*Nd));
+					var start =line1[0].replace(/Z$/,'');
+
+					var hs = "0" + start + "\0";
+
+					console.log(hs.length + Nr*(Nt + 8*Nd))
+					var linebuff = new Buffer(hs.length + Nr*8*(Nd+1));
+					linebuff.write(hs);
+					var pos = hs.length-1;
+					for (var i = 0; i < Nr; i++) {
+						var line = linesarr[i].split(",");
+						line[0] = i; // Overwrite ISO time with seconds
+						for (var j = 0;j < Nd+1;j++) {
+							linebuff.writeDoubleLE(line[j],pos);
+							pos = pos + 8;
+						}
+					}
+					return linebuff;
+				}
 
 				util.readUnlockFile(fname, work, function () {})
 
