@@ -863,29 +863,31 @@ function stream(source, res) {
 			function readcallback(err, data) {
 
 				//console.log(data)
-				//var data = csv2fbin(data);
+				var data = csv2fbin(data);
 				//console.log(data)
 				function csv2fbin(lines) {
 
 					var linesarr = lines.split("\n");
 					var Nr = linesarr.length; // Number of rows
-
+					if (linesarr[Nr-1] === "") {
+						Nr = Nr - 1;
+					}
 					var line1 = linesarr[0].split(",");
-					var Nd    = line1.length - 1;	 // Number of data columns
+					var Nd    = line1.length; // Number of columns
 
-					//var linebuff = new Buffer.alloc(22 + Nr*(Nt + 8*Nd));
-					var start =line1[0].replace(/Z$/,'');
-
+					var start = new Date(line1[0]).toISOString().replace(/\..*/,'');
 					var hs = "0" + start + "\0";
-
-					console.log(hs.length + Nr*(Nt + 8*Nd))
-					var linebuff = new Buffer(hs.length + Nr*8*(Nd+1));
+					console.log(Nr)
+					console.log(linesarr[0]);
+					console.log(hs.length)
+					console.log(21 + Nr*(8*Nd))
+					var linebuff = new Buffer(hs.length + Nr*(8*Nd));
 					linebuff.write(hs);
-					var pos = hs.length-1;
+					var pos = hs.length;
 					for (var i = 0; i < Nr; i++) {
 						var line = linesarr[i].split(",");
 						line[0] = i; // Overwrite ISO time with seconds
-						for (var j = 0;j < Nd+1;j++) {
+						for (var j = 0;j < Nd;j++) {
 							linebuff.writeDoubleLE(line[j],pos);
 							pos = pos + 8;
 						}

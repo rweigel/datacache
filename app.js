@@ -497,9 +497,12 @@ function parseOptions(req) {
 	options.streamFilterReadTimeFormat  = req.query.streamFilterReadTimeFormat  || req.body.streamFilterReadTimeFormat  || "";
 	options.streamFilterReadTimeColumns = req.query.streamFilterReadTimeColumns || req.body.streamFilterReadTimeColumns || "";
 
+	// 0 for ASCII, 1 for binary
+	options.streamFilterWriteFormat = req.query.streamFilterWriteFormat || req.body.streamFilterWriteFormat || "0";
+
 	// If streamFilterReadColumns + streamFilterReadTimeFormat + streamFilterReadTimeColumns
 	// valid, allow output format to be 0, 1, or 2. 
-	options.streamFilterWriteTimeFormat = req.query.streamFilterWriteTimeFormat || req.body.streamFilterWriteTimeFormat      || "0";
+	options.streamFilterWriteTimeFormat = req.query.streamFilterWriteTimeFormat || req.body.streamFilterWriteTimeFormat || "0";
 
 	options.streamFilterWriteDelimiter = req.query.streamFilterWriteDelimiter || req.body.streamFilterWriteDelimiter      || " ";
 
